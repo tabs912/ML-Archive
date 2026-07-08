@@ -11092,7 +11092,7 @@ function updateMasterListForMonth_(monthParts) {
     restorePreviouslyHiddenSheets_(hiddenSheetNamesAtStart, currentMaster);
     markRuntimeStep_(timing, "Restore previously hidden sheets");
     writeRuntimeTimingReport_(timing);
-    hideSystemSheets_(timing);
+    hideSystemAndTestingSheets_(timing);
     notify_(
       "Update Master List complete.\\n\\n" +
       `New Master List: ${currentMaster.getName()}\\n` +
@@ -11706,12 +11706,12 @@ function organizeWorkbookTabs_(monthParts) {
       Logger.log("Could not move sheet " + sheetName + ": " + err.message);
     }
   });
-  hideSystemSheets_();
+  hideSystemAndTestingSheets_();
   const currentMaster = getMonthlySheetByPrefixAndDate_(ss, MASTER_LIST_PREFIX, monthParts.firstDay, monthParts.lastDay);
   if (currentMaster) currentMaster.activate();
 }
 
-function hideSystemSheets_(timing) {
+function hideSystemAndTestingSheets_(timing) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   let hiddenCount = 0;
   ss.getSheets().forEach(sheet => {
@@ -12467,7 +12467,7 @@ function applyMasterListUpdateMetadataToRow_(rowValues, headerMap, monthParts, s
 
 function hideSystemSheetsNow() {
   return runFrameworkTimed_("Hide System Sheets", function(timing) {
-    const count = hideSystemSheets_(timing);
+    const count = hideSystemAndTestingSheets_(timing);
     notify_("System/testing sheets hidden: " + count);
     return count;
   });
