@@ -1,5 +1,5 @@
 /**
- * Master List Framework v1.6.23.4 Full Script
+ * Master List Framework v1.6.25 Full Script
  *
  * Required section structure for this and all future full-script rebuilds:
  * 1. CONFIGURATION
@@ -29,7 +29,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.6.23.4";
+const MASTER_LIST_MERGE_ML_VERSION = "1.6.25";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
