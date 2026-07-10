@@ -812,12 +812,14 @@ function showQuickStartToast_(message) {
 function quickSystemSetup() {
   showQuickStartToast_("Quick System Setup: rebuilding Format Dashboard defaults...");
   rebuildFormatDashboardDefaults();
-  showQuickStartToast_("Quick System Setup: setting up system sheets...");
+  showQuickStartToast_("Quick System Setup: setting up system sheets and Index auto-refresh trigger...");
   setupSystemSheets();
   showQuickStartToast_("Quick System Setup: building Index...");
   createIndexSheet();
   showQuickStartToast_("Quick System Setup: running Dashboard Quality start-up...");
   runDashboardQualityStartUp();
+  showQuickStartToast_("Quick System Setup: running Quality Smokescreen...");
+  runFrameworkSmokeValidation();
   showQuickStartToast_("Quick System Setup complete.");
 }
 
@@ -6393,6 +6395,11 @@ function collectFrameworkSmokeValidationRows_() {
     functionSourceContainsAll_(onOpen, ["Build Monthly Change Report", "buildMonthlyChangeReport"]),
     "Monthly Change remains reachable from callback registry and the root menu");
 
+  appendFrameworkSmokeValidationRow_(rows, "Index auto-refresh trigger path",
+    typeof setupIndexRefreshOnSheetAddedTrigger_ === "function" &&
+    functionSourceContainsAll_(handleSpreadsheetChangeForIndex, ["INSERT_GRID", "createIndexSheet"]),
+    "Quick System Setup installs an on-change trigger that refreshes Index after sheet-grid changes");
+
   return rows;
 }
 
@@ -11470,6 +11477,37 @@ function generateArchiveFileIndex_() {
   return createIndexSheet();
 }
 
+function setupIndexRefreshOnSheetAddedTrigger_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const handlerName = "handleSpreadsheetChangeForIndex";
+  const hasTrigger = ScriptApp.getProjectTriggers().some(function(trigger) {
+    return trigger.getHandlerFunction &&
+      trigger.getHandlerFunction() === handlerName &&
+      trigger.getEventType &&
+      trigger.getEventType() === ScriptApp.EventType.ON_CHANGE;
+  });
+  if (hasTrigger) return false;
+  ScriptApp.newTrigger(handlerName)
+    .forSpreadsheet(ss)
+    .onChange()
+    .create();
+  return true;
+}
+
+function handleSpreadsheetChangeForIndex(e) {
+  const changeType = String((e && e.changeType) || "");
+  if (changeType && changeType !== "INSERT_GRID" && changeType !== "REMOVE_GRID") return;
+  const lock = LockService.getDocumentLock();
+  if (!lock.tryLock(1000)) return;
+  try {
+    createIndexSheet();
+  } catch (err) {
+    logBestEffortWarning_("Index auto-refresh after sheet structure change skipped: " + err.message);
+  } finally {
+    lock.releaseLock();
+  }
+}
+
 function enforceGlobalSheetSortOrder_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const dashboard = loadDashboardConfig_();
@@ -15198,8 +15236,7 @@ function getRequiredMenuFunctionNames_() {
     "formatDashboard",
     "rebuildFormatDashboardDefaults",
     "saveActiveLayoutToDashboardSettings",
-    "setupSystemSheets",
-    ""
+    "setupSystemSheets"
   ];
 }
 
@@ -15266,7 +15303,8 @@ function runDashboardQualityWorkflowSyncVerification_(timing) {
 
 function setupSystemSheets() {
   const result = initializeSystemSheets_();
-  notify_("System sheets setup complete.");
+  setupIndexRefreshOnSheetAddedTrigger_();
+  notify_("System sheets setup complete. Index auto-refresh trigger is active.");
   return result;
 }
 
