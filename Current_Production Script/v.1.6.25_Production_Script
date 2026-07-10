@@ -632,6 +632,7 @@ function writeDashboardDefaultsFast_(sheet) {
   appendDashboardSectionRows_(rows, RFF_SECTION_COLUMNS, ["Header", "Width", "Header Font Size", "Date Column", "Hide Column", "Data Wrap", "Horizontal Alignment", "Vertical Alignment", "Number Format"], getResolvedDefaultColumnDefinitionRows_(), width);
   appendDashboardSectionRows_(rows, RFF_SECTION_BEHAVIORS, ["Sheet Type", "Uses Title Rows", "Uses Filter", "Uses Alternating Colors", "Uses Subheaders", "Hidden Template", "Output Visibility"], getDefaultBehaviorRows_(), width);
   appendDashboardSectionRows_(rows, RFF_SECTION_HEADERS, ["Sheet Type", "Column Order", "Header", "Source of Data"], getDefaultSheetHeaderRows_(), width);
+  appendDashboardSectionRows_(rows, RFF_SECTION_SYSTEM_SURFACES, ["System Sheet Name", "Display Name", "Sort Order", "Output Visibility", "Title Fill Color", "Title Font Color", "Use Global Defaults", "Notes"], getDefaultSystemSurfaceRows_(), width);
 
   trimSheetToColumnCount_(sheet, width, "Format Dashboard");
   if (sheet.getMaxRows() < rows.length) sheet.insertRowsAfter(sheet.getMaxRows(), rows.length - sheet.getMaxRows());
@@ -3067,6 +3068,8 @@ const RFF_SECTION_BEHAVIORS = "SECTION E - SHEET BEHAVIORS";
 
 const RFF_SECTION_HEADERS = "SECTION F - SHEET HEADERS";
 
+const RFF_SECTION_SYSTEM_SURFACES = "SECTION G - SYSTEM SHEET SURFACES";
+
 let RFF_DASHBOARD_CONFIG_CACHE_ = null;
 
 let RFF_DASHBOARD_CONFIG_CACHE_KEY_ = "";
@@ -3152,7 +3155,8 @@ function getFormatDashboardSectionNames_() {
     RFF_SECTION_SHEETS,
     RFF_SECTION_COLUMNS,
     RFF_SECTION_BEHAVIORS,
-    RFF_SECTION_HEADERS
+    RFF_SECTION_HEADERS,
+    RFF_SECTION_SYSTEM_SURFACES
   ];
 }
 
@@ -3285,6 +3289,16 @@ function getDefaultBehaviorRows_() {
   ["Monthly Change", true, true, true, true, true, "VISIBLE"]
 ];
 }
+
+function getDefaultSystemSurfaceRows_() {
+  return [
+    [RFF_DASHBOARD_SHEET, "Format Dashboard", 80, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Dashboard configuration surface"],
+    ["Dashboard Quality Report", "Dashboard Quality Report", 60, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified quality report surface"],
+    ["Framework Timing Report", "Framework Timing Report", 70, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified timing report surface"],
+    [RFF_BASE_TEMPLATE_NAME, RFF_BASE_TEMPLATE_NAME, 900, "HIDDEN", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Hidden framework base template"]
+  ];
+}
+
 
 function getDefaultSheetHeaderRows_() {
   const rows = [];
