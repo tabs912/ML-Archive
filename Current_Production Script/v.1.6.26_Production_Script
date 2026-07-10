@@ -1,5 +1,9 @@
 /**
+<<<<<<< HEAD
+ * Master List Framework v1.6.26.3 Full Script
+=======
  * Master List Framework v1.6.26.2 Full Script
+>>>>>>> origin/main
  *
  * Required section structure for this and all future full-script rebuilds:
  * 1. CONFIGURATION
@@ -29,7 +33,11 @@
 // CONFIGURATION
 // ============================================================================
 
+<<<<<<< HEAD
+const MASTER_LIST_MERGE_ML_VERSION = "1.6.26.3";
+=======
 const MASTER_LIST_MERGE_ML_VERSION = "1.6.26.2";
+>>>>>>> origin/main
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -97,6 +105,14 @@ const RFF_TEMPLATE_SIGNATURE_MAX_CHARS = 8500;
 const HEADER_ROW = 4;
 
 const DATA_START_ROW = 5;
+
+const RFF_MIN_SERIAL_DATE = 30000;
+
+const RFF_EXCEL_EPOCH_YEAR = 1899;
+
+const RFF_EXCEL_EPOCH_MONTH = 11;
+
+const RFF_EXCEL_EPOCH_DAY = 30;
 
 
 const FORMAT_ALLOWED_EMPTY_COLUMNS = 2;
@@ -853,7 +869,7 @@ function coerceToValidDate_(value) {
 
 
   if (typeof value === "number") {
-    if (value < 30000) return null;
+    if (value < RFF_MIN_SERIAL_DATE) return null;
     return spreadsheetSerialDateToLocalDate_(value);
   }
 
@@ -895,25 +911,20 @@ function coerceToValidDate_(value) {
 
 function spreadsheetSerialDateToLocalDate_(serialValue) {
   if (serialValue === null || serialValue === undefined || serialValue === "") return null;
-
-
   const serial = Number(serialValue);
   if (isNaN(serial) || serial < 1) return null;
-
 
   const wholeDays = Math.floor(serial);
   const fractional = serial - wholeDays;
 
-
-  const date = new Date(1899, 11, 30);
+  const date = new Date(RFF_EXCEL_EPOCH_YEAR, RFF_EXCEL_EPOCH_MONTH, RFF_EXCEL_EPOCH_DAY);
   date.setDate(date.getDate() + wholeDays);
-
 
   if (fractional > 0) {
     const millisInDay = Math.round(fractional * 24 * 60 * 60 * 1000);
     date.setMilliseconds(date.getMilliseconds() + millisInDay);
+    date.setMilliseconds(0);
   }
-
 
   return isReasonableReportDate_(date) ? date : null;
 }
@@ -5213,18 +5224,12 @@ function compactTemplateFormatSignature_(signature) {
   const text = String(signature || "");
   if (text.length <= RFF_TEMPLATE_SIGNATURE_MAX_CHARS) return text;
 
-
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    hash = ((hash << 5) - hash) + text.charCodeAt(i);
-    hash |= 0;
-  }
-
+  const md5Hash = computeStableHash_(text);
 
   return [
     "compact=true",
     "length=" + text.length,
-    "hash=" + Math.abs(hash).toString(16),
+    "hash=" + md5Hash,
     "prefix=" + text.slice(0, 500)
   ].join("|");
 }
@@ -8737,7 +8742,22 @@ function getDemoPMonthlySyncChangedPMRs_(monthParts) {
 
 function processDemoPDataWithFillBlankMask_(data, changedPMRs) {
   if (!data || !data.values || !data.values.length) return [];
-  const beforeValues = data.values.map(function(row) { return row.slice(); });
+
+  const pmrIdx = getPMRIndex_(data.headerMap);
+  const keptRows = [];
+  const beforeValues = [];
+
+  data.values.forEach(function(row) {
+    const pmr = pmrIdx === -1 ? "" : normalizePMR_(row[pmrIdx]);
+    if (pmr && changedPMRs && changedPMRs.has(pmr)) return;
+
+    keptRows.push(row);
+    beforeValues.push(row.slice());
+  });
+
+  const originalValues = data.values;
+  data.values = keptRows;
+
   populateParticipantNameData_(data, null);
   populateDemoPNameData_(data, null);
   combineAddressesData_(data, null);
@@ -8746,16 +8766,13 @@ function processDemoPDataWithFillBlankMask_(data, changedPMRs) {
   runMasterContactProcessData_(data, null);
   combineNotesSummaryData_(data, null);
 
-  const pmrIdx = getPMRIndex_(data.headerMap);
-  const keptRows = [];
   data.values.forEach(function(row, r) {
-    const pmr = pmrIdx === -1 ? "" : normalizePMR_(row[pmrIdx]);
-    if (pmr && changedPMRs && changedPMRs.has(pmr)) return;
     for (let c = 0; c < row.length; c++) {
       if (normalizeCompareValue_(beforeValues[r][c]) !== "") row[c] = beforeValues[r][c];
     }
-    keptRows.push(row);
   });
+
+  data.values = originalValues;
   return keptRows;
 }
 
