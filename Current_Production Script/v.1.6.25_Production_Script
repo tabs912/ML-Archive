@@ -217,7 +217,6 @@ const GLOBAL_DATE_FORMAT_HEADERS = Object.freeze([
   "IDT Meeting Date",
   "Last Care Plan",
   "Next Care Plan Due",
-  "Master List Update Month"
 ]);
 
 
@@ -311,9 +310,6 @@ function getDefaultColumnDefinitionRows_() {
   ["Last Care Plan", 100, 10, true, false, "CLIP", "left", "middle", "mm/dd/yyyy"],
   ["Last Name", 165, 10, false, false, "CLIP", "left", "middle", ""],
   ["Name", 180, 10, false, false, "CLIP", "left", "middle", ""],
-  ["Master List Source Sheet", 140, 10, false, false, "CLIP", "left", "middle", ""],
-  ["Master List Update Month", 140, 10, false, false, "CLIP", "left", "middle", "mm/dd/yyyy"],
-  ["Master List Update Status", 140, 10, false, false, "CLIP", "left", "middle", "mm/dd/yyyy"],
   ["New Value", 180, 10, false, false, "CLIP", "left", "middle", ""],
   ["Next Care Plan Due", 100, 10, true, false, "CLIP", "left", "middle", "mm/dd/yyyy"],
   ["Notes", 140, 10, false, false, "CLIP", "left", "middle", ""],
@@ -461,9 +457,6 @@ function getColumnStandards_() {
     "Contact - 7": c_(140, 10, false, true),
     "Contact - 8": c_(140, 10, false, true),
     "Contact - Summary": c_(140, 10, false, true),
-    "Master List Update Status": c_(140, 10, false, false),
-    "Master List Update Month": c_(140, 10, false, false),
-    "Master List Source Sheet": c_(140, 10, false, false),
     "Sort Order": c_(100, 10, false, true),
     "Primary PMR Row": c_(110, 10, false, true),
     "Columns With Change": c_(220, 10, false, false),
@@ -3585,9 +3578,6 @@ function getDefaultHeaderSets_() {
       h_("Caseload - Supervising MD", "Demo P"),
       h_("Capitation Date", "Demo P"),
       h_("Enrollment Status", "Demo P"),
-      h_("Master List Update Status", ""),
-      h_("Master List Update Month", ""),
-      h_("Master List Source Sheet", ""),
       h_("Primary PMR Row", "Demo P")
     ],
     [RFF_SHEET_TYPES.MASTER_LIST_CHANGE_LOG]: [
@@ -8244,9 +8234,6 @@ function getRawDataDisallowedWorkingColumns_() {
     "PAP Supplies",
     "PERS Auth",
     "PERS Auth Link",
-    "Master List Update Status",
-    "Master List Update Month",
-    "Master List Source Sheet"
   ];
 }
 
@@ -8801,9 +8788,7 @@ const DEMO_P_OPTIONAL_SYNC_HEADERS = [
 
 const DEMO_P_FORMAT_HEADERS = DEMO_P_RAW_HEADERS.concat(DEMO_P_OPTIONAL_SYNC_HEADERS);
 
-const DEMO_P_TEMPLATE_DATE_HEADERS = GLOBAL_DATE_FORMAT_HEADERS.filter(header =>
-  header !== "Master List Update Month"
-);
+const DEMO_P_TEMPLATE_DATE_HEADERS = GLOBAL_DATE_FORMAT_HEADERS.slice();
 
 const DEMO_P_BANNER_SYNC_HEADERS = [
   "Safety - 2 Person",
@@ -9652,9 +9637,6 @@ function buildSourceHashForRows_(rows, headers) {
     "Demo P Update Status": true,
     "Demo P Update Month": true,
     "Demo P Source Sheet": true,
-    "Master List Update Status": true,
-    "Master List Update Month": true,
-    "Master List Source Sheet": true
   };
   const normalizedRows = rows.map(function(row) {
     return headers.map(function(header, index) {
@@ -11270,45 +11252,9 @@ function copyPrimaryDemoPRowsToMasterListByHeader_(demoSheet, masterSheet, month
 }
 
 function fillMasterListMetadataColumns_(sheet, monthParts, sourceSheetName, statusText) {
-  const lastRow = sheet.getLastRow();
-  if (lastRow < DATA_START_ROW) return;
-  const headers = getHeaders_(sheet, HEADER_ROW);
-  const headerMap = buildHeaderIndexMap_(headers);
-  const required = ["Master List Update Status", "Master List Update Month", "Master List Source Sheet"];
-  const missing = required.filter(function(header) { return headerMap[header] === undefined; });
-  if (missing.length) {
-    Logger.log("Master List metadata write skipped for missing dashboard-defined columns: " + missing.join(", "));
-  }
-  const rowCount = lastRow - DATA_START_ROW + 1;
-  const metadata = {
-    "Master List Update Status": statusText || "Created",
-    "Master List Update Month": monthParts.firstDay,
-    "Master List Source Sheet": sourceSheetName || ""
-  };
-  const indexes = required
-    .map(function(header) { return headerMap[header]; })
-    .filter(function(idx) { return idx !== undefined; })
-    .sort(function(a, b) { return a - b; });
-  if (!indexes.length) return;
-  if (indexes[indexes.length - 1] - indexes[0] + 1 === indexes.length) {
-    const startIdx = indexes[0];
-    const width = indexes.length;
-    const rowTemplate = [];
-    for (let c = startIdx; c <= indexes[indexes.length - 1]; c++) {
-      const header = headers[c];
-      rowTemplate.push(Object.prototype.hasOwnProperty.call(metadata, header) ? metadata[header] : "");
-    }
-    const values = Array.from({ length: rowCount }, function() { return rowTemplate.slice(); });
-    sheet.getRange(DATA_START_ROW, startIdx + 1, rowCount, width).setValues(values);
-    return;
-  }
-  indexes.forEach(function(idx) {
-    const header = headers[idx];
-    const value = Object.prototype.hasOwnProperty.call(metadata, header) ? metadata[header] : "";
-    const values = Array.from({ length: rowCount }, function() { return [value]; });
-    sheet.getRange(DATA_START_ROW, idx + 1, rowCount, 1).setValues(values);
-  });
+  return;
 }
+
 
 
 function getMasterListTemplateHeaders_() {
@@ -12545,13 +12491,9 @@ function mutateMasterRowColumnsFromDemoRow_(rowValues, masterHeaderMap, demoRow,
 }
 
 function applyMasterListUpdateMetadataToRow_(rowValues, headerMap, monthParts, sourceSheetName, statusText) {
-  const statusIdx = headerMap["Master List Update Status"];
-  const monthIdx = headerMap["Master List Update Month"];
-  const sourceIdx = headerMap["Master List Source Sheet"];
-  if (statusIdx !== undefined) rowValues[statusIdx] = statusText || "Updated from Demo P";
-  if (monthIdx !== undefined) rowValues[monthIdx] = monthParts ? monthParts.firstDay : new Date();
-  if (sourceIdx !== undefined) rowValues[sourceIdx] = sourceSheetName || "";
+  return;
 }
+
 
 
 function hideSystemSheetsNow() {
@@ -13104,9 +13046,6 @@ function getPrimaryRowChangedColumnDetails_(masterRow, masterHeaderMap, demoRow,
     "Notes",
     "Primary PMR Row",
     "Sort Order",
-    "Master List Update Status",
-    "Master List Update Month",
-    "Master List Source Sheet"
   ]);
 
 

@@ -1,5 +1,5 @@
 /**
- * Master List Framework v1.6.25 Full Script
+ * Master List Framework v1.6.26 Full Script
  *
  * Required section structure for this and all future full-script rebuilds:
  * 1. CONFIGURATION
@@ -29,7 +29,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.6.25";
+const MASTER_LIST_MERGE_ML_VERSION = "1.6.26";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -191,7 +191,20 @@ const DEMO_P_TEMPLATE_SHEET = "Template - Demo P";
 const SYSTEM_SHEETS_TO_HIDE = Object.freeze([
   "Framework Timing Report",
   "Dashboard Quality Report",
-  RFF_BASE_TEMPLATE_NAME
+  RFF_BASE_TEMPLATE_NAME,
+  "Archive Index",
+  "Archive Index Settings",
+  "Framework Test 6 Date Format Report",
+  "Framework Test 9 Monthly Change Subheader Report",
+  "Framework Test 10 Dashboard Audit Report",
+  "Framework Health Check Report",
+  "Timing Summary Report",
+  "Master List Health Check",
+  "Care Plan Sync Diagnostics",
+  "Monthly Change Validation",
+  "Format Demo P Timing",
+  "Update Master List Timing",
+  "Create Master List Timing"
 ]);
 
 
@@ -625,6 +638,7 @@ function writeDashboardDefaultsFast_(sheet) {
   appendDashboardSectionRows_(rows, RFF_SECTION_COLUMNS, ["Header", "Width", "Header Font Size", "Date Column", "Hide Column", "Data Wrap", "Horizontal Alignment", "Vertical Alignment", "Number Format"], getResolvedDefaultColumnDefinitionRows_(), width);
   appendDashboardSectionRows_(rows, RFF_SECTION_BEHAVIORS, ["Sheet Type", "Uses Title Rows", "Uses Filter", "Uses Alternating Colors", "Uses Subheaders", "Hidden Template", "Output Visibility"], getDefaultBehaviorRows_(), width);
   appendDashboardSectionRows_(rows, RFF_SECTION_HEADERS, ["Sheet Type", "Column Order", "Header", "Source of Data"], getDefaultSheetHeaderRows_(), width);
+  appendDashboardSectionRows_(rows, RFF_SECTION_SYSTEM_SURFACES, ["System Sheet Name", "Display Name", "Sort Order", "Output Visibility", "Title Fill Color", "Title Font Color", "Use Global Defaults", "Notes"], getDefaultSystemSurfaceRows_(), width);
 
   trimSheetToColumnCount_(sheet, width, "Format Dashboard");
   if (sheet.getMaxRows() < rows.length) sheet.insertRowsAfter(sheet.getMaxRows(), rows.length - sheet.getMaxRows());
@@ -759,6 +773,77 @@ function notify_(message) {
   } catch (err) {
     Logger.log(message);
   }
+}
+
+function trimExcessRows_(sheet, minRows) {
+  if (!sheet) return 0;
+  minRows = Math.max(1, Number(minRows) || 1000);
+  const maxRows = sheet.getMaxRows();
+  const lastRow = Math.max(sheet.getLastRow(), minRows);
+  if (maxRows <= lastRow || maxRows <= minRows) return 0;
+  const rowsToDelete = maxRows - lastRow;
+  if (rowsToDelete <= 0) return 0;
+  sheet.deleteRows(lastRow + 1, rowsToDelete);
+  return rowsToDelete;
+}
+
+function hideOldDisenrolledRows_(sheet) {
+  if (!sheet) return 0;
+  const data = getDataValues_(sheet, HEADER_ROW, DATA_START_ROW);
+  if (!data.values.length) return 0;
+  const dateHeaders = ["Disenrollment Effective Date", "Disenrollment Date", "Date of Death"];
+  const dateIndexes = dateHeaders
+    .map(function(header) { return data.headerMap[header]; })
+    .filter(function(index) { return index !== undefined; });
+  if (!dateIndexes.length) return 0;
+  try {
+    sheet.showRows(DATA_START_ROW, data.values.length);
+  } catch (err) {
+    Logger.log("Disenrolled row unhide skipped: " + err.message);
+  }
+  const cutoff = createLocalDateOnly_(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  cutoff.setDate(cutoff.getDate() - 365);
+  const rowsToHide = [];
+  data.values.forEach(function(row, index) {
+    const matchedDate = dateIndexes
+      .map(function(dateIndex) { return coerceToValidDate_(row[dateIndex]); })
+      .filter(function(date) { return date && !isNaN(date.getTime()); })
+      .sort(function(a, b) { return b.getTime() - a.getTime(); })[0];
+    if (matchedDate && matchedDate.getTime() < cutoff.getTime()) rowsToHide.push(DATA_START_ROW + index);
+  });
+  rowsToHide.forEach(function(rowNumber) {
+    try {
+      sheet.hideRows(rowNumber);
+    } catch (err) {
+      Logger.log("Disenrolled old-row hide skipped at row " + rowNumber + ": " + err.message);
+    }
+  });
+  return rowsToHide.length;
+}
+
+function showQuickStartToast_(message) {
+  notify_(message);
+  SpreadsheetApp.flush();
+}
+
+function quickSystemSetup() {
+  showQuickStartToast_("Quick System Setup: rebuilding Format Dashboard defaults...");
+  rebuildFormatDashboardDefaults();
+  showQuickStartToast_("Quick System Setup: setting up system sheets...");
+  setupSystemSheets();
+  showQuickStartToast_("Quick System Setup: building Index...");
+  createIndexSheet();
+  showQuickStartToast_("Quick System Setup: running Dashboard Quality start-up...");
+  runDashboardQualityStartUp();
+  showQuickStartToast_("Quick System Setup complete.");
+}
+
+function quickBuildAllTemplates() {
+  showQuickStartToast_("Quick Build All Templates: creating/refreshing templates...");
+  createOrRefreshAllReportTemplates();
+  showQuickStartToast_("Quick Build All Templates: validating templates...");
+  runDashboardQualityValidateTemplates();
+  showQuickStartToast_("Quick Build All Templates complete.");
 }
 
 function notifyErrorWithTiming_(message) {
@@ -2557,16 +2642,17 @@ function writeFrameworkTimingPerformanceRecommendations() {
 
 const ML_MENU_CALLBACKS = Object.freeze({
   dataProcessing: Object.freeze([
-    "createIndexSheet",
     "formatMonthlySheets",
     "updateDemoPMonthlySync",
+    "buildDemoPFromScratch",
     "createDisenrolledList",
-    "createMasterList",
-    "buildMonthlyChangeReport"
+    "createMasterList"
   ]),
   sheetLayout: Object.freeze([
     "enforceGlobalSheetSortOrder_",
+    "hideMonthlyImportSheets",
     "archiveMonthlyImportSheets",
+    "hideMonthlyActiveSheets",
     "archiveMonthlyActiveSheets",
     "hideTemplates_",
     "showTemplates_",
@@ -2575,8 +2661,15 @@ const ML_MENU_CALLBACKS = Object.freeze({
     "clearDiagnosticsAndTimingLogs",
     "toggleFrameworkTiming"
   ]),
+  quickStart: Object.freeze([
+    "quickSystemSetup",
+    "quickBuildAllTemplates",
+    "runDashboardQualityFull"
+  ]),
   maintenanceRebuild: Object.freeze([
-    "buildDemoPFromScratch",
+    "runDashboardQualityStartUp",
+    "runDashboardQualityValidateTemplates",
+    "runDashboardQualityFull",
     "formatBannerReport",
     "formatCarePlanDueReport",
     "formatUnlockedCarePlanReport",
@@ -2587,23 +2680,32 @@ const ML_MENU_CALLBACKS = Object.freeze({
     "rebuildFormatDashboardDefaults",
     "saveActiveLayoutToDashboardSettings",
     "createOrRefreshAllReportTemplates",
-    "runDashboardQualityStartUp",
-    "runDashboardQualityValidateTemplates",
-    "runDashboardQualityFull"
+    "createIndexSheet"
   ])
 });
 
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
-  const dataProcessingMenu = ui.createMenu("📁 Data & Processing Engine")
-    .addItem("📊 Format Monthly Sheets", "formatMonthlySheets")
+  const demoPMenu = ui.createMenu("📁 Demo P")
     .addItem("🔄 Update Demo P", "updateDemoPMonthlySync")
-    .addItem("⛔ Create / Update Disenrolled List", "createDisenrolledList")
-    .addItem("💡 Create Master List", "createMasterList")
-    .addItem("🗓️ Monthly Change Report", "buildMonthlyChangeReport");
+    .addItem("🛠️ Build Demo P", "buildDemoPFromScratch");
 
-  const templatesMenu = ui.createMenu("🦑 Templates")
+  const dataProcessingMenu = ui.createMenu("📊 Data & Processing Engine")
+    .addItem("📚 Format Monthly Sheets", "formatMonthlySheets")
+    .addSubMenu(demoPMenu)
+    .addItem("⛔ Create / Update Disenrolled List", "createDisenrolledList")
+    .addItem("💡 Create Master List", "createMasterList");
+
+  const monthlyImportSheetsMenu = ui.createMenu("🗄️ Monthly Import Sheets")
+    .addItem("🗂️ Hide Monthly Import Sheets", "hideMonthlyImportSheets")
+    .addItem("🗃️ Archive Monthly Import Sheets", "archiveMonthlyImportSheets");
+
+  const monthlyActiveSheetsMenu = ui.createMenu("🗄️ Monthly Active Sheets")
+    .addItem("🗂️ Hide Monthly Active Sheets", "hideMonthlyActiveSheets")
+    .addItem("🗃️ Archive Monthly Active Sheets", "archiveMonthlyActiveSheets");
+
+  const templatesMenu = ui.createMenu("🙈 Templates")
     .addItem("Hide Templates", "hideTemplates_")
     .addItem("Show Templates", "showTemplates_");
 
@@ -2611,15 +2713,24 @@ function onOpen() {
     .addItem("Hide System Sheets", "hideSystemSheets_")
     .addItem("Show System Sheets", "showSystemSheets_");
 
-  const sheetLayoutMenu = ui.createMenu("📁 Sheet & Layout Management")
-    .addItem("📇 Create Index", "createIndexSheet")
+  const sheetLayoutMenu = ui.createMenu("⚙️ Sheet & Layout Management")
     .addItem("🧭 Enforce Global Tab Sorting Order", "enforceGlobalSheetSortOrder_")
-    .addItem("🗄️ Archive Monthly Import Sheets", "archiveMonthlyImportSheets")
-    .addItem("🗄️ Archive Monthly Active Sheets", "archiveMonthlyActiveSheets")
+    .addSubMenu(monthlyImportSheetsMenu)
+    .addSubMenu(monthlyActiveSheetsMenu)
     .addSubMenu(templatesMenu)
     .addSubMenu(systemSheetsMenu)
     .addItem("🪄 Clear Timing & Quality Logs", "clearDiagnosticsAndTimingLogs")
     .addItem("⏱️ Framework Timing on/off", "toggleFrameworkTiming");
+
+  const quickStartMenu = ui.createMenu("🚀 Quick Start-up")
+    .addItem("🏗️ System Set up", "quickSystemSetup")
+    .addItem("🖼️ Build All Templates", "quickBuildAllTemplates")
+    .addItem("✅ Dashboard Quality Workflow", "runDashboardQualityFull");
+
+  const qualityMenu = ui.createMenu("👌 Quality")
+    .addItem("Dashboard Quality Start up", "runDashboardQualityStartUp")
+    .addItem("Dashboard Quality Validate Templates", "runDashboardQualityValidateTemplates")
+    .addItem("Dashboard Quality Workflow", "runDashboardQualityFull");
 
   const formatSheetsMenu = ui.createMenu("📝 Format Sheets")
     .addItem("Banner", "formatBannerReport")
@@ -2627,32 +2738,26 @@ function onOpen() {
     .addItem("Unlocked CP", "formatUnlockedCarePlanReport")
     .addItem("Raw Data", "formatRawData");
 
-  const maintenanceMenu = ui.createMenu("📁 Maintenance/Rebuild")
-    .addItem("🛠️ Build Demo P", "buildDemoPFromScratch")
+  const maintenanceMenu = ui.createMenu("🛠️ Maintenance/Rebuild")
+    .addSubMenu(qualityMenu)
     .addSubMenu(formatSheetsMenu);
 
-  const formatDashboardMenu = ui.createMenu("🎨 Format Dashboard")
-    .addItem("Format Dashboard", "rebuildFormatDashboardDefaults")
-    .addItem("💾 Save Active Layout as Rebuild Default", "saveActiveLayoutToDashboardSettings");
-
-  const qualityMenu = ui.createMenu("👌 Quality")
-    .addItem("Dashboard Quality Start up", "runDashboardQualityStartUp")
-    .addItem("Dashboard Quality Validate Templates", "runDashboardQualityValidateTemplates")
-    .addItem("Dashboard Quality Workflow", "runDashboardQualityFull");
-
-  const startUpMenu = ui.createMenu("📁 Start-up")
+  const startUpMenu = ui.createMenu("🧩 Start - up")
     .addItem("📜 Set up System Sheets", "setupSystemSheets")
-    .addSubMenu(formatDashboardMenu)
+    .addItem("🎨 Format Dashboard", "rebuildFormatDashboardDefaults")
+    .addItem("💾 Save Active Layout as Rebuild Default", "saveActiveLayoutToDashboardSettings")
     .addItem("🖼️ Create / Refresh All Templates", "createOrRefreshAllReportTemplates")
-    .addSubMenu(qualityMenu);
+    .addItem("📇 Build Index", "createIndexSheet");
 
   ui.createMenu("Master List")
     .addSubMenu(dataProcessingMenu)
     .addSubMenu(sheetLayoutMenu)
+    .addSubMenu(quickStartMenu)
     .addSubMenu(maintenanceMenu)
     .addSubMenu(startUpMenu)
     .addToUi();
 }
+
 
 function isFrameworkTimingEnabled_() {
   try {
@@ -3060,6 +3165,8 @@ const RFF_SECTION_BEHAVIORS = "SECTION E - SHEET BEHAVIORS";
 
 const RFF_SECTION_HEADERS = "SECTION F - SHEET HEADERS";
 
+const RFF_SECTION_SYSTEM_SURFACES = "SECTION G - SYSTEM SHEET SURFACES";
+
 let RFF_DASHBOARD_CONFIG_CACHE_ = null;
 
 let RFF_DASHBOARD_CONFIG_CACHE_KEY_ = "";
@@ -3145,7 +3252,8 @@ function getFormatDashboardSectionNames_() {
     RFF_SECTION_SHEETS,
     RFF_SECTION_COLUMNS,
     RFF_SECTION_BEHAVIORS,
-    RFF_SECTION_HEADERS
+    RFF_SECTION_HEADERS,
+    RFF_SECTION_SYSTEM_SURFACES
   ];
 }
 
@@ -3278,6 +3386,16 @@ function getDefaultBehaviorRows_() {
   ["Monthly Change", true, true, true, true, true, "VISIBLE"]
 ];
 }
+
+function getDefaultSystemSurfaceRows_() {
+  return [
+    [RFF_DASHBOARD_SHEET, "Format Dashboard", 80, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Dashboard configuration surface"],
+    ["Dashboard Quality Report", "Dashboard Quality Report", 60, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified quality report surface"],
+    ["Framework Timing Report", "Framework Timing Report", 70, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified timing report surface"],
+    [RFF_BASE_TEMPLATE_NAME, RFF_BASE_TEMPLATE_NAME, 900, "HIDDEN", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Hidden framework base template"]
+  ];
+}
+
 
 function getDefaultSheetHeaderRows_() {
   const rows = [];
@@ -6571,6 +6689,54 @@ function archiveRawDataSheet_(sourceSheet, archiveName) {
 }
 
 
+function hideMonthlyImportSheets() {
+  const monthParts = promptForLockedYearReportMonth_("Hide Monthly Import Sheets");
+  if (!monthParts) return null;
+  const parsed = buildPromptedMonthContext_(monthParts);
+  const specs = [
+    { label: "Banners", keywords: ["Banners", "Banner Report"] },
+    { label: "CP Due Date", keywords: ["CP Due Date", "CP Due", "Care Plan Due Date Report", "Care Plan Due"] },
+    { label: "Unlocked CP", keywords: ["Unlocked CP", "Unlock CP", "Unlocked Care Plan"] }
+  ];
+  return hideMonthlySheetsBySpecs_("Hide Monthly Import Sheets", parsed, specs);
+}
+
+function hideMonthlyActiveSheets() {
+  const monthParts = promptForLockedYearReportMonth_("Hide Monthly Active Sheets");
+  if (!monthParts) return null;
+  const parsed = buildPromptedMonthContext_(monthParts);
+  const specs = [
+    { label: "Raw Data", keywords: ["Raw Data"] },
+    { label: "Master List", keywords: ["Master List"] }
+  ];
+  return hideMonthlySheetsBySpecs_("Hide Monthly Active Sheets", parsed, specs);
+}
+
+function hideMonthlySheetsBySpecs_(processName, parsedMonth, specs) {
+  return runFrameworkTimed_(processName + " " + parsedMonth.monthLabel, function(timing) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const result = { hidden: [], skipped: [] };
+    specs.forEach(function(spec) {
+      const sheets = findArchiveMonthlyCandidateSheets_(ss, spec.keywords, parsedMonth.monthLabel);
+      if (!sheets.length) {
+        result.skipped.push(spec.label + " not found");
+        return;
+      }
+      sheets.forEach(function(sheet) {
+        try {
+          if (!sheet.isSheetHidden()) sheet.hideSheet();
+          result.hidden.push(sheet.getName());
+        } catch (err) {
+          result.skipped.push(sheet.getName() + ": " + err.message);
+        }
+      });
+    });
+    enforceGlobalSheetSortOrder_(parsedMonth.monthParts);
+    notify_(processName + " complete for " + parsedMonth.monthLabel + ". Hidden: " + result.hidden.length + "; Skipped: " + result.skipped.length + ".");
+    return result;
+  });
+}
+
 function archiveMonthlyImportSheets() {
   const monthParts = promptForLockedYearReportMonth_("Archive Monthly Import Sheets");
   if (!monthParts) return null;
@@ -9128,6 +9294,9 @@ function processDemoP() {
     lockFinalOutputRowHeights_(sheet, "Demo P");
     markRuntimeStep_(timing, "Lock Demo P final row heights");
 
+    const trimmedDemoRows = trimExcessRows_(sheet, 1000);
+    markRuntimeStep_(timing, "Trim Demo P excess blank rows", "Rows removed: " + trimmedDemoRows);
+
     writeRuntimeTimingReport_(timing);
 
 
@@ -11067,6 +11236,8 @@ function updateMasterListForMonth_(monthParts) {
     markRuntimeStep_(timing, "Auto-hide previous month sheets");
     restorePreviouslyHiddenSheets_(hiddenSheetNamesAtStart, currentMaster);
     markRuntimeStep_(timing, "Restore previously hidden sheets");
+    const trimmedMasterRows = trimExcessRows_(currentMaster, 1000);
+    markRuntimeStep_(timing, "Trim Master List excess blank rows", "Rows removed: " + trimmedMasterRows);
     writeRuntimeTimingReport_(timing);
     hideSystemAndTestingSheets_(timing);
     notify_(
@@ -11571,6 +11742,7 @@ function generateArchiveFileIndex_() {
 
 function enforceGlobalSheetSortOrder_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboard = loadDashboardConfig_();
   const currentParts = monthParts || getMonthDateParts_(new Date());
   const currentFirst = currentParts && currentParts.firstDay ? currentParts.firstDay : null;
 
@@ -11588,7 +11760,8 @@ function enforceGlobalSheetSortOrder_(monthParts) {
     if (sheetName.indexOf(DEMO_P_PREFIX) === 0) return 20;
     if (sheetName.indexOf(MONTHLY_CHANGE_REPORT_PREFIX) === 0) return 30;
     if (sheetName.indexOf(MASTER_LIST_PREFIX) === 0) return 40;
-    if (sheetName === DISENROLLED_EXCLUSION_SHEET || sheetName.indexOf("Disenrolled") !== -1) return 50;
+    if (sheetName === DISENROLLED_EXCLUSION_SHEET || sheetName.indexOf("Disenrolled") !== -1 && sheetName !== "Template - Disenrolled Exclusion") return 50;
+    if (sheetName === "Template - Disenrolled Exclusion") return 51;
     if (sheetName === RFF_TEST_DASHBOARD_SHEET || sheetName === "Dashboard Quality Report") return 60;
     if (sheetName === RFF_TIMING_SHEET || sheetName === "Framework Timing Report") return 70;
     if (sheetName === RFF_DASHBOARD_SHEET) return 80;
@@ -11622,8 +11795,10 @@ function enforceGlobalSheetSortOrder_(monthParts) {
   let position = 1;
   let moves = 0;
   orderedSheets.forEach(function(sheet) {
+    const sheetName = name_(sheet);
+    let wasHidden = false;
     try {
-      const wasHidden = typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden();
+      wasHidden = typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden();
       if (wasHidden) sheet.showSheet();
       if (sheet.getIndex() !== position) {
         ss.setActiveSheet(sheet);
@@ -11631,17 +11806,22 @@ function enforceGlobalSheetSortOrder_(monthParts) {
         moves++;
       }
       position++;
-      const inferredType = inferSheetTypeFromName_(name_(sheet));
-      if (inferredType) applyOutputVisibilityPolicy_(sheet, loadDashboardConfig_(), inferredType, null);
-      if (((wasHidden && !inferredType) || isTemplate_(name_(sheet)) || name_(sheet) === RFF_BASE_TEMPLATE_NAME) && !sheet.isSheetHidden()) {
+      if (wasHidden && !sheet.isSheetHidden()) {
         sheet.hideSheet();
+      } else if (!wasHidden && sheet.isSheetHidden()) {
+        sheet.showSheet();
+      }
+      if (!wasHidden) {
+        const inferredType = inferSheetTypeFromName_(sheetName);
+        if (inferredType) applyOutputVisibilityPolicy_(sheet, dashboard, inferredType, null);
       }
     } catch (err) {
-      Logger.log("Global sheet sort skipped for " + name_(sheet) + ": " + err.message);
+      Logger.log("Global sheet sort skipped for " + sheetName + ": " + err.message);
     }
   });
   return moves;
 }
+
 
 function extractFirstDateFromSheetName_(sheetName) {
   const text = String(sheetName || "").trim();
@@ -13302,7 +13482,9 @@ function createDisenrolledList() {
     const result = moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts);
     markFrameworkStep_(timing, "Copy disenrolled primary records and remove rows: " + result.rowsCopied + " copied, " + result.rowsRemoved + " removed");
     setLastRawDataDisenrolledBuildResult_(result);
-    notify_("Disenrolled Exclusion updated. PMRs identified: " + result.pmrsRemoved + "; primary rows written: " + result.rowsCopied + "; Demo P rows removed: " + result.rowsRemoved + ".");
+    const oldRowsHidden = hideOldDisenrolledRows_(exclusionSheet);
+    markFrameworkStep_(timing, "Hide old Disenrolled Exclusion rows", "Rows hidden: " + oldRowsHidden);
+    notify_("Disenrolled Exclusion updated. PMRs identified: " + result.pmrsRemoved + "; primary rows written: " + result.rowsCopied + "; Demo P rows removed: " + result.rowsRemoved + "; old rows hidden: " + oldRowsHidden + ".");
     return result;
   });
 }
@@ -14749,6 +14931,10 @@ function initializeSystemSheets_() {
 function deleteLegacyOperationalAndDiagnosticSheets_() {
   const legacySheetNames = [
     "Timing Summary Report",
+    "Framework Test 6 Date Format Report",
+    "Framework Test 9 Monthly Change Subheader Report",
+    "Framework Test 10 Dashboard Audit Report",
+    "Framework Health Check Report",
     "Update Master List Merge Audit",
     "Update Master List Primary Row Audit",
     "Format Demo P Timing",
