@@ -1,9 +1,5 @@
 /**
-<<<<<<< HEAD
  * Master List Framework v1.6.26.3 Full Script
-=======
- * Master List Framework v1.6.26.2 Full Script
->>>>>>> origin/main
  *
  * Required section structure for this and all future full-script rebuilds:
  * 1. CONFIGURATION
@@ -33,11 +29,7 @@
 // CONFIGURATION
 // ============================================================================
 
-<<<<<<< HEAD
 const MASTER_LIST_MERGE_ML_VERSION = "1.6.26.3";
-=======
-const MASTER_LIST_MERGE_ML_VERSION = "1.6.26.2";
->>>>>>> origin/main
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -2644,6 +2636,7 @@ const ML_MENU_CALLBACKS = Object.freeze({
     "updateDemoPMonthlySync",
     "buildDemoPFromScratch",
     "createDisenrolledList",
+    "buildMonthlyChangeReport",
     "createMasterList"
   ]),
   sheetLayout: Object.freeze([
@@ -2693,6 +2686,7 @@ function onOpen() {
     .addItem("📚 Format Monthly Sheets", "formatMonthlySheets")
     .addSubMenu(demoPMenu)
     .addItem("⛔ Create / Update Disenrolled List", "createDisenrolledList")
+    .addItem("🗓️ Monthly Change Report", "buildMonthlyChangeReport")
     .addItem("💡 Create Master List", "createMasterList");
 
   const monthlyImportSheetsMenu = ui.createMenu("🗄️ Monthly Import Sheets")
