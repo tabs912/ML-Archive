@@ -204,11 +204,15 @@ const SYSTEM_SHEETS_TO_HIDE = Object.freeze([
   "Monthly Change Validation",
   "Format Demo P Timing",
   "Update Master List Timing",
+<<<<<<< HEAD
   "Create Master List Timing",
   "Master List Merge Audit",
   "Master List Primary Row Audit",
   "Update Master List Merge Audit",
   "Update Master List Primary Row Audit"
+=======
+  "Create Master List Timing"
+>>>>>>> origin/main
 ]);
 
 
@@ -3223,8 +3227,12 @@ const RFF_MONTHLY_CHANGE_SUBSECTIONS = [
   "Demographic Changes",
   "Caseload Changes",
   "Contact Changes",
+<<<<<<< HEAD
   "Banner Summary Changes",
   "Other Changes"
+=======
+  "Banner Summary Changes"
+>>>>>>> origin/main
 ];
 
 
@@ -9080,6 +9088,7 @@ function sortSheetAlphabeticallyByParticipantName_(sheet) {
 function getDemoPMonthlySyncChangedPMRs_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const set = new Set();
+<<<<<<< HEAD
 
   const mcrSheet = getMonthlySheetByPrefixAndDate_(ss, MONTHLY_CHANGE_REPORT_PREFIX, monthParts.firstDay, monthParts.lastDay);
   if (mcrSheet) {
@@ -9133,6 +9142,24 @@ function getDemoPMonthlySyncChangedPMRs_(monthParts) {
 }
 
 
+=======
+  const candidates = [
+    getMonthlySheetByPrefixAndDate_(ss, MONTHLY_CHANGE_REPORT_PREFIX, monthParts.firstDay, monthParts.lastDay)
+  ].filter(Boolean);
+
+  candidates.forEach(function(sheet) {
+    const data = getDataValues_(sheet, HEADER_ROW, DATA_START_ROW);
+    const pmrIdx = getPMRIndex_(data.headerMap);
+    if (pmrIdx === -1) return;
+    data.values.forEach(function(row) {
+      const pmr = normalizePMR_(row[pmrIdx]);
+      if (pmr) set.add(pmr);
+    });
+  });
+  return set;
+}
+
+>>>>>>> origin/main
 function processDemoPDataWithFillBlankMask_(data, changedPMRs) {
   if (!data || !data.values || !data.values.length) return [];
   const beforeValues = data.values.map(function(row) { return row.slice(); });
@@ -10097,9 +10124,13 @@ function buildMonthlyChangeReportForMonth_(monthParts, timing) {
     sectionData.disenrollmentPMRs.size +
     sectionData.demographicPMRs.size +
     sectionData.caseloadPMRs.size +
+<<<<<<< HEAD
     sectionData.contactPMRs.size +
     sectionData.bannerPMRs.size +
     sectionData.otherPMRs.size;
+=======
+    sectionData.contactPMRs.size;
+>>>>>>> origin/main
 
 
   if (totalPMRs === 0) {
@@ -10156,9 +10187,13 @@ notify_(
     `Disenrollments: ${sectionData.disenrollmentPMRs.size}\n` +
     `Demographic Changes: ${sectionData.demographicPMRs.size}\n` +
     `Caseload Changes: ${sectionData.caseloadPMRs.size}\n` +
+<<<<<<< HEAD
     `Contact Changes: ${sectionData.contactPMRs.size}\n` +
     `Banner Summary Changes: ${sectionData.bannerPMRs.size}\n` +
     `Other Changes: ${sectionData.otherPMRs.size}`
+=======
+    `Contact Changes: ${sectionData.contactPMRs.size}`
+>>>>>>> origin/main
   );
 
 
@@ -10191,9 +10226,13 @@ function getOrBuildMonthlyChangeReport_(ss, monthParts, currentDemo, previousDem
     sectionData.disenrollmentPMRs.size +
     sectionData.demographicPMRs.size +
     sectionData.caseloadPMRs.size +
+<<<<<<< HEAD
     sectionData.contactPMRs.size +
     sectionData.bannerPMRs.size +
     sectionData.otherPMRs.size;
+=======
+    sectionData.contactPMRs.size;
+>>>>>>> origin/main
 
 
   if (totalPMRs === 0) return null;
@@ -10226,18 +10265,27 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
   const previousData = getRawDemoPDataForCompare_(previousDemo);
   const currentData = getRawDemoPDataForCompare_(currentDemo);
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
   const enrollmentPMRs = new Set();
   const disenrollmentPMRs = new Set();
   const demographicPMRs = new Set();
   const caseloadPMRs = new Set();
   const contactPMRs = new Set();
   const bannerPMRs = new Set();
+<<<<<<< HEAD
   const otherPMRs = new Set();
+=======
+
+>>>>>>> origin/main
 
   const demographicChangedColumnsByPMR = new Map();
   const caseloadChangedColumnsByPMR = new Map();
   const contactChangedColumnsByPMR = new Map();
   const bannerChangedColumnsByPMR = new Map();
+<<<<<<< HEAD
   const otherChangedColumnsByPMR = new Map();
 
   const trackedFields = new Set([].concat(
@@ -10268,21 +10316,39 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
     const cleanHeader = String(header || "").trim();
     return cleanHeader && !trackedFields.has(cleanHeader) && !systemFields.has(cleanHeader);
   });
+=======
+
+>>>>>>> origin/main
 
   currentData.rowsByPMR.forEach((currentRows, pmr) => {
     const previousRows = previousData.rowsByPMR.get(pmr) || [];
 
+<<<<<<< HEAD
     const capitationHeader = "Capitation Date";
     const disenrollEffectiveHeader = "Disenrollment Effective Date";
 
+=======
+
+    const capitationHeader = "Capitation Date";
+    const disenrollEffectiveHeader = "Disenrollment Effective Date";
+
+
+>>>>>>> origin/main
     const mostRecentCapitationDate = getMostRecentDateFromRowsByHeader_(
       currentRows,
       currentData.headerMap,
       capitationHeader
     );
 
+<<<<<<< HEAD
     const isEnrollmentPMR = isSameDate_(mostRecentCapitationDate, monthParts.firstDay);
 
+=======
+
+    const isEnrollmentPMR = isSameDate_(mostRecentCapitationDate, monthParts.firstDay);
+
+
+>>>>>>> origin/main
     const isDisenrollmentPMR =
       currentRows.some(item => {
         const effectiveDate = getFieldValueFromRow_(
@@ -10291,6 +10357,7 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
           disenrollEffectiveHeader
         );
 
+<<<<<<< HEAD
         return isSameDate_(effectiveDate, monthParts.firstDay);
       });
 
@@ -10304,6 +10371,27 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
     const currentDobRows = rowsWithDOBOnlyForSection_(currentRows, currentData.headerMap);
     const previousDobRows = rowsWithDOBOnlyForSection_(previousRows, previousData.headerMap);
 
+=======
+
+        return isSameDate_(effectiveDate, monthParts.firstDay);
+      });
+
+
+    if (isEnrollmentPMR) enrollmentPMRs.add(pmr);
+    if (isDisenrollmentPMR) disenrollmentPMRs.add(pmr);
+
+
+    if (isEnrollmentPMR || isDisenrollmentPMR) return;
+
+
+    if (isParticipantEnrollmentStatusDisenrolled_(currentRows, currentData.headerMap)) return;
+
+
+    const currentDobRows = rowsWithDOBOnlyForSection_(currentRows, currentData.headerMap);
+    const previousDobRows = rowsWithDOBOnlyForSection_(previousRows, previousData.headerMap);
+
+
+>>>>>>> origin/main
     const demographicChangedColumns = getChangedColumnsForSectionRows_(
       currentDobRows,
       previousDobRows,
@@ -10314,11 +10402,19 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       previousData.headerMap
     );
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     if (demographicChangedColumns.size > 0) {
       demographicPMRs.add(pmr);
       demographicChangedColumnsByPMR.set(pmr, demographicChangedColumns);
     }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     const caseloadChangedColumns = getChangedColumnsForSectionRows_(
       currentDobRows,
       previousDobRows,
@@ -10329,11 +10425,19 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       previousData.headerMap
     );
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     if (caseloadChangedColumns.size > 0) {
       caseloadPMRs.add(pmr);
       caseloadChangedColumnsByPMR.set(pmr, caseloadChangedColumns);
     }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     const contactChangedColumns = getChangedColumnsForSectionRows_(
       currentRows,
       previousRows,
@@ -10344,11 +10448,19 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       previousData.headerMap
     );
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     if (contactChangedColumns.size > 0) {
       contactPMRs.add(pmr);
       contactChangedColumnsByPMR.set(pmr, contactChangedColumns);
     }
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     const bannerChangedColumns = getChangedColumnsForSectionRows_(
       currentRows,
       previousRows,
@@ -10359,10 +10471,15 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       previousData.headerMap
     );
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> origin/main
     if (bannerChangedColumns.size > 0) {
       bannerPMRs.add(pmr);
       bannerChangedColumnsByPMR.set(pmr, bannerChangedColumns);
     }
+<<<<<<< HEAD
 
     const otherChangedColumns = getChangedColumnsForSectionRows_(
       currentRows,
@@ -10380,22 +10497,39 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
     }
   });
 
+=======
+  });
+
+
+>>>>>>> origin/main
   enrollmentPMRs.forEach(pmr => {
     demographicPMRs.delete(pmr);
     caseloadPMRs.delete(pmr);
     contactPMRs.delete(pmr);
     bannerPMRs.delete(pmr);
+<<<<<<< HEAD
     otherPMRs.delete(pmr);
   });
 
+=======
+  });
+
+
+>>>>>>> origin/main
   disenrollmentPMRs.forEach(pmr => {
     demographicPMRs.delete(pmr);
     caseloadPMRs.delete(pmr);
     contactPMRs.delete(pmr);
     bannerPMRs.delete(pmr);
+<<<<<<< HEAD
     otherPMRs.delete(pmr);
   });
 
+=======
+  });
+
+
+>>>>>>> origin/main
   return {
     previousData: previousData,
     currentData: currentData,
@@ -10405,6 +10539,7 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
     caseloadPMRs: caseloadPMRs,
     contactPMRs: contactPMRs,
     bannerPMRs: bannerPMRs,
+<<<<<<< HEAD
     otherPMRs: otherPMRs,
     demographicChangedColumnsByPMR: demographicChangedColumnsByPMR,
     caseloadChangedColumnsByPMR: caseloadChangedColumnsByPMR,
@@ -10415,6 +10550,15 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
 }
 
 
+=======
+    demographicChangedColumnsByPMR: demographicChangedColumnsByPMR,
+    caseloadChangedColumnsByPMR: caseloadChangedColumnsByPMR,
+    contactChangedColumnsByPMR: contactChangedColumnsByPMR,
+    bannerChangedColumnsByPMR: bannerChangedColumnsByPMR
+  };
+}
+
+>>>>>>> origin/main
 function rowsWithDOBOnlyForSection_(items, headerMap) {
   const dobIdx = getDOBIndex_(headerMap);
   if (dobIdx === -1) return [];
@@ -10898,12 +11042,15 @@ function getMonthlyChangeSectionSpecs_(sectionData) {
       pmrSet: sectionData.bannerPMRs,
       rowMode: "allRows",
       changedColumnsByPMR: sectionData.bannerChangedColumnsByPMR
+<<<<<<< HEAD
     },
     {
       title: "Other Changes",
       pmrSet: sectionData.otherPMRs,
       rowMode: "dobOnly",
       changedColumnsByPMR: sectionData.otherChangedColumnsByPMR
+=======
+>>>>>>> origin/main
     }
   ];
 }
@@ -11062,7 +11209,11 @@ function findMonthlyChangeSectionTitleRow_(sheet, title) {
 }
 
 function findNextMonthlyChangeSectionTitleRow_(sheet, afterRow) {
+<<<<<<< HEAD
   const titles = new Set(["Enrollments", "Disenrollments", "Demographic Changes", "Caseload Changes", "Contact Changes", "Banner Summary Changes", "Other Changes"]);
+=======
+  const titles = new Set(["Enrollments", "Disenrollments", "Demographic Changes", "Caseload Changes", "Contact Changes", "Banner Summary Changes"]);
+>>>>>>> origin/main
   const lastRow = sheet.getLastRow();
 
 
@@ -11091,7 +11242,11 @@ function getChangedPMRsFromMonthlyChangeReport_(reportSheet) {
   if (lastRow < 1 || lastCol < 1) return result;
 
 
+<<<<<<< HEAD
   const sectionTitles = ["Enrollments", "Disenrollments", "Demographic Changes", "Caseload Changes", "Contact Changes", "Banner Summary Changes", "Banner Changes", "Other Changes"];
+=======
+  const sectionTitles = ["Enrollments", "Disenrollments", "Demographic Changes", "Caseload Changes", "Contact Changes", "Banner Summary Changes", "Banner Changes"];
+>>>>>>> origin/main
 
 
   let foundSectionLayout = false;
@@ -12779,12 +12934,470 @@ function showSystemSheetsNow() {
 }
 
 
+<<<<<<< HEAD
 
 
 
 
 
 
+=======
+function runUpdateMasterListMergeAudit() {
+  notify_("Standalone Master List merge audits have been retired. Use Dashboard Quality Report and Framework Timing Report for update review.");
+  return null;
+}
+
+function buildUpdateMasterListMergeAuditForMonth_(monthParts) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const currentDemo = getCurrentDemoPSheet_(monthParts);
+  const sourceMaster = getPreviousMasterListSheet_(monthParts);
+
+
+  if (!currentDemo) {
+    notify_("Current month Demo P was not found. Format Demo P first.");
+    return null;
+  }
+
+
+  if (!sourceMaster) {
+    notify_("Previous month Master List was not found for merge audit.");
+    return null;
+  }
+
+
+  const reportSheet = getMonthlySheetByPrefixAndDate_(
+    ss,
+    MONTHLY_CHANGE_REPORT_PREFIX,
+    monthParts.firstDay,
+    monthParts.lastDay
+  );
+
+
+  if (!reportSheet) {
+    notify_("Monthly Change Report was not found. Create Monthly Change Report first.");
+    return null;
+  }
+
+
+  const changedInfo = getChangedPMRsFromMonthlyChangeReport_(reportSheet);
+  const contactChangePMRs = Array.from(changedInfo.keys())
+    .filter(pmr => changedInfo.get(pmr) && changedInfo.get(pmr).has("Contact Changes"))
+    .sort();
+
+
+  const demoData = getDataValues_(currentDemo, HEADER_ROW, DATA_START_ROW);
+  const masterData = getDataValues_(sourceMaster, HEADER_ROW, DATA_START_ROW);
+
+
+  const demoBlocks = buildMergeRowsByPMRFromData_(demoData);
+  const masterBlocks = buildMergeRowsByPMRFromData_(masterData);
+
+
+  const summaryRows = [];
+  const detailRows = [];
+
+
+  contactChangePMRs.forEach(pmr => {
+    const demoRows = demoBlocks.get(pmr) || [];
+    const masterRows = masterBlocks.get(pmr) || [];
+    const participantName = getMergeAuditParticipantName_(demoRows, demoData.headerMap, masterRows, masterData.headerMap);
+
+
+    const demoKeys = buildSecondaryMergeKeyMapForRows_(demoRows, demoData.headerMap, pmr);
+    const masterKeys = buildSecondaryMergeKeyMapForRows_(masterRows, masterData.headerMap, pmr);
+
+
+    const contactKeys = new Set(
+      [].concat(Array.from(demoKeys.keys()), Array.from(masterKeys.keys()))
+    );
+
+
+    let matchedCount = 0;
+    let updateCount = 0;
+    let addCount = 0;
+    let removeCount = 0;
+    let noActionCount = 0;
+
+
+    contactKeys.forEach(key => {
+      const demoItem = demoKeys.get(key);
+      const masterItem = masterKeys.get(key);
+      const masterSummary = masterItem ? buildMergeAuditContactSummary_(masterItem.values, masterData.headerMap) : "";
+      const demoSummary = demoItem ? buildMergeAuditContactSummary_(demoItem.values, demoData.headerMap) : "";
+
+
+      let auditAction = "";
+      let differenceFound = "";
+      let recommendedAction = "";
+
+
+      if (demoItem && masterItem) {
+        matchedCount++;
+        const changedFields = getMergeAuditChangedFields_(masterItem.values, masterData.headerMap, demoItem.values, demoData.headerMap);
+
+
+        if (changedFields.length > 0) {
+          auditAction = "Update";
+          differenceFound = "Contact exists in both; changed fields: " + changedFields.join(", ");
+          recommendedAction = "Update existing Master List contact row";
+          updateCount++;
+        } else {
+          auditAction = "No action";
+          differenceFound = "Contact exists in both; no compared field differences";
+          recommendedAction = "No Master List contact row change needed";
+          noActionCount++;
+        }
+      } else if (demoItem && !masterItem) {
+        auditAction = "Add";
+        differenceFound = "Contact exists in Demo P only";
+        recommendedAction = "Add new contact row to Master List";
+        addCount++;
+      } else if (!demoItem && masterItem) {
+        auditAction = "Remove";
+        differenceFound = "Contact exists in previous Master List only";
+        recommendedAction = "Remove contact row from Master List";
+        removeCount++;
+      }
+
+
+      detailRows.push([
+        pmr,
+        participantName.lastName,
+        participantName.firstName,
+        auditAction,
+        differenceFound,
+        recommendedAction,
+        masterItem ? masterItem.rowNumber : "",
+        demoItem ? demoItem.rowNumber : "",
+        "Secondary/Contact",
+        "Yes",
+        masterSummary,
+        demoSummary,
+        key
+      ]);
+    });
+
+
+    let recommendation = "No contact row change needed";
+    if (addCount || removeCount || updateCount) {
+      const pieces = [];
+      if (updateCount) pieces.push(updateCount + " update");
+      if (addCount) pieces.push(addCount + " add");
+      if (removeCount) pieces.push(removeCount + " remove");
+      recommendation = pieces.join(", ");
+    }
+
+
+    summaryRows.push([
+      pmr,
+      participantName.lastName,
+      participantName.firstName,
+      masterRows.length,
+      demoRows.length,
+      matchedCount,
+      updateCount,
+      addCount,
+      removeCount,
+      noActionCount,
+      recommendation
+    ]);
+  });
+
+
+  const auditName = "Update Master List Merge Audit";
+  let audit = ss.getSheetByName(auditName);
+  if (audit) ss.deleteSheet(audit);
+  audit = ss.insertSheet(auditName);
+
+
+  audit.getRange("A1").setValue(auditName);
+  audit.getRange("A2").setValue("Date");
+  audit.getRange("B2").setValue(monthParts.firstDay);
+  audit.getRange("C2").setValue("to");
+  audit.getRange("D2").setValue(monthParts.lastDay);
+  audit.getRange("A3").setValue("Audit Scope");
+  audit.getRange("B3").setValue("Contact Changes only - secondary rows only");
+  audit.getRange("C3").setValue("Source Master List");
+  audit.getRange("D3").setValue(sourceMaster.getName());
+  audit.getRange("E3").setValue("Source Demo P");
+  audit.getRange("F3").setValue(currentDemo.getName());
+
+
+  const summaryHeaders = [
+    "PMR #",
+    "Last Name",
+    "First Name",
+    "Master Row Count",
+    "Demo P Row Count",
+    "Contacts Matched",
+    "Contacts To Update",
+    "Contacts To Add",
+    "Contacts To Remove",
+    "Contacts With No Action",
+    "Merge Recommendation"
+  ];
+
+
+  audit.getRange(5, 1, 1, summaryHeaders.length).setValues([summaryHeaders]);
+  if (summaryRows.length) {
+    audit.getRange(6, 1, summaryRows.length, summaryHeaders.length).setValues(summaryRows);
+  } else {
+    audit.getRange(6, 1).setValue("No PMRs were found in the Contact Changes section of the Monthly Change Report.");
+  }
+
+
+  const detailStart = Math.max(8 + summaryRows.length, 8);
+  audit.getRange(detailStart, 1).setValue("Contact Change Details");
+  const detailHeaders = [
+    "PMR #",
+    "Last Name",
+    "First Name",
+    "Audit Action",
+    "Difference Found",
+    "Recommended Master List Action",
+    "Master Row #",
+    "Demo P Row #",
+    "Row Type",
+    "Secondary Row Only",
+    "Master Contact Summary",
+    "Demo P Contact Summary",
+    "Contact Match Key"
+  ];
+
+
+  audit.getRange(detailStart + 1, 1, 1, detailHeaders.length).setValues([detailHeaders]);
+  if (detailRows.length) {
+    audit.getRange(detailStart + 2, 1, detailRows.length, detailHeaders.length).setValues(detailRows);
+  }
+
+
+  applyStandardFormatting_(audit, {
+    sheetType: SHEET_TYPE.MASTER_LIST_CHANGE_LOG,
+    title: auditName,
+    startDate: monthParts.firstDay,
+    endDate: monthParts.lastDay,
+    renameSheet: false
+  });
+
+  return audit;
+}
+
+function buildUpdateMasterListPrimaryRowAuditForMonth_(monthParts) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const currentDemo = getCurrentDemoPSheet_(monthParts);
+  const sourceMaster = getPreviousMasterListSheet_(monthParts);
+
+
+  if (!currentDemo || !sourceMaster) return null;
+
+
+  const reportSheet = getMonthlySheetByPrefixAndDate_(
+    ss,
+    MONTHLY_CHANGE_REPORT_PREFIX,
+    monthParts.firstDay,
+    monthParts.lastDay
+  );
+
+
+  if (!reportSheet) return null;
+
+
+  const changedInfo = getChangedPMRsFromMonthlyChangeReport_(reportSheet);
+  const primarySections = new Set(["Demographic Changes", "Caseload Changes", "Banner Changes"]);
+
+
+  const primaryChangePMRs = Array.from(changedInfo.keys())
+    .filter(pmr => {
+      const sections = changedInfo.get(pmr);
+      if (!sections) return false;
+      return Array.from(sections).some(section => primarySections.has(section));
+    })
+    .sort();
+
+
+  const demoData = getDataValues_(currentDemo, HEADER_ROW, DATA_START_ROW);
+  const masterData = getDataValues_(sourceMaster, HEADER_ROW, DATA_START_ROW);
+
+
+  const demoBlocks = buildMergeRowsByPMRFromData_(demoData);
+  const masterBlocks = buildMergeRowsByPMRFromData_(masterData);
+
+
+  const summaryRows = [];
+  const detailRows = [];
+
+
+  primaryChangePMRs.forEach(pmr => {
+    const demoRows = demoBlocks.get(pmr) || [];
+    const masterRows = masterBlocks.get(pmr) || [];
+    const participantName = getMergeAuditParticipantName_(demoRows, demoData.headerMap, masterRows, masterData.headerMap);
+    const sections = Array.from(changedInfo.get(pmr) || []).filter(section => primarySections.has(section)).join(" | ");
+
+
+    const demoPrimary = getPrimaryMergeRowItem_(demoRows, demoData.headerMap);
+    const masterPrimary = getPrimaryMergeRowItem_(masterRows, masterData.headerMap);
+
+
+    if (!demoPrimary && !masterPrimary) {
+      summaryRows.push([
+        pmr,
+        participantName.lastName,
+        participantName.firstName,
+        sections,
+        "",
+        "",
+        0,
+        "No primary row found in either source",
+        "Review PMR manually"
+      ]);
+      return;
+    }
+
+
+    if (demoPrimary && !masterPrimary) {
+      summaryRows.push([
+        pmr,
+        participantName.lastName,
+        participantName.firstName,
+        sections,
+        "",
+        demoPrimary.rowNumber,
+        0,
+        "Primary row exists in Demo P only",
+        "Add PMR block or add primary row to Master List"
+      ]);
+      return;
+    }
+
+
+    if (!demoPrimary && masterPrimary) {
+      summaryRows.push([
+        pmr,
+        participantName.lastName,
+        participantName.firstName,
+        sections,
+        masterPrimary.rowNumber,
+        "",
+        0,
+        "Primary row exists in previous Master List only",
+        "Review/remove PMR block"
+      ]);
+      return;
+    }
+
+
+    const changedColumns = getPrimaryRowChangedColumnDetails_(
+      masterPrimary.values,
+      masterData.headerMap,
+      demoPrimary.values,
+      demoData.headerMap
+    );
+
+
+    changedColumns.forEach(change => {
+      detailRows.push([
+        pmr,
+        participantName.lastName,
+        participantName.firstName,
+        sections,
+        masterPrimary.rowNumber,
+        demoPrimary.rowNumber,
+        change.column,
+        change.masterValue,
+        change.demoValue,
+        "Update Master List primary row column"
+      ]);
+    });
+
+
+    summaryRows.push([
+      pmr,
+      participantName.lastName,
+      participantName.firstName,
+      sections,
+      masterPrimary.rowNumber,
+      demoPrimary.rowNumber,
+      changedColumns.length,
+      changedColumns.map(item => item.column).join(", "),
+      changedColumns.length ? "Update primary row columns listed in detail section" : "No compared primary-row column differences found"
+    ]);
+  });
+
+
+  const auditName = "Update Master List Primary Row Audit";
+  let audit = ss.getSheetByName(auditName);
+  if (audit) ss.deleteSheet(audit);
+  audit = ss.insertSheet(auditName);
+
+
+  audit.getRange("A1").setValue(auditName);
+  audit.getRange("A2").setValue("Date");
+  audit.getRange("B2").setValue(monthParts.firstDay);
+  audit.getRange("C2").setValue("to");
+  audit.getRange("D2").setValue(monthParts.lastDay);
+  audit.getRange("A3").setValue("Audit Scope");
+  audit.getRange("B3").setValue("Primary rows only - Demographic, Caseload, and Banner Changes");
+  audit.getRange("C3").setValue("Source Master List");
+  audit.getRange("D3").setValue(sourceMaster.getName());
+  audit.getRange("E3").setValue("Source Demo P");
+  audit.getRange("F3").setValue(currentDemo.getName());
+
+
+  const summaryHeaders = [
+    "PMR #",
+    "Last Name",
+    "First Name",
+    "Monthly Change Sections",
+    "Master Primary Row #",
+    "Demo P Primary Row #",
+    "Columns To Update Count",
+    "Columns To Update",
+    "Primary Row Recommendation"
+  ];
+
+
+  audit.getRange(5, 1, 1, summaryHeaders.length).setValues([summaryHeaders]);
+  if (summaryRows.length) {
+    audit.getRange(6, 1, summaryRows.length, summaryHeaders.length).setValues(summaryRows);
+  } else {
+    audit.getRange(6, 1).setValue("No PMRs were found in Demographic, Caseload, or Banner Changes.");
+  }
+
+
+  const detailStart = Math.max(8 + summaryRows.length, 8);
+  audit.getRange(detailStart, 1).setValue("Primary Row Column Update Details");
+  const detailHeaders = [
+    "PMR #",
+    "Last Name",
+    "First Name",
+    "Monthly Change Sections",
+    "Master Row #",
+    "Demo P Row #",
+    "Column To Update",
+    "Current Master List Value",
+    "New Demo P Value",
+    "Recommended Master List Action"
+  ];
+
+
+  audit.getRange(detailStart + 1, 1, 1, detailHeaders.length).setValues([detailHeaders]);
+  if (detailRows.length) {
+    audit.getRange(detailStart + 2, 1, detailRows.length, detailHeaders.length).setValues(detailRows);
+  }
+
+
+  applyStandardFormatting_(audit, {
+    sheetType: SHEET_TYPE.MASTER_LIST_CHANGE_LOG,
+    title: auditName,
+    startDate: monthParts.firstDay,
+    endDate: monthParts.lastDay,
+    renameSheet: false
+  });
+
+  return audit;
+}
+
+>>>>>>> origin/main
 function getPrimaryMergeRowItem_(rows, headerMap) {
   const primaryIdx = headerMap ? headerMap["Primary PMR Row"] : undefined;
 
@@ -14570,8 +15183,11 @@ function deleteLegacyOperationalAndDiagnosticSheets_() {
     "Framework Health Check Report",
     "Update Master List Merge Audit",
     "Update Master List Primary Row Audit",
+<<<<<<< HEAD
     "Master List Merge Audit",
     "Master List Primary Row Audit",
+=======
+>>>>>>> origin/main
     "Format Demo P Timing",
     "Update Master List Timing",
     "Create Master List Timing",
