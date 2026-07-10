@@ -1,5 +1,5 @@
 /**
- * Master List Framework v1.6.26 Full Script
+ * Master List Framework v1.6.26.2 Full Script
  *
  * Required section structure for this and all future full-script rebuilds:
  * 1. CONFIGURATION
@@ -29,7 +29,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.6.26";
+const MASTER_LIST_MERGE_ML_VERSION = "1.6.26.2";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -2538,7 +2538,7 @@ function getPerformanceRecommendationForTimingStep_(process, step, seconds, seve
     return "Separate first-build/full-rebuild timing from metadata-only refresh, apply the governed benchmark for that mode, and optimize the largest full-build steps before treating this as a steady-state failure.";
   }
   if (text.indexOf("dashboard loaded for sections f-g") !== -1) {
-    return "Dashboard config reads are capped to governed dashboard columns and Sections F-G are batch-written; rerun Validate Templates and compare this step against the v1.5.38 baseline.";
+    return "Dashboard config reads are capped to governed dashboard columns and Section F is batch-written; rerun Validate Templates and compare this step against the v1.5.38 baseline.";
   }
   if (text.indexOf("dashboard quality sections a-e updated") !== -1) {
     return "A-E section writes now skip redundant unmerge work in batch mode and merge adjacent style ranges to reduce Apps Script range calls.";
@@ -3127,8 +3127,6 @@ const RFF_TIMING_SHEET = "Framework Timing Report";
 const RFF_FRAMEWORK_TIMING_SHEET = RFF_TIMING_SHEET;
 
 const RFF_TIMING_SUMMARY_SHEET = RFF_TIMING_SHEET;
-
-const RFF_TEST6_DATE_FORMAT_SHEET = "Date Format Integrity";
 
 const RFF_TEST_DASHBOARD_SHEET = "Dashboard Quality Report";
 
@@ -4382,7 +4380,7 @@ function refreshTemplateMetadataOnly_(sheet, dashboard, sheetDef, colCount, expe
   const globals = (dashboard && dashboard.globals) || RFF_DEFAULTS;
   const rowCount = resolveTemplateRowCount_(sheetDef, globals);
   const dataStartRow = globals.dataStartRow || DATA_START_ROW;
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, getHeadersForSheetType_(dashboard, sheetDef.sheetType), dataStartRow, Math.max(rowCount - dataStartRow + 1, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, getHeadersForSheetType_(dashboard, sheetDef.sheetType), dataStartRow, rowCount - dataStartRow + 1);
   writeTemplateMetadata_(sheet, dashboard, sheetDef, colCount, expectedSignature);
   storeTemplateFormatSignature_(sheetDef, expectedSignature);
   markFrameworkStep_(timing, "Metadata-only refresh; template unchanged: " + sheetDef.templateName);
@@ -4476,7 +4474,7 @@ function buildTemplateFromDashboard_(sheet, dashboard, sheetDef, headers, rowCou
   markFrameworkStep_(timing, "Apply full template formatting: " + sheetDef.templateName);
 
 
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, getHeadersForSheetType_(dashboard, sheetDef.sheetType), (dashboard.globals || {}).dataStartRow || DATA_START_ROW, Math.max(rowCount - (((dashboard.globals || {}).dataStartRow || DATA_START_ROW)) + 1, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, getHeadersForSheetType_(dashboard, sheetDef.sheetType), (dashboard.globals || {}).dataStartRow || DATA_START_ROW, rowCount - (((dashboard.globals || {}).dataStartRow || DATA_START_ROW)) + 1);
   writeTemplateMetadata_(sheet, dashboard, sheetDef, colCount, expectedSignature);
   storeTemplateFormatSignature_(sheetDef, expectedSignature);
   markFrameworkStep_(timing, "Write metadata/signature: " + sheetDef.templateName);
@@ -4707,7 +4705,7 @@ function applyTemplateBaseFormatting_(sheet, dashboard, sheetDef, headers, rowCo
   markFrameworkStep_(timing, "Apply column widths: " + sheetDef.templateName);
 
 
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStartRow, Math.max(rowCount - dataStartRow + 1, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStartRow, rowCount - dataStartRow + 1);
   markFrameworkStep_(timing, "Apply governed text/date/number formats: " + sheetDef.templateName);
 
 
@@ -4789,6 +4787,17 @@ function applyTitleRows_(sheet, dashboard, sheetDef, theme, colCount) {
   sheet.getRange("D2").setValue("").setNumberFormat(globals.defaultDateFormat);
 }
 
+function rowColToA1_(row, col) {
+  let column = Math.max(Number(col || 1), 1);
+  let letters = "";
+  while (column > 0) {
+    const remainder = (column - 1) % 26;
+    letters = String.fromCharCode(65 + remainder) + letters;
+    column = Math.floor((column - 1) / 26);
+  }
+  return letters + Math.max(Number(row || 1), 1);
+}
+
 function applyHeaderRow_(sheet, dashboard, sheetDef, headers, theme, colCount) {
   const globals = dashboard.globals;
   const headerRow = globals.headerRow;
@@ -4818,7 +4827,7 @@ function applyHeaderRow_(sheet, dashboard, sheetDef, headers, theme, colCount) {
     const fontSize = Number(def.headerFontSize || defaultHeaderFontSize);
     if (fontSize === Number(defaultHeaderFontSize)) return;
     if (!rangesByFontSize[fontSize]) rangesByFontSize[fontSize] = [];
-    rangesByFontSize[fontSize].push(sheet.getRange(headerRow, index + 1).getA1Notation());
+    rangesByFontSize[fontSize].push(rowColToA1_(headerRow, index + 1));
   });
 
   Object.keys(rangesByFontSize).forEach(function(fontSize) {
@@ -4932,13 +4941,10 @@ function enforceDateAndNumberFormatsForHeaders_(sheet, dashboard, headers, rowCo
 
 
     try {
-      if (typeof sheet.getRangeList === "function") {
-        sheet.getRangeList(ranges).setNumberFormat(googleSheetsFormat);
-      } else {
-        ranges.forEach(function(a1Notation) {
-          sheet.getRange(a1Notation).setNumberFormat(googleSheetsFormat);
-        });
+      if (typeof sheet.getRangeList !== "function") {
+        throw new Error("RangeList API is unavailable");
       }
+      sheet.getRangeList(ranges).setNumberFormat(googleSheetsFormat);
     } catch (err) {
       throw new Error((logPrefix || "Date/number format") + " failed for " + sheet.getName() + " with format " + googleSheetsFormat + ": " + err.message);
     }
@@ -5014,18 +5020,7 @@ function applyHiddenColumnSettingsInRuns_(sheet, hiddenFlags) {
         sheet.showColumns(startCol, runLength);
       }
     } catch (err) {
-      Logger.log("Hidden column run skipped for columns " + startCol + "-" + (startCol + runLength - 1) + ": " + err.message);
-      for (let col = startCol; col < startCol + runLength; col++) {
-        try {
-          if (currentHidden) {
-            sheet.hideColumns(col);
-          } else {
-            sheet.showColumns(col);
-          }
-        } catch (colErr) {
-          Logger.log("Hidden column setting skipped for column " + col + ": " + colErr.message);
-        }
-      }
+      throw new Error("Hidden column run failed for " + sheet.getName() + " columns " + startCol + "-" + (startCol + runLength - 1) + ": " + err.message);
     }
 
 
@@ -6882,176 +6877,6 @@ function getMonthlyChangeSubsectionLabels() {
 }
 
 
-function runFrameworkTest6DateFormatting() {
-  return runFrameworkTimed_("Framework Test 6 - Date Formatting", function(timing) {
-    const dashboard = loadDashboardConfig_();
-    markFrameworkStep_(timing, "Dashboard loaded");
-    return runFrameworkTest6DateFormattingCore_(dashboard, timing);
-  });
-}
-
-function runFrameworkTest6DateFormattingCore_(dashboard, timing, options) {
-  const activeDashboard = dashboard || loadDashboardConfig_();
-  const results = [];
-
-  activeDashboard.sheetDefinitions.forEach(function(sheetDef) {
-    const templateResults = testDateFormattingForTemplate_(activeDashboard, sheetDef);
-    results.push.apply(results, templateResults);
-    markFrameworkStep_(timing, "Checked date formats: " + sheetDef.templateName);
-  });
-
-  writeFrameworkTest6DateFormatReport_(results, options);
-  markFrameworkStep_(timing, options && options.deferDashboardWrite ? "Dashboard Quality Section G staged" : "Dashboard Quality Section G saved");
-
-  return results;
-}
-
-function testDateFormattingForTemplate_(dashboard, sheetDef) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(sheetDef.templateName);
-  const globals = dashboard.globals;
-  const headers = getHeadersForSheetType_(dashboard, sheetDef.sheetType);
-  const results = [];
-
-
-  if (!sheet) {
-    results.push({
-      templateName: sheetDef.templateName,
-      sheetType: sheetDef.sheetType,
-      header: "",
-      column: "",
-      expectedFormat: "",
-      actualFormats: "Template missing",
-      status: "FAIL"
-    });
-    return results;
-  }
-
-
-  const dateChecks = [];
-  headers.forEach(function(header, index) {
-    const def = dashboard.columnDefinitions[header] || {};
-    if (!def.dateColumn) return;
-    const expectedFormat = getExpectedNumberFormat_(def, globals);
-    const expectedSheetsFormat = getGoogleSheetsNumberFormat_(expectedFormat, true);
-    dateChecks.push({
-      header: header,
-      column: index + 1,
-      expectedFormat: expectedFormat,
-      expectedSheetsFormat: expectedSheetsFormat
-    });
-  });
-
-
-  if (dateChecks.length === 0) return results;
-
-
-  if (sheet.getMaxColumns() < headers.length) {
-    dateChecks.forEach(function(check) {
-      results.push({
-        templateName: sheetDef.templateName,
-        sheetType: sheetDef.sheetType,
-        header: check.header,
-        column: check.column,
-        expectedFormat: check.expectedFormat,
-        actualFormats: "Template has " + sheet.getMaxColumns() + " column(s), expected at least " + headers.length,
-        status: "FAIL"
-      });
-    });
-    return results;
-  }
-
-
-  const sampleRows = Math.min(10, Math.max(sheet.getMaxRows() - globals.dataStartRow + 1, 1));
-  const lastCol = Math.max(headers.length, 1);
-  let allFormats = [];
-
-
-  try {
-    allFormats = sheet.getRange(globals.dataStartRow, 1, sampleRows, lastCol).getNumberFormats();
-  } catch (err) {
-    dateChecks.forEach(function(check) {
-      results.push({
-        templateName: sheetDef.templateName,
-        sheetType: sheetDef.sheetType,
-        header: check.header,
-        column: check.column,
-        expectedFormat: check.expectedFormat,
-        actualFormats: "Read error: " + err.message,
-        status: "FAIL"
-      });
-    });
-    return results;
-  }
-
-
-  dateChecks.forEach(function(check) {
-    let uniqueActualFormats = collectUniqueDateFormatsForCheck_(allFormats, check.column);
-    let failedFormats = uniqueActualFormats.filter(function(actualFormat) {
-      return !numberFormatsMatch_(actualFormat, check.expectedSheetsFormat);
-    });
-    let repaired = false;
-
-    if (failedFormats.length && RFF_REPAIR_DATE_FORMATS_DURING_SECTION_G) {
-      repaired = repairDateFormatForSectionG_(sheet, globals, check);
-      if (repaired) {
-        try {
-          const repairedFormats = sheet.getRange(globals.dataStartRow, check.column, sampleRows, 1).getNumberFormats();
-          uniqueActualFormats = collectUniqueDateFormatsForCheck_(repairedFormats, 1);
-          failedFormats = uniqueActualFormats.filter(function(actualFormat) {
-            return !numberFormatsMatch_(actualFormat, check.expectedSheetsFormat);
-          });
-        } catch (readErr) {
-          Logger.log("Section G repaired format read skipped for " + sheetDef.templateName + " / " + check.header + ": " + readErr.message);
-        }
-      }
-    }
-
-    results.push({
-      templateName: sheetDef.templateName,
-      sheetType: sheetDef.sheetType,
-      header: check.header,
-      column: check.column,
-      expectedFormat: check.expectedFormat,
-      actualFormats: uniqueActualFormats.join(", ") + (repaired ? " (repaired)" : ""),
-      status: failedFormats.length === 0 ? "PASS" : "FAIL"
-    });
-  });
-
-
-  return results;
-}
-
-function collectUniqueDateFormatsForCheck_(formatRows, column) {
-  const uniqueActualFormats = [];
-  (formatRows || []).forEach(function(row) {
-    const actualFormat = (row || [])[column - 1];
-    if (uniqueActualFormats.indexOf(actualFormat) === -1) uniqueActualFormats.push(actualFormat);
-  });
-  return uniqueActualFormats;
-}
-
-function repairDateFormatForSectionG_(sheet, globals, check) {
-  try {
-    const dataStartRow = Number(globals.dataStartRow || DATA_START_ROW);
-    const maxRows = sheet.getMaxRows();
-    if (maxRows < dataStartRow) return false;
-    const dataRows = maxRows - dataStartRow + 1;
-    const sampleRows = Math.min(25, dataRows);
-    sheet.getRange(dataStartRow, check.column, dataRows, 1).setNumberFormat(check.expectedSheetsFormat);
-    sheet.getRange(dataStartRow, check.column, sampleRows, 1).setNumberFormat(check.expectedSheetsFormat);
-    return true;
-  } catch (err) {
-    throw new Error("Section G date format repair failed for " + sheet.getName() + " / " + check.header + ": " + err.message);
-  }
-}
-
-function writeFrameworkTest6DateFormatReport_(results, options) {
-  saveDashboardQualityRowsForTest6_(results, options);
-  deleteLegacyQualityReportSheet_(RFF_TEST6_DATE_FORMAT_SHEET);
-}
-
-
 function normalizeNumberFormatForCompare_(format) {
   let text = String(format || "")
     .trim()
@@ -7175,7 +7000,9 @@ function validateTemplateFromDashboard_(dashboard, sheetDef, options) {
 
 
   try {
-    const sampleRows = Math.min(10, Math.max(sheet.getMaxRows() - globals.dataStartRow + 1, 1));
+    const availableFormatRows = sheet.getMaxRows() - globals.dataStartRow + 1;
+    if (availableFormatRows < 1) return issues;
+    const sampleRows = Math.min(10, availableFormatRows);
     const formatWidth = Math.max(expectedHeaders.length, 1);
     const allFormats = sheet.getRange(globals.dataStartRow, 1, sampleRows, formatWidth).getNumberFormats();
 
@@ -7420,17 +7247,19 @@ function mapRowsToHeaders_(sourceRows, sourceHeaders, targetHeaders) {
 
 function applyUniversalFastCanvasFormatting_(sheet, dashboard, headers) {
   if (!sheet || !dashboard || !headers) return;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < DATA_START_ROW) return;
   try {
     applyColumnWidths_(sheet, dashboard, headers);
     applyHiddenColumnSettings_(sheet, dashboard, headers);
     sheet.getRange(
       DATA_START_ROW,
       1,
-      Math.max(sheet.getLastRow() - DATA_START_ROW + 1, 1),
+      lastRow - DATA_START_ROW + 1,
       Math.max(sheet.getLastColumn(), 1)
     ).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
   } catch (err) {
-    Logger.log("Universal canvas formatting skipped: " + err.message);
+    throw new Error("Universal canvas formatting failed for " + sheet.getName() + ": " + err.message);
   }
 }
 
@@ -7439,7 +7268,10 @@ function applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStart
   const globals = (dashboard && dashboard.globals) || {};
   const columnDefinitions = (dashboard && dashboard.columnDefinitions) || {};
   const startRow = Number(dataStartRow || DATA_START_ROW);
-  const rows = Math.max(Number(rowCount || (sheet.getMaxRows() - startRow + 1)), 1);
+  const hasExplicitRowCount = rowCount !== undefined && rowCount !== null;
+  const requestedRows = hasExplicitRowCount ? Number(rowCount || 0) : Number(sheet.getMaxRows() - startRow + 1);
+  if (requestedRows < 1) return;
+  const rows = requestedRows;
   const formatsByA1 = {};
 
   headers.forEach(function(header, index) {
@@ -7496,7 +7328,7 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
   // 2. RIGHT-SIZE GRID: Force dimensions before writing to save rendering ticks
   resizeSheetGrid_(sheet, requiredRows, width);
 
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, Math.max(rows.length, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, rows.length);
 
   // 3. NAKED WRITE: Set raw values instantly on unformatted cells
   if (rows.length) {
@@ -7523,7 +7355,7 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
     if (endDate) sheet.getRange("D2").setValue(endDate);
     if (headers.length) sheet.getRange(HEADER_ROW, 1, 1, width).setValues([headers]);
   } catch (err) {
-    Logger.log("Output style paint skipped for " + outputName + ": " + err.message);
+    throw new Error("Output style paint failed for " + outputName + ": " + err.message);
   }
 
   // 5. ENFORCE SYSTEM ENVIRONMENT: Set frozen attributes, filters, and color palettes
@@ -7536,7 +7368,7 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
     if (existingFilter) existingFilter.remove();
     sheet.getRange(HEADER_ROW, 1, Math.max(sheet.getMaxRows() - HEADER_ROW + 1, 1), width).createFilter();
   } catch (err) {
-    Logger.log("Environmental configurations skipped for " + outputName + ": " + err.message);
+    throw new Error("Environmental configurations failed for " + outputName + ": " + err.message);
   }
 
   applyUniversalFastCanvasFormatting_(sheet, dashboard, headers);
@@ -7570,7 +7402,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
   // 2. RIGHT-SIZE GRID: Force dimensions before writing to save rendering ticks
   resizeSheetGrid_(sheet, requiredRows, width);
 
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, Math.max(rows.length, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, rows.length);
 
   // 3. NAKED WRITE: Set raw values instantly on unformatted cells (~2-3 seconds)
   if (rows.length) {
@@ -7601,7 +7433,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
     if (endDate) sheet.getRange("D2").setValue(endDate);
     if (headers.length) sheet.getRange(HEADER_ROW, 1, 1, width).setValues([headers]);
   } catch (err) {
-    Logger.log("Raw Data output style paint skipped for " + outputName + ": " + err.message);
+    throw new Error("Raw Data output style paint failed for " + outputName + ": " + err.message);
   }
 
   // 5. ENFORCE SYSTEM ENVIRONMENT: Set frozen attributes, filters, and color palettes
@@ -7614,7 +7446,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
     if (existingFilter) existingFilter.remove();
     sheet.getRange(HEADER_ROW, 1, Math.max(sheet.getMaxRows() - HEADER_ROW + 1, 1), width).createFilter();
   } catch (err) {
-    Logger.log("Raw Data environmental configurations skipped for " + outputName + ": " + err.message);
+    throw new Error("Raw Data environmental configurations failed for " + outputName + ": " + err.message);
   }
 
   applyUniversalFastCanvasFormatting_(sheet, dashboard, headers);
@@ -9742,7 +9574,7 @@ function applyDemoPTemplateToSheet_(targetSheet, monthParts) {
   try {
     targetSheet.getRange("A1").setValue(sheetDef.reportTitle || "Demo P");
   } catch (err) {
-    Logger.log("Could not refresh Demo P title after dashboard template apply: " + err.message);
+    throw new Error("Could not refresh Demo P title after dashboard template apply: " + err.message);
   }
 
 
@@ -9751,30 +9583,25 @@ function applyDemoPTemplateToSheet_(targetSheet, monthParts) {
 
 function applyDemoPDateFormattingByHeader_(sheet) {
   if (!sheet) return;
-
-
-  const lastRow = Math.max(sheet.getLastRow(), DATA_START_ROW);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < DATA_START_ROW) return;
   const headers = getHeaders_(sheet, HEADER_ROW);
-
+  const dataRows = lastRow - DATA_START_ROW + 1;
 
   DEMO_P_TEMPLATE_DATE_HEADERS.forEach(headerName => {
     const idx = headers.indexOf(headerName);
     if (idx === -1) return;
-
-
     try {
-      sheet.getRange(DATA_START_ROW, idx + 1, Math.max(lastRow - DATA_START_ROW + 1, 1), 1);
+      sheet.getRange(DATA_START_ROW, idx + 1, dataRows, 1).setNumberFormat("m/d/yyyy");
     } catch (err) {
-      Logger.log("Could not apply Demo P date format for " + headerName + ": " + err.message);
+      throw new Error("Could not apply Demo P date format for " + headerName + ": " + err.message);
     }
   });
 
-
   try {
-    sheet.getRange("B2");
-    sheet.getRange("D2");
+    sheet.getRange("B2:D2").setNumberFormat("m/d/yyyy");
   } catch (err) {
-    Logger.log("Could not apply Demo P title date format: " + err.message);
+    throw new Error("Could not apply Demo P title date format: " + err.message);
   }
 }
 
@@ -10194,29 +10021,31 @@ function rowsWithDOBOnlyForSection_(items, headerMap) {
 
 function getChangedColumnsForSectionRows_(currentItems, previousItems, currentHeaders, previousHeaders, columnsToCompare, currentHeaderMap, previousHeaderMap) {
   const changed = new Set();
-
-
   if (!currentItems || currentItems.length === 0) return changed;
-
-
   if (!previousItems || previousItems.length === 0) return changed;
 
+  const currentSignatures = buildColumnSignaturesForSection_(currentItems, currentHeaderMap, columnsToCompare);
+  const previousSignatures = buildColumnSignaturesForSection_(previousItems, previousHeaderMap, columnsToCompare);
 
   columnsToCompare.forEach(header => {
-
-
     if (currentHeaderMap[header] === undefined || previousHeaderMap[header] === undefined) return;
-
-
-    const currentSig = buildColumnSignatureForSection_(currentItems, currentHeaderMap, [header]);
-    const previousSig = buildColumnSignatureForSection_(previousItems, previousHeaderMap, [header]);
-
-
-    if (currentSig !== previousSig) changed.add(header);
+    if ((currentSignatures[header] || "") !== (previousSignatures[header] || "")) changed.add(header);
   });
 
-
   return changed;
+}
+
+function buildColumnSignaturesForSection_(items, headerMap, columnsToCompare) {
+  const signatures = {};
+  (columnsToCompare || []).forEach(function(header) {
+    const idx = headerMap[header];
+    if (idx === undefined || idx === -1) return;
+    signatures[header] = (items || [])
+      .map(function(item) { return normalizeCompareValue_(item.values[idx]); })
+      .sort()
+      .join("||");
+  });
+  return signatures;
 }
 
 function buildColumnSignatureForSection_(items, headerMap, columnsToCompare) {
@@ -10356,23 +10185,17 @@ function compareRawDemoPForChanges_(previousDemo, currentDemo, monthParts) {
   allCurrentPMRs.forEach(pmr => {
     if (!previousData.allPMRs.has(pmr)) return;
 
+    const previousMap = buildContactCompareMap_(previousData.rowsByPMR.get(pmr) || [], previousData.headerMap, pmr);
+    const currentMap = buildContactCompareMap_(currentData.rowsByPMR.get(pmr) || [], currentData.headerMap, pmr);
+    const allContactKeys = new Set([].concat(Array.from(previousMap.keys()), Array.from(currentMap.keys())));
 
-    const previousRows = previousData.rowsByPMR.get(pmr) || [];
-    const currentRows = currentData.rowsByPMR.get(pmr) || [];
-
-
-    const maxLength = Math.max(previousRows.length, currentRows.length);
-
-
-    for (let i = 0; i < maxLength; i++) {
-      const previousItem = previousRows[i] || null;
-      const currentItem = currentRows[i] || null;
-
+    allContactKeys.forEach(key => {
+      const previousItem = previousMap.get(key) || null;
+      const currentItem = currentMap.get(key) || null;
 
       RAW_DEMO_P_CONTACT_FIELDS.forEach(field => {
         const previousValue = previousItem ? getFieldValueFromRow_(previousItem.values, previousData.headerMap, field) : "";
         const currentValue = currentItem ? getFieldValueFromRow_(currentItem.values, currentData.headerMap, field) : "";
-
 
         if (!valuesAreEqual_(previousValue, currentValue)) {
           addMCRRow_(
@@ -10391,7 +10214,7 @@ function compareRawDemoPForChanges_(previousDemo, currentDemo, monthParts) {
           );
         }
       });
-    }
+    });
   });
 
 
@@ -10559,6 +10382,25 @@ function addMCRRow_(
 
   if (!changedPMRs.has(pmr)) changedPMRs.set(pmr, new Set());
   changedPMRs.get(pmr).add(section);
+}
+
+function buildContactCompareMap_(rows, headerMap, pmr) {
+  const map = new Map();
+  (rows || []).forEach(function(item, ordinal) {
+    const values = item && item.values ? item.values : [];
+    const keyParts = [
+      pmr,
+      getFieldValueFromRow_(values, headerMap, "Contact - First Name"),
+      getFieldValueFromRow_(values, headerMap, "Contact - Last Name"),
+      getFieldValueFromRow_(values, headerMap, "Relationship"),
+      getFieldValueFromRow_(values, headerMap, "AD1 - Phone") || getFieldValueFromRow_(values, headerMap, "Phone")
+    ].map(normalizeCompareValue_);
+    let key = keyParts.join("|");
+    if (key.replace(/[|]/g, "") === normalizeCompareValue_(pmr)) key = normalizeCompareValue_(pmr) + "|row#" + ordinal;
+    if (map.has(key)) key += "|dup#" + ordinal;
+    map.set(key, item);
+  });
+  return map;
 }
 
 function getFieldValueFromRow_(row, headerMap, field) {
@@ -11315,7 +11157,7 @@ function createMasterListSheetFromTemplate_(ss, targetName, monthParts) {
     Logger.log("Master List naked canvas style paint skipped: " + err.message);
   }
   applyColumnWidths_(sheet, dashboard, headers);
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, Math.max(requiredRows - DATA_START_ROW + 1, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, requiredRows >= DATA_START_ROW ? requiredRows - DATA_START_ROW + 1 : 0);
 
   try {
     sheet.getRange("A1:D2").setValues([
@@ -11778,7 +11620,6 @@ function getSystemAndTestingSheetNames_() {
     RFF_DASHBOARD_SHEET,
     RFF_VALIDATION_SHEET,
     RFF_TIMING_SHEET,
-    RFF_TEST6_DATE_FORMAT_SHEET,
     RFF_TEST_DASHBOARD_SHEET,
     RFF_HEALTH_CHECK_SHEET
   ].forEach(function(name) {
@@ -13808,16 +13649,15 @@ function runDashboardQualityValidateTemplates() {
   return runFrameworkTimed_("Dashboard Quality Validate Templates", function(timing) {
     const sheet = ensureDashboardQualityReportSheet_();
     runDashboardQualityTemplateAndFormatSections_(timing, false, false);
-    markFrameworkStep_(timing, "Dashboard Quality Sections F-G updated");
+    markFrameworkStep_(timing, "Dashboard Quality Section F updated");
   });
 }
 
 function runDashboardQualityTemplateAndFormatSections_(timing, includeDashboardAudit, includeHealthAndSignoff) {
   const dashboard = loadDashboardConfig_();
-  markFrameworkStep_(timing, "Dashboard loaded for Sections F-G");
+  markFrameworkStep_(timing, "Dashboard loaded for Section F");
 
   const previousValidationRows = getDashboardQualitySectionRows_(RFF_VALIDATION_SHEET);
-  const previousDateRows = getDashboardQualitySectionRows_(RFF_TEST6_DATE_FORMAT_SHEET);
   const stagedSectionWrites = [];
 
   validateReportTemplatesCore_(dashboard, timing, { deferDashboardWrite: true });
@@ -13829,20 +13669,11 @@ function runDashboardQualityTemplateAndFormatSections_(timing, includeDashboardA
     });
   }
 
-  runFrameworkTest6DateFormattingCore_(dashboard, timing, { deferDashboardWrite: true });
-  const dateRows = getDashboardQualitySectionRows_(RFF_TEST6_DATE_FORMAT_SHEET);
-  if (!dashboardQualityRowsEqualValues_(previousDateRows, dateRows)) {
-    stagedSectionWrites.push({
-      title: getDashboardQualitySectionTitleForKey_(RFF_TEST6_DATE_FORMAT_SHEET),
-      rows: buildTimestampedDashboardQualitySectionRows_(RFF_TEST6_DATE_FORMAT_SHEET, dateRows)
-    });
-  }
-
   if (stagedSectionWrites.length) {
     replaceDashboardQualitySectionsRows_(ensureDashboardQualityReportSheet_(), stagedSectionWrites);
-    markFrameworkStep_(timing, "Dashboard Quality Sections F-G batch written");
+    markFrameworkStep_(timing, "Dashboard Quality Section F batch written");
   } else {
-    markFrameworkStep_(timing, "Dashboard Quality Sections F-G sheet write skipped - unchanged");
+    markFrameworkStep_(timing, "Dashboard Quality Section F sheet write skipped - unchanged");
   }
 
   if (includeDashboardAudit) {
@@ -14053,7 +13884,6 @@ const RFF_DASHBOARD_QUALITY_SECTIONS = [
   { key: RFF_DASHBOARD_VERIFY_COLUMNS_KEY, title: "SECTION D - COLUMN DEFINITIONS VERIFICATION" },
   { key: RFF_DASHBOARD_VERIFY_BEHAVIORS_KEY, title: "SECTION E - SHEET BEHAVIOR VERIFICATION" },
   { key: RFF_VALIDATION_SHEET, title: "SECTION F - TEMPLATE STRUCTURE & VALIDATION" },
-  { key: RFF_TEST6_DATE_FORMAT_SHEET, title: "SECTION G - DATE FORMAT INTEGRITY VALIDATION" },
   { key: RFF_HEALTH_CHECK_SHEET, title: "SECTION H - FRAMEWORK HEALTH CHECK" },
   { key: RFF_PERFORMANCE_SUMMARY_KEY, title: "SECTION I - PERFORMANCE SUMMARY" },
   { key: RFF_MASTER_LIST_HEALTH_KEY, title: "SECTION J - MASTER LIST VALIDATION" },
@@ -14577,7 +14407,6 @@ function getTimingProcessNameForDashboardQualitySection_(sectionKey) {
   if (sectionKey === RFF_DASHBOARD_VERIFY_BEHAVIORS_KEY) return "Verify Framework Configuration";
   if (sectionKey === RFF_VALIDATION_SHEET) return "Validate Templates";
   if (sectionKey === "Template Header Audit") return "Template Header Audit";
-  if (sectionKey === RFF_TEST6_DATE_FORMAT_SHEET) return "Framework Test 6 - Date Formatting";
   if (sectionKey === RFF_HEALTH_CHECK_SHEET) return "Framework Health Check";
   if (sectionKey === "Signoff") return "Dashboard Quality Signoff";
   if (sectionKey === "Summary") return "Dashboard Quality Summary";
@@ -14653,35 +14482,9 @@ function deleteLegacyQualityReportSheet_(sheetName) {
 
 function deleteLegacyStandaloneQualityReports_() {
   [
-    RFF_TEST6_DATE_FORMAT_SHEET,
     RFF_HEALTH_CHECK_SHEET,
     RFF_VALIDATION_SHEET,
   ].forEach(deleteLegacyQualityReportSheet_);
-}
-
-function saveDashboardQualityRowsForTest6_(results, options) {
-  const rows = [["Template", "Sheet Type", "Header", "Expected", "Actual", "Status", "Issues"]];
-  const failures = (results || []).filter(function(item) {
-    return String(item && item.status || "").toUpperCase() !== "PASS";
-  });
-
-  if (!failures.length) {
-    rows.push(["All templates", "All governed sheet types", "Date format columns", "Governed formats", "Matched", "PASS", "All date format checks passed."]);
-  } else {
-    failures.forEach(function(item) {
-      rows.push([
-        item.templateName || "",
-        item.sheetType || "",
-        item.header || "",
-        item.expectedFormat || "",
-        item.actualFormats || "",
-        item.status || "FAIL",
-        item.issues || "Date format mismatch"
-      ]);
-    });
-  }
-
-  saveDashboardQualitySectionRows_(RFF_TEST6_DATE_FORMAT_SHEET, rows, options);
 }
 
 function saveDashboardQualityRowsForTemplateValidation_(results, options) {
@@ -15158,7 +14961,6 @@ function appendCombinedDashboardSignOffRows_(rows) {
   rows.push(["SECTION N - SIGNOFF"]);
   rows.push(["Dashboard Integrity", dashboardAudit.status, dashboardAudit.notes]);
   rows.push(["Template Validation", templateValidation.status, templateValidation.notes]);
-  rows.push(["Date Formatting", getReportOverallStatus_(RFF_TEST6_DATE_FORMAT_SHEET, 7), getReportFailureNotes_(RFF_TEST6_DATE_FORMAT_SHEET, 7)]);
   rows.push(["Framework Health Check", frameworkHealth.status, frameworkHealth.notes]);
   rows.push(["Performance Summary", performance.status, performance.notes]);
   rows.push(["Master List Validation", masterHealth.status, masterHealth.notes]);
@@ -15174,7 +14976,6 @@ function buildFrameworkSummaryRows_() {
   const dashboardColumns = getStoredSectionStatusAndNotes_(RFF_DASHBOARD_VERIFY_COLUMNS_KEY, 2);
   const dashboardBehaviors = getStoredSectionStatusAndNotes_(RFF_DASHBOARD_VERIFY_BEHAVIORS_KEY, 2);
   const templateValidation = getStoredSectionStatusAndNotes_(RFF_VALIDATION_SHEET, 2);
-  const dateIntegrity = getStoredSectionStatusAndNotes_(RFF_TEST6_DATE_FORMAT_SHEET, 3);
   const frameworkHealth = getStoredSectionStatusAndNotes_(RFF_HEALTH_CHECK_SHEET, 2);
   const performance = getStoredSectionStatusAndNotes_(RFF_PERFORMANCE_SUMMARY_KEY, 3);
   const masterHealth = getStoredSectionStatusAndNotes_(RFF_MASTER_LIST_HEALTH_KEY, 2);
@@ -15186,7 +14987,6 @@ function buildFrameworkSummaryRows_() {
   rows.push(["Dashboard Column Definitions", dashboardColumns.status, dashboardColumns.notes, "Dashboard Quality Report Section D"]);
   rows.push(["Dashboard Sheet Behaviors", dashboardBehaviors.status, dashboardBehaviors.notes, "Dashboard Quality Report Section E"]);
   rows.push(["Template Structure & Validation", templateValidation.status, templateValidation.notes, "Dashboard Quality Report Section F"]);
-  rows.push(["Date Format Integrity Validation", dateIntegrity.status, dateIntegrity.notes, "Dashboard Quality Report Section G"]);
   rows.push(["Framework Health Check", frameworkHealth.status, frameworkHealth.notes, "Dashboard Quality Report Section H"]);
   rows.push(["Performance Summary", performance.status, performance.notes, "Dashboard Quality Report Section I"]);
   rows.push(["Master List Validation", masterHealth.status, masterHealth.notes, "Dashboard Quality Report Section J"]);
