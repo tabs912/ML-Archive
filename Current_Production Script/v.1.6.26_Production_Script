@@ -1,5 +1,5 @@
 /**
- * Master List Framework v1.6.25 Full Script
+ * Master List Framework v1.6.26 Full Script
  *
  * Required section structure for this and all future full-script rebuilds:
  * 1. CONFIGURATION
@@ -29,7 +29,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.6.25";
+const MASTER_LIST_MERGE_ML_VERSION = "1.6.26";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -625,6 +625,7 @@ function writeDashboardDefaultsFast_(sheet) {
   appendDashboardSectionRows_(rows, RFF_SECTION_COLUMNS, ["Header", "Width", "Header Font Size", "Date Column", "Hide Column", "Data Wrap", "Horizontal Alignment", "Vertical Alignment", "Number Format"], getResolvedDefaultColumnDefinitionRows_(), width);
   appendDashboardSectionRows_(rows, RFF_SECTION_BEHAVIORS, ["Sheet Type", "Uses Title Rows", "Uses Filter", "Uses Alternating Colors", "Uses Subheaders", "Hidden Template", "Output Visibility"], getDefaultBehaviorRows_(), width);
   appendDashboardSectionRows_(rows, RFF_SECTION_HEADERS, ["Sheet Type", "Column Order", "Header", "Source of Data"], getDefaultSheetHeaderRows_(), width);
+  appendDashboardSectionRows_(rows, RFF_SECTION_SYSTEM_SURFACES, ["System Sheet Name", "Display Name", "Sort Order", "Output Visibility", "Title Fill Color", "Title Font Color", "Use Global Defaults", "Notes"], getDefaultSystemSurfaceRows_(), width);
 
   trimSheetToColumnCount_(sheet, width, "Format Dashboard");
   if (sheet.getMaxRows() < rows.length) sheet.insertRowsAfter(sheet.getMaxRows(), rows.length - sheet.getMaxRows());
@@ -759,6 +760,77 @@ function notify_(message) {
   } catch (err) {
     Logger.log(message);
   }
+}
+
+function trimExcessRows_(sheet, minRows) {
+  if (!sheet) return 0;
+  minRows = Math.max(1, Number(minRows) || 1000);
+  const maxRows = sheet.getMaxRows();
+  const lastRow = Math.max(sheet.getLastRow(), minRows);
+  if (maxRows <= lastRow || maxRows <= minRows) return 0;
+  const rowsToDelete = maxRows - lastRow;
+  if (rowsToDelete <= 0) return 0;
+  sheet.deleteRows(lastRow + 1, rowsToDelete);
+  return rowsToDelete;
+}
+
+function hideOldDisenrolledRows_(sheet) {
+  if (!sheet) return 0;
+  const data = getDataValues_(sheet, HEADER_ROW, DATA_START_ROW);
+  if (!data.values.length) return 0;
+  const dateHeaders = ["Disenrollment Effective Date", "Disenrollment Date", "Date of Death"];
+  const dateIndexes = dateHeaders
+    .map(function(header) { return data.headerMap[header]; })
+    .filter(function(index) { return index !== undefined; });
+  if (!dateIndexes.length) return 0;
+  try {
+    sheet.showRows(DATA_START_ROW, data.values.length);
+  } catch (err) {
+    Logger.log("Disenrolled row unhide skipped: " + err.message);
+  }
+  const cutoff = createLocalDateOnly_(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+  cutoff.setDate(cutoff.getDate() - 365);
+  const rowsToHide = [];
+  data.values.forEach(function(row, index) {
+    const matchedDate = dateIndexes
+      .map(function(dateIndex) { return coerceToValidDate_(row[dateIndex]); })
+      .filter(function(date) { return date && !isNaN(date.getTime()); })
+      .sort(function(a, b) { return b.getTime() - a.getTime(); })[0];
+    if (matchedDate && matchedDate.getTime() < cutoff.getTime()) rowsToHide.push(DATA_START_ROW + index);
+  });
+  rowsToHide.forEach(function(rowNumber) {
+    try {
+      sheet.hideRows(rowNumber);
+    } catch (err) {
+      Logger.log("Disenrolled old-row hide skipped at row " + rowNumber + ": " + err.message);
+    }
+  });
+  return rowsToHide.length;
+}
+
+function showQuickStartToast_(message) {
+  notify_(message);
+  SpreadsheetApp.flush();
+}
+
+function quickSystemSetup() {
+  showQuickStartToast_("Quick System Setup: rebuilding Format Dashboard defaults...");
+  rebuildFormatDashboardDefaults();
+  showQuickStartToast_("Quick System Setup: setting up system sheets...");
+  setupSystemSheets();
+  showQuickStartToast_("Quick System Setup: building Index...");
+  createIndexSheet();
+  showQuickStartToast_("Quick System Setup: running Dashboard Quality start-up...");
+  runDashboardQualityStartUp();
+  showQuickStartToast_("Quick System Setup complete.");
+}
+
+function quickBuildAllTemplates() {
+  showQuickStartToast_("Quick Build All Templates: creating/refreshing templates...");
+  createOrRefreshAllReportTemplates();
+  showQuickStartToast_("Quick Build All Templates: validating templates...");
+  runDashboardQualityValidateTemplates();
+  showQuickStartToast_("Quick Build All Templates complete.");
 }
 
 function notifyErrorWithTiming_(message) {
@@ -2557,16 +2629,17 @@ function writeFrameworkTimingPerformanceRecommendations() {
 
 const ML_MENU_CALLBACKS = Object.freeze({
   dataProcessing: Object.freeze([
-    "createIndexSheet",
     "formatMonthlySheets",
     "updateDemoPMonthlySync",
+    "buildDemoPFromScratch",
     "createDisenrolledList",
-    "createMasterList",
-    "buildMonthlyChangeReport"
+    "createMasterList"
   ]),
   sheetLayout: Object.freeze([
     "enforceGlobalSheetSortOrder_",
+    "hideMonthlyImportSheets",
     "archiveMonthlyImportSheets",
+    "hideMonthlyActiveSheets",
     "archiveMonthlyActiveSheets",
     "hideTemplates_",
     "showTemplates_",
@@ -2575,8 +2648,15 @@ const ML_MENU_CALLBACKS = Object.freeze({
     "clearDiagnosticsAndTimingLogs",
     "toggleFrameworkTiming"
   ]),
+  quickStart: Object.freeze([
+    "quickSystemSetup",
+    "quickBuildAllTemplates",
+    "runDashboardQualityFull"
+  ]),
   maintenanceRebuild: Object.freeze([
-    "buildDemoPFromScratch",
+    "runDashboardQualityStartUp",
+    "runDashboardQualityValidateTemplates",
+    "runDashboardQualityFull",
     "formatBannerReport",
     "formatCarePlanDueReport",
     "formatUnlockedCarePlanReport",
@@ -2587,23 +2667,32 @@ const ML_MENU_CALLBACKS = Object.freeze({
     "rebuildFormatDashboardDefaults",
     "saveActiveLayoutToDashboardSettings",
     "createOrRefreshAllReportTemplates",
-    "runDashboardQualityStartUp",
-    "runDashboardQualityValidateTemplates",
-    "runDashboardQualityFull"
+    "createIndexSheet"
   ])
 });
 
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
 
-  const dataProcessingMenu = ui.createMenu("📁 Data & Processing Engine")
-    .addItem("📊 Format Monthly Sheets", "formatMonthlySheets")
+  const demoPMenu = ui.createMenu("📁 Demo P")
     .addItem("🔄 Update Demo P", "updateDemoPMonthlySync")
-    .addItem("⛔ Create / Update Disenrolled List", "createDisenrolledList")
-    .addItem("💡 Create Master List", "createMasterList")
-    .addItem("🗓️ Monthly Change Report", "buildMonthlyChangeReport");
+    .addItem("🛠️ Build Demo P", "buildDemoPFromScratch");
 
-  const templatesMenu = ui.createMenu("🦑 Templates")
+  const dataProcessingMenu = ui.createMenu("📊 Data & Processing Engine")
+    .addItem("📚 Format Monthly Sheets", "formatMonthlySheets")
+    .addSubMenu(demoPMenu)
+    .addItem("⛔ Create / Update Disenrolled List", "createDisenrolledList")
+    .addItem("💡 Create Master List", "createMasterList");
+
+  const monthlyImportSheetsMenu = ui.createMenu("🗄️ Monthly Import Sheets")
+    .addItem("🗂️ Hide Monthly Import Sheets", "hideMonthlyImportSheets")
+    .addItem("🗃️ Archive Monthly Import Sheets", "archiveMonthlyImportSheets");
+
+  const monthlyActiveSheetsMenu = ui.createMenu("🗄️ Monthly Active Sheets")
+    .addItem("🗂️ Hide Monthly Active Sheets", "hideMonthlyActiveSheets")
+    .addItem("🗃️ Archive Monthly Active Sheets", "archiveMonthlyActiveSheets");
+
+  const templatesMenu = ui.createMenu("🙈 Templates")
     .addItem("Hide Templates", "hideTemplates_")
     .addItem("Show Templates", "showTemplates_");
 
@@ -2611,15 +2700,24 @@ function onOpen() {
     .addItem("Hide System Sheets", "hideSystemSheets_")
     .addItem("Show System Sheets", "showSystemSheets_");
 
-  const sheetLayoutMenu = ui.createMenu("📁 Sheet & Layout Management")
-    .addItem("📇 Create Index", "createIndexSheet")
+  const sheetLayoutMenu = ui.createMenu("⚙️ Sheet & Layout Management")
     .addItem("🧭 Enforce Global Tab Sorting Order", "enforceGlobalSheetSortOrder_")
-    .addItem("🗄️ Archive Monthly Import Sheets", "archiveMonthlyImportSheets")
-    .addItem("🗄️ Archive Monthly Active Sheets", "archiveMonthlyActiveSheets")
+    .addSubMenu(monthlyImportSheetsMenu)
+    .addSubMenu(monthlyActiveSheetsMenu)
     .addSubMenu(templatesMenu)
     .addSubMenu(systemSheetsMenu)
     .addItem("🪄 Clear Timing & Quality Logs", "clearDiagnosticsAndTimingLogs")
     .addItem("⏱️ Framework Timing on/off", "toggleFrameworkTiming");
+
+  const quickStartMenu = ui.createMenu("🚀 Quick Start-up")
+    .addItem("🏗️ System Set up", "quickSystemSetup")
+    .addItem("🖼️ Build All Templates", "quickBuildAllTemplates")
+    .addItem("✅ Dashboard Quality Workflow", "runDashboardQualityFull");
+
+  const qualityMenu = ui.createMenu("👌 Quality")
+    .addItem("Dashboard Quality Start up", "runDashboardQualityStartUp")
+    .addItem("Dashboard Quality Validate Templates", "runDashboardQualityValidateTemplates")
+    .addItem("Dashboard Quality Workflow", "runDashboardQualityFull");
 
   const formatSheetsMenu = ui.createMenu("📝 Format Sheets")
     .addItem("Banner", "formatBannerReport")
@@ -2627,32 +2725,26 @@ function onOpen() {
     .addItem("Unlocked CP", "formatUnlockedCarePlanReport")
     .addItem("Raw Data", "formatRawData");
 
-  const maintenanceMenu = ui.createMenu("📁 Maintenance/Rebuild")
-    .addItem("🛠️ Build Demo P", "buildDemoPFromScratch")
+  const maintenanceMenu = ui.createMenu("🛠️ Maintenance/Rebuild")
+    .addSubMenu(qualityMenu)
     .addSubMenu(formatSheetsMenu);
 
-  const formatDashboardMenu = ui.createMenu("🎨 Format Dashboard")
-    .addItem("Format Dashboard", "rebuildFormatDashboardDefaults")
-    .addItem("💾 Save Active Layout as Rebuild Default", "saveActiveLayoutToDashboardSettings");
-
-  const qualityMenu = ui.createMenu("👌 Quality")
-    .addItem("Dashboard Quality Start up", "runDashboardQualityStartUp")
-    .addItem("Dashboard Quality Validate Templates", "runDashboardQualityValidateTemplates")
-    .addItem("Dashboard Quality Workflow", "runDashboardQualityFull");
-
-  const startUpMenu = ui.createMenu("📁 Start-up")
+  const startUpMenu = ui.createMenu("🧩 Start - up")
     .addItem("📜 Set up System Sheets", "setupSystemSheets")
-    .addSubMenu(formatDashboardMenu)
+    .addItem("🎨 Format Dashboard", "rebuildFormatDashboardDefaults")
+    .addItem("💾 Save Active Layout as Rebuild Default", "saveActiveLayoutToDashboardSettings")
     .addItem("🖼️ Create / Refresh All Templates", "createOrRefreshAllReportTemplates")
-    .addSubMenu(qualityMenu);
+    .addItem("📇 Build Index", "createIndexSheet");
 
   ui.createMenu("Master List")
     .addSubMenu(dataProcessingMenu)
     .addSubMenu(sheetLayoutMenu)
+    .addSubMenu(quickStartMenu)
     .addSubMenu(maintenanceMenu)
     .addSubMenu(startUpMenu)
     .addToUi();
 }
+
 
 function isFrameworkTimingEnabled_() {
   try {
@@ -3036,17 +3128,17 @@ const RFF_FRAMEWORK_TIMING_SHEET = RFF_TIMING_SHEET;
 
 const RFF_TIMING_SUMMARY_SHEET = RFF_TIMING_SHEET;
 
-const RFF_TEST6_DATE_FORMAT_SHEET = "Framework Test 6 Date Format Report";
+const RFF_TEST6_DATE_FORMAT_SHEET = "Date Format Integrity";
 
 const RFF_TEST7_VALIDATION_FAILURE_SHEET = "Framework Test 7 Validation Failure Report";
 
-const RFF_TEST9_SUBHEADER_SHEET = "Framework Test 9 Monthly Change Subheader Report";
+const RFF_TEST9_SUBHEADER_SHEET = "Monthly Change Subheader Integrity";
 
-const RFF_TEST10_DASHBOARD_AUDIT_SHEET = "Framework Test 10 Dashboard Audit Report";
+const RFF_TEST10_DASHBOARD_AUDIT_SHEET = "Dashboard Audit Integrity";
 
 const RFF_TEST_DASHBOARD_SHEET = "Dashboard Quality Report";
 
-const RFF_HEALTH_CHECK_SHEET = "Framework Health Check Report";
+const RFF_HEALTH_CHECK_SHEET = "Framework Health Check";
 
 const RFF_SECTION_GLOBAL = "SECTION A - GLOBAL SETTINGS";
 
@@ -3059,6 +3151,8 @@ const RFF_SECTION_COLUMNS = "SECTION D - COLUMN DEFINITIONS";
 const RFF_SECTION_BEHAVIORS = "SECTION E - SHEET BEHAVIORS";
 
 const RFF_SECTION_HEADERS = "SECTION F - SHEET HEADERS";
+
+const RFF_SECTION_SYSTEM_SURFACES = "SECTION G - SYSTEM SHEET SURFACES";
 
 let RFF_DASHBOARD_CONFIG_CACHE_ = null;
 
@@ -3112,7 +3206,8 @@ const RFF_MONTHLY_CHANGE_SUBSECTIONS = [
   "Demographic Changes",
   "Caseload Changes",
   "Contact Changes",
-  "Banner Summary Changes"
+  "Banner Summary Changes",
+  "Other Changes"
 ];
 
 
@@ -3145,7 +3240,8 @@ function getFormatDashboardSectionNames_() {
     RFF_SECTION_SHEETS,
     RFF_SECTION_COLUMNS,
     RFF_SECTION_BEHAVIORS,
-    RFF_SECTION_HEADERS
+    RFF_SECTION_HEADERS,
+    RFF_SECTION_SYSTEM_SURFACES
   ];
 }
 
@@ -3278,6 +3374,16 @@ function getDefaultBehaviorRows_() {
   ["Monthly Change", true, true, true, true, true, "VISIBLE"]
 ];
 }
+
+function getDefaultSystemSurfaceRows_() {
+  return [
+    [RFF_DASHBOARD_SHEET, "Format Dashboard", 80, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Dashboard configuration surface"],
+    ["Dashboard Quality Report", "Dashboard Quality Report", 60, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified quality report surface"],
+    ["Framework Timing Report", "Framework Timing Report", 70, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified timing report surface"],
+    [RFF_BASE_TEMPLATE_NAME, RFF_BASE_TEMPLATE_NAME, 900, "HIDDEN", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Hidden framework base template"]
+  ];
+}
+
 
 function getDefaultSheetHeaderRows_() {
   const rows = [];
@@ -6571,6 +6677,54 @@ function archiveRawDataSheet_(sourceSheet, archiveName) {
 }
 
 
+function hideMonthlyImportSheets() {
+  const monthParts = promptForLockedYearReportMonth_("Hide Monthly Import Sheets");
+  if (!monthParts) return null;
+  const parsed = buildPromptedMonthContext_(monthParts);
+  const specs = [
+    { label: "Banners", keywords: ["Banners", "Banner Report"] },
+    { label: "CP Due Date", keywords: ["CP Due Date", "CP Due", "Care Plan Due Date Report", "Care Plan Due"] },
+    { label: "Unlocked CP", keywords: ["Unlocked CP", "Unlock CP", "Unlocked Care Plan"] }
+  ];
+  return hideMonthlySheetsBySpecs_("Hide Monthly Import Sheets", parsed, specs);
+}
+
+function hideMonthlyActiveSheets() {
+  const monthParts = promptForLockedYearReportMonth_("Hide Monthly Active Sheets");
+  if (!monthParts) return null;
+  const parsed = buildPromptedMonthContext_(monthParts);
+  const specs = [
+    { label: "Raw Data", keywords: ["Raw Data"] },
+    { label: "Master List", keywords: ["Master List"] }
+  ];
+  return hideMonthlySheetsBySpecs_("Hide Monthly Active Sheets", parsed, specs);
+}
+
+function hideMonthlySheetsBySpecs_(processName, parsedMonth, specs) {
+  return runFrameworkTimed_(processName + " " + parsedMonth.monthLabel, function(timing) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const result = { hidden: [], skipped: [] };
+    specs.forEach(function(spec) {
+      const sheets = findArchiveMonthlyCandidateSheets_(ss, spec.keywords, parsedMonth.monthLabel);
+      if (!sheets.length) {
+        result.skipped.push(spec.label + " not found");
+        return;
+      }
+      sheets.forEach(function(sheet) {
+        try {
+          if (!sheet.isSheetHidden()) sheet.hideSheet();
+          result.hidden.push(sheet.getName());
+        } catch (err) {
+          result.skipped.push(sheet.getName() + ": " + err.message);
+        }
+      });
+    });
+    enforceGlobalSheetSortOrder_(parsedMonth.monthParts);
+    notify_(processName + " complete for " + parsedMonth.monthLabel + ". Hidden: " + result.hidden.length + "; Skipped: " + result.skipped.length + ".");
+    return result;
+  });
+}
+
 function archiveMonthlyImportSheets() {
   const monthParts = promptForLockedYearReportMonth_("Archive Monthly Import Sheets");
   if (!monthParts) return null;
@@ -8909,21 +9063,58 @@ function sortSheetAlphabeticallyByParticipantName_(sheet) {
 function getDemoPMonthlySyncChangedPMRs_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const set = new Set();
-  const candidates = [
-    getMonthlySheetByPrefixAndDate_(ss, MONTHLY_CHANGE_REPORT_PREFIX, monthParts.firstDay, monthParts.lastDay)
-  ].filter(Boolean);
 
-  candidates.forEach(function(sheet) {
-    const data = getDataValues_(sheet, HEADER_ROW, DATA_START_ROW);
+  const mcrSheet = getMonthlySheetByPrefixAndDate_(ss, MONTHLY_CHANGE_REPORT_PREFIX, monthParts.firstDay, monthParts.lastDay);
+  if (mcrSheet) {
+    const data = getDataValues_(mcrSheet, HEADER_ROW, DATA_START_ROW);
     const pmrIdx = getPMRIndex_(data.headerMap);
-    if (pmrIdx === -1) return;
-    data.values.forEach(function(row) {
-      const pmr = normalizePMR_(row[pmrIdx]);
-      if (pmr) set.add(pmr);
-    });
-  });
+    if (pmrIdx !== -1) {
+      data.values.forEach(function(row) {
+        const pmr = normalizePMR_(row[pmrIdx]);
+        if (pmr) set.add(pmr);
+      });
+    }
+  }
+
+  const demoSheet = getCurrentDemoPSheet_(monthParts);
+  const rawSheet = getCurrentRawDataSheet_(monthParts);
+
+  if (demoSheet && rawSheet) {
+    const demoData = getDataValues_(demoSheet, HEADER_ROW, DATA_START_ROW);
+    const rawData = getDataValues_(rawSheet, HEADER_ROW, DATA_START_ROW);
+
+    const demoPmrIdx = getPMRIndex_(demoData.headerMap);
+    const demoHashIdx = demoData.headerMap["Source Hash"];
+    const rawPmrIdx = getPMRIndex_(rawData.headerMap);
+
+    if (demoPmrIdx !== -1 && demoHashIdx !== undefined && rawPmrIdx !== -1) {
+      const rawHashesByPmr = buildSourceHashByPMR_(rawData, rawPmrIdx);
+      const demoPmrSet = new Set();
+
+      demoData.values.forEach(function(row) {
+        const pmr = normalizePMR_(row[demoPmrIdx]);
+        const demoHash = String(row[demoHashIdx] || "").trim();
+
+        if (pmr) {
+          demoPmrSet.add(pmr);
+          if (rawHashesByPmr[pmr] && rawHashesByPmr[pmr] !== demoHash) {
+            set.add(pmr);
+          }
+        }
+      });
+
+      rawData.values.forEach(function(row) {
+        const pmr = normalizePMR_(row[rawPmrIdx]);
+        if (pmr && !demoPmrSet.has(pmr)) {
+          set.add(pmr);
+        }
+      });
+    }
+  }
+
   return set;
 }
+
 
 function processDemoPDataWithFillBlankMask_(data, changedPMRs) {
   if (!data || !data.values || !data.values.length) return [];
@@ -9127,6 +9318,9 @@ function processDemoP() {
 
     lockFinalOutputRowHeights_(sheet, "Demo P");
     markRuntimeStep_(timing, "Lock Demo P final row heights");
+
+    const trimmedDemoRows = trimExcessRows_(sheet, 1000);
+    markRuntimeStep_(timing, "Trim Demo P excess blank rows", "Rows removed: " + trimmedDemoRows);
 
     writeRuntimeTimingReport_(timing);
 
@@ -9886,7 +10080,9 @@ function buildMonthlyChangeReportForMonth_(monthParts, timing) {
     sectionData.disenrollmentPMRs.size +
     sectionData.demographicPMRs.size +
     sectionData.caseloadPMRs.size +
-    sectionData.contactPMRs.size;
+    sectionData.contactPMRs.size +
+    sectionData.bannerPMRs.size +
+    sectionData.otherPMRs.size;
 
 
   if (totalPMRs === 0) {
@@ -9943,7 +10139,9 @@ notify_(
     `Disenrollments: ${sectionData.disenrollmentPMRs.size}\n` +
     `Demographic Changes: ${sectionData.demographicPMRs.size}\n` +
     `Caseload Changes: ${sectionData.caseloadPMRs.size}\n` +
-    `Contact Changes: ${sectionData.contactPMRs.size}`
+    `Contact Changes: ${sectionData.contactPMRs.size}\n` +
+    `Banner Summary Changes: ${sectionData.bannerPMRs.size}\n` +
+    `Other Changes: ${sectionData.otherPMRs.size}`
   );
 
 
@@ -9976,7 +10174,9 @@ function getOrBuildMonthlyChangeReport_(ss, monthParts, currentDemo, previousDem
     sectionData.disenrollmentPMRs.size +
     sectionData.demographicPMRs.size +
     sectionData.caseloadPMRs.size +
-    sectionData.contactPMRs.size;
+    sectionData.contactPMRs.size +
+    sectionData.bannerPMRs.size +
+    sectionData.otherPMRs.size;
 
 
   if (totalPMRs === 0) return null;
@@ -10009,28 +10209,54 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
   const previousData = getRawDemoPDataForCompare_(previousDemo);
   const currentData = getRawDemoPDataForCompare_(currentDemo);
 
-
   const enrollmentPMRs = new Set();
   const disenrollmentPMRs = new Set();
   const demographicPMRs = new Set();
   const caseloadPMRs = new Set();
   const contactPMRs = new Set();
   const bannerPMRs = new Set();
-
+  const otherPMRs = new Set();
 
   const demographicChangedColumnsByPMR = new Map();
   const caseloadChangedColumnsByPMR = new Map();
   const contactChangedColumnsByPMR = new Map();
   const bannerChangedColumnsByPMR = new Map();
+  const otherChangedColumnsByPMR = new Map();
 
+  const trackedFields = new Set([].concat(
+    RAW_DEMO_P_DEMOGRAPHIC_FIELDS,
+    RAW_DEMO_P_CONTACT_FIELDS,
+    RAW_DEMO_P_CASELOAD_FIELDS,
+    RAW_DEMO_P_BANNER_FIELDS,
+    RAW_DEMO_P_ENROLLMENT_FIELDS,
+    RAW_DEMO_P_DISENROLLMENT_FIELDS
+  ));
+  const systemFields = new Set([
+    "",
+    "Primary PMR Row",
+    "Sort Order",
+    "Update Status",
+    "Update Month",
+    "Source Sheet",
+    "Columns Updated",
+    "Last Updated At",
+    "Source Hash",
+    "Previous Source Hash",
+    "Source Workflow",
+    "Demo P Update Status",
+    "Demo P Update Month",
+    "Demo P Source Sheet"
+  ]);
+  const otherFields = currentData.headers.filter(function(header) {
+    const cleanHeader = String(header || "").trim();
+    return cleanHeader && !trackedFields.has(cleanHeader) && !systemFields.has(cleanHeader);
+  });
 
   currentData.rowsByPMR.forEach((currentRows, pmr) => {
     const previousRows = previousData.rowsByPMR.get(pmr) || [];
 
-
     const capitationHeader = "Capitation Date";
     const disenrollEffectiveHeader = "Disenrollment Effective Date";
-
 
     const mostRecentCapitationDate = getMostRecentDateFromRowsByHeader_(
       currentRows,
@@ -10038,9 +10264,7 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       capitationHeader
     );
 
-
     const isEnrollmentPMR = isSameDate_(mostRecentCapitationDate, monthParts.firstDay);
-
 
     const isDisenrollmentPMR =
       currentRows.some(item => {
@@ -10050,24 +10274,18 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
           disenrollEffectiveHeader
         );
 
-
         return isSameDate_(effectiveDate, monthParts.firstDay);
       });
-
 
     if (isEnrollmentPMR) enrollmentPMRs.add(pmr);
     if (isDisenrollmentPMR) disenrollmentPMRs.add(pmr);
 
-
     if (isEnrollmentPMR || isDisenrollmentPMR) return;
-
 
     if (isParticipantEnrollmentStatusDisenrolled_(currentRows, currentData.headerMap)) return;
 
-
     const currentDobRows = rowsWithDOBOnlyForSection_(currentRows, currentData.headerMap);
     const previousDobRows = rowsWithDOBOnlyForSection_(previousRows, previousData.headerMap);
-
 
     const demographicChangedColumns = getChangedColumnsForSectionRows_(
       currentDobRows,
@@ -10079,12 +10297,10 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       previousData.headerMap
     );
 
-
     if (demographicChangedColumns.size > 0) {
       demographicPMRs.add(pmr);
       demographicChangedColumnsByPMR.set(pmr, demographicChangedColumns);
     }
-
 
     const caseloadChangedColumns = getChangedColumnsForSectionRows_(
       currentDobRows,
@@ -10096,12 +10312,10 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       previousData.headerMap
     );
 
-
     if (caseloadChangedColumns.size > 0) {
       caseloadPMRs.add(pmr);
       caseloadChangedColumnsByPMR.set(pmr, caseloadChangedColumns);
     }
-
 
     const contactChangedColumns = getChangedColumnsForSectionRows_(
       currentRows,
@@ -10113,12 +10327,10 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       previousData.headerMap
     );
 
-
     if (contactChangedColumns.size > 0) {
       contactPMRs.add(pmr);
       contactChangedColumnsByPMR.set(pmr, contactChangedColumns);
     }
-
 
     const bannerChangedColumns = getChangedColumnsForSectionRows_(
       currentRows,
@@ -10130,29 +10342,42 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
       previousData.headerMap
     );
 
-
     if (bannerChangedColumns.size > 0) {
       bannerPMRs.add(pmr);
       bannerChangedColumnsByPMR.set(pmr, bannerChangedColumns);
     }
-  });
 
+    const otherChangedColumns = getChangedColumnsForSectionRows_(
+      currentRows,
+      previousRows,
+      currentData.headers,
+      previousData.headers,
+      otherFields,
+      currentData.headerMap,
+      previousData.headerMap
+    );
+
+    if (otherChangedColumns.size > 0) {
+      otherPMRs.add(pmr);
+      otherChangedColumnsByPMR.set(pmr, otherChangedColumns);
+    }
+  });
 
   enrollmentPMRs.forEach(pmr => {
     demographicPMRs.delete(pmr);
     caseloadPMRs.delete(pmr);
     contactPMRs.delete(pmr);
     bannerPMRs.delete(pmr);
+    otherPMRs.delete(pmr);
   });
-
 
   disenrollmentPMRs.forEach(pmr => {
     demographicPMRs.delete(pmr);
     caseloadPMRs.delete(pmr);
     contactPMRs.delete(pmr);
     bannerPMRs.delete(pmr);
+    otherPMRs.delete(pmr);
   });
-
 
   return {
     previousData: previousData,
@@ -10163,12 +10388,15 @@ function compareRawDemoPForSectionReport_(previousDemo, currentDemo, monthParts)
     caseloadPMRs: caseloadPMRs,
     contactPMRs: contactPMRs,
     bannerPMRs: bannerPMRs,
+    otherPMRs: otherPMRs,
     demographicChangedColumnsByPMR: demographicChangedColumnsByPMR,
     caseloadChangedColumnsByPMR: caseloadChangedColumnsByPMR,
     contactChangedColumnsByPMR: contactChangedColumnsByPMR,
-    bannerChangedColumnsByPMR: bannerChangedColumnsByPMR
+    bannerChangedColumnsByPMR: bannerChangedColumnsByPMR,
+    otherChangedColumnsByPMR: otherChangedColumnsByPMR
   };
 }
+
 
 function rowsWithDOBOnlyForSection_(items, headerMap) {
   const dobIdx = getDOBIndex_(headerMap);
@@ -10653,6 +10881,12 @@ function getMonthlyChangeSectionSpecs_(sectionData) {
       pmrSet: sectionData.bannerPMRs,
       rowMode: "allRows",
       changedColumnsByPMR: sectionData.bannerChangedColumnsByPMR
+    },
+    {
+      title: "Other Changes",
+      pmrSet: sectionData.otherPMRs,
+      rowMode: "dobOnly",
+      changedColumnsByPMR: sectionData.otherChangedColumnsByPMR
     }
   ];
 }
@@ -10811,7 +11045,7 @@ function findMonthlyChangeSectionTitleRow_(sheet, title) {
 }
 
 function findNextMonthlyChangeSectionTitleRow_(sheet, afterRow) {
-  const titles = new Set(["Enrollments", "Disenrollments", "Demographic Changes", "Caseload Changes", "Contact Changes", "Banner Summary Changes"]);
+  const titles = new Set(["Enrollments", "Disenrollments", "Demographic Changes", "Caseload Changes", "Contact Changes", "Banner Summary Changes", "Other Changes"]);
   const lastRow = sheet.getLastRow();
 
 
@@ -10840,7 +11074,7 @@ function getChangedPMRsFromMonthlyChangeReport_(reportSheet) {
   if (lastRow < 1 || lastCol < 1) return result;
 
 
-  const sectionTitles = ["Enrollments", "Disenrollments", "Demographic Changes", "Caseload Changes", "Contact Changes", "Banner Summary Changes", "Banner Changes"];
+  const sectionTitles = ["Enrollments", "Disenrollments", "Demographic Changes", "Caseload Changes", "Contact Changes", "Banner Summary Changes", "Banner Changes", "Other Changes"];
 
 
   let foundSectionLayout = false;
@@ -11067,6 +11301,8 @@ function updateMasterListForMonth_(monthParts) {
     markRuntimeStep_(timing, "Auto-hide previous month sheets");
     restorePreviouslyHiddenSheets_(hiddenSheetNamesAtStart, currentMaster);
     markRuntimeStep_(timing, "Restore previously hidden sheets");
+    const trimmedMasterRows = trimExcessRows_(currentMaster, 1000);
+    markRuntimeStep_(timing, "Trim Master List excess blank rows", "Rows removed: " + trimmedMasterRows);
     writeRuntimeTimingReport_(timing);
     hideSystemAndTestingSheets_(timing);
     notify_(
@@ -11429,7 +11665,7 @@ function createIndexSheet() {
   }
 
   const localRows = [];
-  const seenLocal = new Set([INDEX_SHEET, "Archive Index", "Archive Index Settings"]);
+  const seenLocal = new Set([INDEX_SHEET]);
 
   function localSheetRow_(sheetName) {
     const sh = ss.getSheetByName(sheetName);
@@ -11571,6 +11807,7 @@ function generateArchiveFileIndex_() {
 
 function enforceGlobalSheetSortOrder_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboard = loadDashboardConfig_();
   const currentParts = monthParts || getMonthDateParts_(new Date());
   const currentFirst = currentParts && currentParts.firstDay ? currentParts.firstDay : null;
 
@@ -11588,7 +11825,8 @@ function enforceGlobalSheetSortOrder_(monthParts) {
     if (sheetName.indexOf(DEMO_P_PREFIX) === 0) return 20;
     if (sheetName.indexOf(MONTHLY_CHANGE_REPORT_PREFIX) === 0) return 30;
     if (sheetName.indexOf(MASTER_LIST_PREFIX) === 0) return 40;
-    if (sheetName === DISENROLLED_EXCLUSION_SHEET || sheetName.indexOf("Disenrolled") !== -1) return 50;
+    if (sheetName === DISENROLLED_EXCLUSION_SHEET || sheetName.indexOf("Disenrolled") !== -1 && sheetName !== "Template - Disenrolled Exclusion") return 50;
+    if (sheetName === "Template - Disenrolled Exclusion") return 51;
     if (sheetName === RFF_TEST_DASHBOARD_SHEET || sheetName === "Dashboard Quality Report") return 60;
     if (sheetName === RFF_TIMING_SHEET || sheetName === "Framework Timing Report") return 70;
     if (sheetName === RFF_DASHBOARD_SHEET) return 80;
@@ -11622,8 +11860,10 @@ function enforceGlobalSheetSortOrder_(monthParts) {
   let position = 1;
   let moves = 0;
   orderedSheets.forEach(function(sheet) {
+    const sheetName = name_(sheet);
+    let wasHidden = false;
     try {
-      const wasHidden = typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden();
+      wasHidden = typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden();
       if (wasHidden) sheet.showSheet();
       if (sheet.getIndex() !== position) {
         ss.setActiveSheet(sheet);
@@ -11631,17 +11871,22 @@ function enforceGlobalSheetSortOrder_(monthParts) {
         moves++;
       }
       position++;
-      const inferredType = inferSheetTypeFromName_(name_(sheet));
-      if (inferredType) applyOutputVisibilityPolicy_(sheet, loadDashboardConfig_(), inferredType, null);
-      if (((wasHidden && !inferredType) || isTemplate_(name_(sheet)) || name_(sheet) === RFF_BASE_TEMPLATE_NAME) && !sheet.isSheetHidden()) {
+      if (wasHidden && !sheet.isSheetHidden()) {
         sheet.hideSheet();
+      } else if (!wasHidden && sheet.isSheetHidden()) {
+        sheet.showSheet();
+      }
+      if (!wasHidden) {
+        const inferredType = inferSheetTypeFromName_(sheetName);
+        if (inferredType) applyOutputVisibilityPolicy_(sheet, dashboard, inferredType, null);
       }
     } catch (err) {
-      Logger.log("Global sheet sort skipped for " + name_(sheet) + ": " + err.message);
+      Logger.log("Global sheet sort skipped for " + sheetName + ": " + err.message);
     }
   });
   return moves;
 }
+
 
 function extractFirstDateFromSheetName_(sheetName) {
   const text = String(sheetName || "").trim();
@@ -12517,460 +12762,11 @@ function showSystemSheetsNow() {
 }
 
 
-function runUpdateMasterListMergeAudit() {
-  notify_("Standalone Master List merge audits have been retired. Use Dashboard Quality Report and Framework Timing Report for update review.");
-  return null;
-}
 
-function buildUpdateMasterListMergeAuditForMonth_(monthParts) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const currentDemo = getCurrentDemoPSheet_(monthParts);
-  const sourceMaster = getPreviousMasterListSheet_(monthParts);
 
 
-  if (!currentDemo) {
-    notify_("Current month Demo P was not found. Format Demo P first.");
-    return null;
-  }
 
 
-  if (!sourceMaster) {
-    notify_("Previous month Master List was not found for merge audit.");
-    return null;
-  }
-
-
-  const reportSheet = getMonthlySheetByPrefixAndDate_(
-    ss,
-    MONTHLY_CHANGE_REPORT_PREFIX,
-    monthParts.firstDay,
-    monthParts.lastDay
-  );
-
-
-  if (!reportSheet) {
-    notify_("Monthly Change Report was not found. Create Monthly Change Report first.");
-    return null;
-  }
-
-
-  const changedInfo = getChangedPMRsFromMonthlyChangeReport_(reportSheet);
-  const contactChangePMRs = Array.from(changedInfo.keys())
-    .filter(pmr => changedInfo.get(pmr) && changedInfo.get(pmr).has("Contact Changes"))
-    .sort();
-
-
-  const demoData = getDataValues_(currentDemo, HEADER_ROW, DATA_START_ROW);
-  const masterData = getDataValues_(sourceMaster, HEADER_ROW, DATA_START_ROW);
-
-
-  const demoBlocks = buildMergeRowsByPMRFromData_(demoData);
-  const masterBlocks = buildMergeRowsByPMRFromData_(masterData);
-
-
-  const summaryRows = [];
-  const detailRows = [];
-
-
-  contactChangePMRs.forEach(pmr => {
-    const demoRows = demoBlocks.get(pmr) || [];
-    const masterRows = masterBlocks.get(pmr) || [];
-    const participantName = getMergeAuditParticipantName_(demoRows, demoData.headerMap, masterRows, masterData.headerMap);
-
-
-    const demoKeys = buildSecondaryMergeKeyMapForRows_(demoRows, demoData.headerMap, pmr);
-    const masterKeys = buildSecondaryMergeKeyMapForRows_(masterRows, masterData.headerMap, pmr);
-
-
-    const contactKeys = new Set(
-      [].concat(Array.from(demoKeys.keys()), Array.from(masterKeys.keys()))
-    );
-
-
-    let matchedCount = 0;
-    let updateCount = 0;
-    let addCount = 0;
-    let removeCount = 0;
-    let noActionCount = 0;
-
-
-    contactKeys.forEach(key => {
-      const demoItem = demoKeys.get(key);
-      const masterItem = masterKeys.get(key);
-      const masterSummary = masterItem ? buildMergeAuditContactSummary_(masterItem.values, masterData.headerMap) : "";
-      const demoSummary = demoItem ? buildMergeAuditContactSummary_(demoItem.values, demoData.headerMap) : "";
-
-
-      let auditAction = "";
-      let differenceFound = "";
-      let recommendedAction = "";
-
-
-      if (demoItem && masterItem) {
-        matchedCount++;
-        const changedFields = getMergeAuditChangedFields_(masterItem.values, masterData.headerMap, demoItem.values, demoData.headerMap);
-
-
-        if (changedFields.length > 0) {
-          auditAction = "Update";
-          differenceFound = "Contact exists in both; changed fields: " + changedFields.join(", ");
-          recommendedAction = "Update existing Master List contact row";
-          updateCount++;
-        } else {
-          auditAction = "No action";
-          differenceFound = "Contact exists in both; no compared field differences";
-          recommendedAction = "No Master List contact row change needed";
-          noActionCount++;
-        }
-      } else if (demoItem && !masterItem) {
-        auditAction = "Add";
-        differenceFound = "Contact exists in Demo P only";
-        recommendedAction = "Add new contact row to Master List";
-        addCount++;
-      } else if (!demoItem && masterItem) {
-        auditAction = "Remove";
-        differenceFound = "Contact exists in previous Master List only";
-        recommendedAction = "Remove contact row from Master List";
-        removeCount++;
-      }
-
-
-      detailRows.push([
-        pmr,
-        participantName.lastName,
-        participantName.firstName,
-        auditAction,
-        differenceFound,
-        recommendedAction,
-        masterItem ? masterItem.rowNumber : "",
-        demoItem ? demoItem.rowNumber : "",
-        "Secondary/Contact",
-        "Yes",
-        masterSummary,
-        demoSummary,
-        key
-      ]);
-    });
-
-
-    let recommendation = "No contact row change needed";
-    if (addCount || removeCount || updateCount) {
-      const pieces = [];
-      if (updateCount) pieces.push(updateCount + " update");
-      if (addCount) pieces.push(addCount + " add");
-      if (removeCount) pieces.push(removeCount + " remove");
-      recommendation = pieces.join(", ");
-    }
-
-
-    summaryRows.push([
-      pmr,
-      participantName.lastName,
-      participantName.firstName,
-      masterRows.length,
-      demoRows.length,
-      matchedCount,
-      updateCount,
-      addCount,
-      removeCount,
-      noActionCount,
-      recommendation
-    ]);
-  });
-
-
-  const auditName = "Update Master List Merge Audit";
-  let audit = ss.getSheetByName(auditName);
-  if (audit) ss.deleteSheet(audit);
-  audit = ss.insertSheet(auditName);
-
-
-  audit.getRange("A1").setValue(auditName);
-  audit.getRange("A2").setValue("Date");
-  audit.getRange("B2").setValue(monthParts.firstDay);
-  audit.getRange("C2").setValue("to");
-  audit.getRange("D2").setValue(monthParts.lastDay);
-  audit.getRange("A3").setValue("Audit Scope");
-  audit.getRange("B3").setValue("Contact Changes only - secondary rows only");
-  audit.getRange("C3").setValue("Source Master List");
-  audit.getRange("D3").setValue(sourceMaster.getName());
-  audit.getRange("E3").setValue("Source Demo P");
-  audit.getRange("F3").setValue(currentDemo.getName());
-
-
-  const summaryHeaders = [
-    "PMR #",
-    "Last Name",
-    "First Name",
-    "Master Row Count",
-    "Demo P Row Count",
-    "Contacts Matched",
-    "Contacts To Update",
-    "Contacts To Add",
-    "Contacts To Remove",
-    "Contacts With No Action",
-    "Merge Recommendation"
-  ];
-
-
-  audit.getRange(5, 1, 1, summaryHeaders.length).setValues([summaryHeaders]);
-  if (summaryRows.length) {
-    audit.getRange(6, 1, summaryRows.length, summaryHeaders.length).setValues(summaryRows);
-  } else {
-    audit.getRange(6, 1).setValue("No PMRs were found in the Contact Changes section of the Monthly Change Report.");
-  }
-
-
-  const detailStart = Math.max(8 + summaryRows.length, 8);
-  audit.getRange(detailStart, 1).setValue("Contact Change Details");
-  const detailHeaders = [
-    "PMR #",
-    "Last Name",
-    "First Name",
-    "Audit Action",
-    "Difference Found",
-    "Recommended Master List Action",
-    "Master Row #",
-    "Demo P Row #",
-    "Row Type",
-    "Secondary Row Only",
-    "Master Contact Summary",
-    "Demo P Contact Summary",
-    "Contact Match Key"
-  ];
-
-
-  audit.getRange(detailStart + 1, 1, 1, detailHeaders.length).setValues([detailHeaders]);
-  if (detailRows.length) {
-    audit.getRange(detailStart + 2, 1, detailRows.length, detailHeaders.length).setValues(detailRows);
-  }
-
-
-  applyStandardFormatting_(audit, {
-    sheetType: SHEET_TYPE.MASTER_LIST_CHANGE_LOG,
-    title: auditName,
-    startDate: monthParts.firstDay,
-    endDate: monthParts.lastDay,
-    renameSheet: false
-  });
-
-  return audit;
-}
-
-function buildUpdateMasterListPrimaryRowAuditForMonth_(monthParts) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const currentDemo = getCurrentDemoPSheet_(monthParts);
-  const sourceMaster = getPreviousMasterListSheet_(monthParts);
-
-
-  if (!currentDemo || !sourceMaster) return null;
-
-
-  const reportSheet = getMonthlySheetByPrefixAndDate_(
-    ss,
-    MONTHLY_CHANGE_REPORT_PREFIX,
-    monthParts.firstDay,
-    monthParts.lastDay
-  );
-
-
-  if (!reportSheet) return null;
-
-
-  const changedInfo = getChangedPMRsFromMonthlyChangeReport_(reportSheet);
-  const primarySections = new Set(["Demographic Changes", "Caseload Changes", "Banner Changes"]);
-
-
-  const primaryChangePMRs = Array.from(changedInfo.keys())
-    .filter(pmr => {
-      const sections = changedInfo.get(pmr);
-      if (!sections) return false;
-      return Array.from(sections).some(section => primarySections.has(section));
-    })
-    .sort();
-
-
-  const demoData = getDataValues_(currentDemo, HEADER_ROW, DATA_START_ROW);
-  const masterData = getDataValues_(sourceMaster, HEADER_ROW, DATA_START_ROW);
-
-
-  const demoBlocks = buildMergeRowsByPMRFromData_(demoData);
-  const masterBlocks = buildMergeRowsByPMRFromData_(masterData);
-
-
-  const summaryRows = [];
-  const detailRows = [];
-
-
-  primaryChangePMRs.forEach(pmr => {
-    const demoRows = demoBlocks.get(pmr) || [];
-    const masterRows = masterBlocks.get(pmr) || [];
-    const participantName = getMergeAuditParticipantName_(demoRows, demoData.headerMap, masterRows, masterData.headerMap);
-    const sections = Array.from(changedInfo.get(pmr) || []).filter(section => primarySections.has(section)).join(" | ");
-
-
-    const demoPrimary = getPrimaryMergeRowItem_(demoRows, demoData.headerMap);
-    const masterPrimary = getPrimaryMergeRowItem_(masterRows, masterData.headerMap);
-
-
-    if (!demoPrimary && !masterPrimary) {
-      summaryRows.push([
-        pmr,
-        participantName.lastName,
-        participantName.firstName,
-        sections,
-        "",
-        "",
-        0,
-        "No primary row found in either source",
-        "Review PMR manually"
-      ]);
-      return;
-    }
-
-
-    if (demoPrimary && !masterPrimary) {
-      summaryRows.push([
-        pmr,
-        participantName.lastName,
-        participantName.firstName,
-        sections,
-        "",
-        demoPrimary.rowNumber,
-        0,
-        "Primary row exists in Demo P only",
-        "Add PMR block or add primary row to Master List"
-      ]);
-      return;
-    }
-
-
-    if (!demoPrimary && masterPrimary) {
-      summaryRows.push([
-        pmr,
-        participantName.lastName,
-        participantName.firstName,
-        sections,
-        masterPrimary.rowNumber,
-        "",
-        0,
-        "Primary row exists in previous Master List only",
-        "Review/remove PMR block"
-      ]);
-      return;
-    }
-
-
-    const changedColumns = getPrimaryRowChangedColumnDetails_(
-      masterPrimary.values,
-      masterData.headerMap,
-      demoPrimary.values,
-      demoData.headerMap
-    );
-
-
-    changedColumns.forEach(change => {
-      detailRows.push([
-        pmr,
-        participantName.lastName,
-        participantName.firstName,
-        sections,
-        masterPrimary.rowNumber,
-        demoPrimary.rowNumber,
-        change.column,
-        change.masterValue,
-        change.demoValue,
-        "Update Master List primary row column"
-      ]);
-    });
-
-
-    summaryRows.push([
-      pmr,
-      participantName.lastName,
-      participantName.firstName,
-      sections,
-      masterPrimary.rowNumber,
-      demoPrimary.rowNumber,
-      changedColumns.length,
-      changedColumns.map(item => item.column).join(", "),
-      changedColumns.length ? "Update primary row columns listed in detail section" : "No compared primary-row column differences found"
-    ]);
-  });
-
-
-  const auditName = "Update Master List Primary Row Audit";
-  let audit = ss.getSheetByName(auditName);
-  if (audit) ss.deleteSheet(audit);
-  audit = ss.insertSheet(auditName);
-
-
-  audit.getRange("A1").setValue(auditName);
-  audit.getRange("A2").setValue("Date");
-  audit.getRange("B2").setValue(monthParts.firstDay);
-  audit.getRange("C2").setValue("to");
-  audit.getRange("D2").setValue(monthParts.lastDay);
-  audit.getRange("A3").setValue("Audit Scope");
-  audit.getRange("B3").setValue("Primary rows only - Demographic, Caseload, and Banner Changes");
-  audit.getRange("C3").setValue("Source Master List");
-  audit.getRange("D3").setValue(sourceMaster.getName());
-  audit.getRange("E3").setValue("Source Demo P");
-  audit.getRange("F3").setValue(currentDemo.getName());
-
-
-  const summaryHeaders = [
-    "PMR #",
-    "Last Name",
-    "First Name",
-    "Monthly Change Sections",
-    "Master Primary Row #",
-    "Demo P Primary Row #",
-    "Columns To Update Count",
-    "Columns To Update",
-    "Primary Row Recommendation"
-  ];
-
-
-  audit.getRange(5, 1, 1, summaryHeaders.length).setValues([summaryHeaders]);
-  if (summaryRows.length) {
-    audit.getRange(6, 1, summaryRows.length, summaryHeaders.length).setValues(summaryRows);
-  } else {
-    audit.getRange(6, 1).setValue("No PMRs were found in Demographic, Caseload, or Banner Changes.");
-  }
-
-
-  const detailStart = Math.max(8 + summaryRows.length, 8);
-  audit.getRange(detailStart, 1).setValue("Primary Row Column Update Details");
-  const detailHeaders = [
-    "PMR #",
-    "Last Name",
-    "First Name",
-    "Monthly Change Sections",
-    "Master Row #",
-    "Demo P Row #",
-    "Column To Update",
-    "Current Master List Value",
-    "New Demo P Value",
-    "Recommended Master List Action"
-  ];
-
-
-  audit.getRange(detailStart + 1, 1, 1, detailHeaders.length).setValues([detailHeaders]);
-  if (detailRows.length) {
-    audit.getRange(detailStart + 2, 1, detailRows.length, detailHeaders.length).setValues(detailRows);
-  }
-
-
-  applyStandardFormatting_(audit, {
-    sheetType: SHEET_TYPE.MASTER_LIST_CHANGE_LOG,
-    title: auditName,
-    startDate: monthParts.firstDay,
-    endDate: monthParts.lastDay,
-    renameSheet: false
-  });
-
-  return audit;
-}
 
 function getPrimaryMergeRowItem_(rows, headerMap) {
   const primaryIdx = headerMap ? headerMap["Primary PMR Row"] : undefined;
@@ -13302,7 +13098,9 @@ function createDisenrolledList() {
     const result = moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts);
     markFrameworkStep_(timing, "Copy disenrolled primary records and remove rows: " + result.rowsCopied + " copied, " + result.rowsRemoved + " removed");
     setLastRawDataDisenrolledBuildResult_(result);
-    notify_("Disenrolled Exclusion updated. PMRs identified: " + result.pmrsRemoved + "; primary rows written: " + result.rowsCopied + "; Demo P rows removed: " + result.rowsRemoved + ".");
+    const oldRowsHidden = hideOldDisenrolledRows_(exclusionSheet);
+    markFrameworkStep_(timing, "Hide old Disenrolled Exclusion rows", "Rows hidden: " + oldRowsHidden);
+    notify_("Disenrolled Exclusion updated. PMRs identified: " + result.pmrsRemoved + "; primary rows written: " + result.rowsCopied + "; Demo P rows removed: " + result.rowsRemoved + "; old rows hidden: " + oldRowsHidden + ".");
     return result;
   });
 }
@@ -14384,8 +14182,8 @@ function runDashboardQualityFull() {
     try {
       runDashboardQualitySectionIfDue_(RFF_HEALTH_CHECK_SHEET, "Section H Framework Health Check", runFrameworkHealthCheck, timing);
       runDashboardQualitySectionIfDue_(RFF_PERFORMANCE_SUMMARY_KEY, "Section I Performance Summary", runDashboardQualityPerformanceSummary_, timing);
-      runDashboardQualitySectionIfDue_(RFF_MASTER_LIST_HEALTH_KEY, "Section J Master List Health Check", runDashboardQualityMasterListHealthCheck_, timing);
-      runDashboardQualitySectionIfDue_(RFF_CP_SYNC_DIAGNOSTICS_KEY, "Section K Care Plan Sync Diagnostics", runDashboardQualityCarePlanSyncDiagnostics_, timing);
+      runDashboardQualitySectionIfDue_(RFF_MASTER_LIST_HEALTH_KEY, "Section J Master List Validation", runDashboardQualityMasterListHealthCheck_, timing);
+      runDashboardQualitySectionIfDue_(RFF_CP_SYNC_DIAGNOSTICS_KEY, "Section K Care Plan Sync Validation", runDashboardQualityCarePlanSyncDiagnostics_, timing);
       runDashboardQualitySectionIfDue_(RFF_WORKFLOW_SYNC_VERIFICATION_KEY, "Section L Workflow & Synchronization Verification", runDashboardQualityWorkflowSyncVerification_, timing);
     } finally {
       RFF_DASHBOARD_QUALITY_DEFER_WRITES_ = previousDefer;
@@ -14410,8 +14208,8 @@ function runDashboardQualityFull() {
     const sectionWrites = [
       { key: RFF_HEALTH_CHECK_SHEET, title: "SECTION H - FRAMEWORK HEALTH CHECK", rows: getDashboardQualitySectionRows_(RFF_HEALTH_CHECK_SHEET) },
       { key: RFF_PERFORMANCE_SUMMARY_KEY, title: "SECTION I - PERFORMANCE SUMMARY", rows: getDashboardQualitySectionRows_(RFF_PERFORMANCE_SUMMARY_KEY) },
-      { key: RFF_MASTER_LIST_HEALTH_KEY, title: "SECTION J - MASTER LIST HEALTH CHECK", rows: getDashboardQualitySectionRows_(RFF_MASTER_LIST_HEALTH_KEY) },
-      { key: RFF_CP_SYNC_DIAGNOSTICS_KEY, title: "SECTION K - CARE PLAN SYNC DIAGNOSTICS", rows: getDashboardQualitySectionRows_(RFF_CP_SYNC_DIAGNOSTICS_KEY) },
+      { key: RFF_MASTER_LIST_HEALTH_KEY, title: "SECTION J - MASTER LIST VALIDATION", rows: getDashboardQualitySectionRows_(RFF_MASTER_LIST_HEALTH_KEY) },
+      { key: RFF_CP_SYNC_DIAGNOSTICS_KEY, title: "SECTION K - CARE PLAN SYNC VALIDATION", rows: getDashboardQualitySectionRows_(RFF_CP_SYNC_DIAGNOSTICS_KEY) },
       { key: RFF_WORKFLOW_SYNC_VERIFICATION_KEY, title: "SECTION L - WORKFLOW & SYNCHRONIZATION VERIFICATION", rows: getDashboardQualitySectionRows_(RFF_WORKFLOW_SYNC_VERIFICATION_KEY) },
       { key: "Summary", title: "SECTION M - SUMMARY", rows: summaryRows },
       { key: "Signoff", title: "SECTION N - SIGNOFF", rows: signoffRows.slice(1) }
@@ -14457,9 +14255,9 @@ function repairAllTemplateDateFormats() {
 }
 
 
-const RFF_MASTER_LIST_HEALTH_KEY = "Master List Health Check";
+const RFF_MASTER_LIST_HEALTH_KEY = "Master List Validation";
 
-const RFF_CP_SYNC_DIAGNOSTICS_KEY = "Care Plan Sync Diagnostics";
+const RFF_CP_SYNC_DIAGNOSTICS_KEY = "Care Plan Sync Validation";
 
 const RFF_WORKFLOW_SYNC_VERIFICATION_KEY = "Workflow & Synchronization Verification";
 
@@ -14487,8 +14285,8 @@ const RFF_DASHBOARD_QUALITY_SECTIONS = [
   { key: RFF_TEST6_DATE_FORMAT_SHEET, title: "SECTION G - DATE FORMAT INTEGRITY VALIDATION" },
   { key: RFF_HEALTH_CHECK_SHEET, title: "SECTION H - FRAMEWORK HEALTH CHECK" },
   { key: RFF_PERFORMANCE_SUMMARY_KEY, title: "SECTION I - PERFORMANCE SUMMARY" },
-  { key: RFF_MASTER_LIST_HEALTH_KEY, title: "SECTION J - MASTER LIST HEALTH CHECK" },
-  { key: "Care Plan Sync Diagnostics", title: "SECTION K - CARE PLAN SYNC DIAGNOSTICS" },
+  { key: RFF_MASTER_LIST_HEALTH_KEY, title: "SECTION J - MASTER LIST VALIDATION" },
+  { key: RFF_CP_SYNC_DIAGNOSTICS_KEY, title: "SECTION K - CARE PLAN SYNC VALIDATION" },
   { key: RFF_WORKFLOW_SYNC_VERIFICATION_KEY, title: "SECTION L - WORKFLOW & SYNCHRONIZATION VERIFICATION" },
   { key: "Summary", title: "SECTION M - SUMMARY" },
   { key: "Signoff", title: "SECTION N - SIGNOFF" }
@@ -14748,18 +14546,7 @@ function initializeSystemSheets_() {
 
 function deleteLegacyOperationalAndDiagnosticSheets_() {
   const legacySheetNames = [
-    "Timing Summary Report",
-    "Update Master List Merge Audit",
-    "Update Master List Primary Row Audit",
-    "Format Demo P Timing",
-    "Update Master List Timing",
-    "Create Master List Timing",
-    "Master List Health Check",
-    "Care Plan Sync Diagnostics",
-    "Monthly Change Validation",
-    MASTER_LIST_CHANGE_LOG_SHEET,
-    "Archive Index",
-    "Archive Index Settings"
+    MASTER_LIST_CHANGE_LOG_SHEET
   ];
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   legacySheetNames.forEach(function(sheetName) {
@@ -15026,8 +14813,8 @@ function getTimingProcessNameForDashboardQualitySection_(sectionKey) {
   if (sectionKey === RFF_HEALTH_CHECK_SHEET) return "Framework Health Check";
   if (sectionKey === "Signoff") return "Dashboard Quality Signoff";
   if (sectionKey === "Summary") return "Dashboard Quality Summary";
-  if (sectionKey === RFF_MASTER_LIST_HEALTH_KEY) return "Master List Health Check";
-  if (sectionKey === RFF_CP_SYNC_DIAGNOSTICS_KEY) return "Care Plan Sync Diagnostics";
+  if (sectionKey === RFF_MASTER_LIST_HEALTH_KEY) return "Master List Validation";
+  if (sectionKey === RFF_CP_SYNC_DIAGNOSTICS_KEY) return "Care Plan Sync Validation";
   if (sectionKey === RFF_WORKFLOW_SYNC_VERIFICATION_KEY) return "Workflow & Synchronization Verification";
   if (sectionKey === RFF_SYSTEM_SHEET_VERIFICATION_KEY) return "System Sheet Verification";
   return "";
@@ -15104,8 +14891,6 @@ function deleteLegacyStandaloneQualityReports_() {
     RFF_TEST10_DASHBOARD_AUDIT_SHEET,
     RFF_HEALTH_CHECK_SHEET,
     RFF_VALIDATION_SHEET,
-    "Master List Health Check",
-    "Care Plan Sync Diagnostics"
   ].forEach(deleteLegacyQualityReportSheet_);
 }
 
@@ -15643,8 +15428,8 @@ function appendCombinedDashboardSignOffRows_(rows) {
   rows.push(["Date Formatting", getReportOverallStatus_(RFF_TEST6_DATE_FORMAT_SHEET, 7), getReportFailureNotes_(RFF_TEST6_DATE_FORMAT_SHEET, 7)]);
   rows.push(["Framework Health Check", frameworkHealth.status, frameworkHealth.notes]);
   rows.push(["Performance Summary", performance.status, performance.notes]);
-  rows.push(["Master List Health Check", masterHealth.status, masterHealth.notes]);
-  rows.push(["Care Plan Sync Diagnostics", carePlanSync.status, carePlanSync.notes]);
+  rows.push(["Master List Validation", masterHealth.status, masterHealth.notes]);
+  rows.push(["Care Plan Sync Validation", carePlanSync.status, carePlanSync.notes]);
   rows.push(["Workflow & Synchronization Verification", workflowVerification.status, workflowVerification.notes]);
 }
 
@@ -15671,8 +15456,8 @@ function buildFrameworkSummaryRows_() {
   rows.push(["Date Format Integrity Validation", dateIntegrity.status, dateIntegrity.notes, "Dashboard Quality Report Section G"]);
   rows.push(["Framework Health Check", frameworkHealth.status, frameworkHealth.notes, "Dashboard Quality Report Section H"]);
   rows.push(["Performance Summary", performance.status, performance.notes, "Dashboard Quality Report Section I"]);
-  rows.push(["Master List Health Check", masterHealth.status, masterHealth.notes, "Dashboard Quality Report Section J"]);
-  rows.push(["Care Plan Sync Diagnostics", getStoredSectionStatusAndNotes_(RFF_CP_SYNC_DIAGNOSTICS_KEY, 2).status, getStoredSectionStatusAndNotes_(RFF_CP_SYNC_DIAGNOSTICS_KEY, 2).notes, "Dashboard Quality Report Section K"]);
+  rows.push(["Master List Validation", masterHealth.status, masterHealth.notes, "Dashboard Quality Report Section J"]);
+  rows.push(["Care Plan Sync Validation", getStoredSectionStatusAndNotes_(RFF_CP_SYNC_DIAGNOSTICS_KEY, 2).status, getStoredSectionStatusAndNotes_(RFF_CP_SYNC_DIAGNOSTICS_KEY, 2).notes, "Dashboard Quality Report Section K"]);
   rows.push(["Workflow & Synchronization Verification", workflowVerification.status, workflowVerification.notes, "Dashboard Quality Report Section L"]);
 
   const anyFail = rows.some(function(r) { return r[1] === "FAIL"; });
