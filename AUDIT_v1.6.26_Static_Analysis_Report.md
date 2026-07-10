@@ -1,411 +1,736 @@
 # Google Apps Script Static Analysis Report — v1.6.26 Production Script
-
-Source audited: `Current_Production Script/v.1.6.26_Production_Script`.
-
-## Executive findings
-
-The script parses as JavaScript under Node's syntax checker, but the audit found several runtime-risk defects and performance traps in the requested prisms. The highest-risk items are: silent formatting failures that allow workflows to continue after partial API failure, per-column/per-cell Spreadsheet API fallback loops, an off-by-one row range that targets one blank row below an empty Demo P data region, legacy framework-test artifacts that survived the purge, and Monthly Change comparison paths that repeatedly rebuild sorted signatures per PMR/field.
-
----
-
-## 1. OFF-BY-ONE & BOUNDARY ERRORS
-
-### Finding 1.1 — Empty Demo P formatting targets row 5 even when no data exists
-
-**Function/context:** `enforceDemoPPostFlattenFormatting_`, immediately after sorting the Demo P sheet.
-
-**Risk:** The function applies wrapping to `Math.max(demoSheet.getLastRow() - DATA_START_ROW + 1, 1)` rows. If `getLastRow()` is `4` or lower, this writes formatting to row `5` even though there are no data rows. This does not crash, but it silently creates a phantom formatted data row and can inflate perceived used range behavior in later formatting/audit routines.
-
-**Fix snippet:**
-
-```javascript
-function enforceDemoPPostFlattenFormatting_(demoSheet) {
-  if (!demoSheet) return;
-  const dashboard = loadDashboardConfig_();
-  const headers = getHeadersForSheetType_(dashboard, SHEET_TYPE.DEMO_P);
-
-  applyColumnWidths_(demoSheet, dashboard, headers);
-  applyHiddenColumnSettings_(demoSheet, dashboard, headers);
-  sortSheetAlphabeticallyByParticipantName_(demoSheet);
-
-  const lastRow = demoSheet.getLastRow();
-  const lastCol = Math.max(demoSheet.getLastColumn(), 1);
-  if (lastRow >= DATA_START_ROW) {
-    demoSheet
-      .getRange(DATA_START_ROW, 1, lastRow - DATA_START_ROW + 1, lastCol)
-      .setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
-  }
-  lockFinalOutputRowHeights_(demoSheet, "Demo P");
-}
-```
-
-### Finding 1.2 — Date/number format enforcement formats row 5 when the requested row count has no data rows
-
-**Function/context:** `enforceDateAndNumberFormatsForHeaders_`, `dataRows = Math.max(rowCount - dataStartRow + 1, 1)`.
-
-**Risk:** The same boundary inflation appears in the global date/number formatter. If the caller passes a `rowCount` less than `DATA_START_ROW`, the function formats a synthetic row 5. This is not a negative-count crash, but it violates the row-governance model and can create formatting artifacts below an otherwise empty report.
-
-**Fix snippet:**
-
-```javascript
-function enforceDateAndNumberFormatsForHeaders_(sheet, dashboard, headers, rowCount, logPrefix) {
-  const globals = dashboard.globals || {};
-  const dataStartRow = Number(globals.dataStartRow || DATA_START_ROW);
-  const actualRowCount = Number(rowCount || 0);
-  if (!sheet || !headers || !headers.length || actualRowCount < dataStartRow) return;
-
-  const dataRows = actualRowCount - dataStartRow + 1;
-  const dataEndRow = dataStartRow + dataRows - 1;
-  const rangesByFormat = {};
-  // existing batching logic continues here...
-}
-```
-
-### Finding 1.3 — Section G date-format repair also formats a synthetic row when templates are shorter than row 5
-
-**Function/context:** `repairDateFormatForSectionG_`, `dataRows = Math.max(sheet.getMaxRows() - dataStartRow + 1, 1)`.
-
-**Risk:** For undersized sheets/templates, the repair path formats at least one row at `DATA_START_ROW` even when the sheet has no data area. Because this function is invoked from validation/repair code, it can mutate templates during an audit path and mask the real problem.
-
-**Fix snippet:**
-
-```javascript
-function repairDateFormatForSectionG_(sheet, globals, check) {
-  try {
-    const dataStartRow = Number(globals.dataStartRow || DATA_START_ROW);
-    const maxRows = sheet.getMaxRows();
-    if (maxRows < dataStartRow) return false;
-
-    const dataRows = maxRows - dataStartRow + 1;
-    const sampleRows = Math.min(25, dataRows);
-    sheet.getRange(dataStartRow, check.column, dataRows, 1)
-      .setNumberFormat(check.expectedSheetsFormat);
-    sheet.getRange(dataStartRow, check.column, sampleRows, 1)
-      .setNumberFormat(check.expectedSheetsFormat);
-    return true;
-  } catch (err) {
-    throw new Error("Section G date format repair failed for " + sheet.getName() + " / " + check.header + ": " + err.message);
-  }
-}
-```
-
----
-
-## 2. SILENT FAILURES & DANGEROUS TRY/CATCH BLOCKS
-
-### Finding 2.1 — Alternating-color failure is swallowed and workflow continues with stale styling
-
-**Function/context:** `applyDashboardSortOrderAlternatingColors_`, `dataRange.setBackgrounds(backgrounds)` catch.
-
-**Risk:** A failed bulk background write is caught and only logged. If this happens after data has changed, row grouping cues can be stale/misleading while the workflow reports success.
-
-**Fix snippet:**
-
-```javascript
-try {
-  dataRange.setBackgrounds(backgrounds);
-} catch (err) {
-  throw new Error("Alternating color application failed for " + sheet.getName() + ": " + err.message);
-}
-```
-
-### Finding 2.2 — Title-row standardization failure is swallowed despite mutating report date metadata
-
-**Function/context:** `ensureStandardTitleRows_`, catch only logs `Title row check skipped...`.
-
-**Risk:** The title rows carry report dates. If writing `A2:D2` fails, downstream functions can read stale month boundaries and compare or name sheets against the wrong reporting period.
-
-**Fix snippet:**
-
-```javascript
-} catch (err) {
-  throw new Error("Title row standardization failed for " + sheet.getName() + ": " + err.message);
-}
-```
-
-### Finding 2.3 — Demo P final title/date-format refresh failures are swallowed
-
-**Function/context:** Demo P template refresh/finalization catches around title/date-format operations.
-
-**Risk:** Several Demo P post-processing steps log and continue after failure to apply title/date formats. Since the same sheet is later used by Monthly Change and Master List workflows, continuing after a partial template application can corrupt date comparisons or user interpretation without stopping the workflow.
-
-**Fix snippet:**
-
-```javascript
-try {
-  targetSheet.getRange("A1").setValue(sheetDef.reportTitle || "Demo P");
-} catch (err) {
-  throw new Error("Could not refresh Demo P title after dashboard template apply: " + err.message);
-}
-
-try {
-  // existing Demo P date-format application
-} catch (err) {
-  throw new Error("Could not apply Demo P date format for " + headerName + ": " + err.message);
-}
-```
-
-### Finding 2.4 — Repair validation catches return `false` and let callers keep running after failed repair
-
-**Function/context:** `repairDateFormatForSectionG_`, catch logs and returns `false`.
-
-**Risk:** Validation/repair code is expected to detect and correct template date formats. Returning `false` after an Apps Script API exception hides whether the repair failed because the sheet/range was invalid, protected, or had another structural issue.
-
-**Fix snippet:** Use the throwing catch shown in Finding 1.3, or return a structured failure object and force the caller to mark the dashboard-quality section as hard failure.
-
----
-
-## 3. HIDDEN GOOGLE SHEETS API ABUSE
-
-### Finding 3.1 — Header font-size batching still calls `getRange()` once per header
-
-**Function/context:** Template/header formatting builds `rangesByFontSize` by calling `sheet.getRange(headerRow, index + 1).getA1Notation()` inside `headers.forEach`.
-
-**Risk:** Although the final write uses `RangeList`, every non-default header font size still incurs an API range construction call in an iteration. On wide dashboards/templates, this is avoidable overhead.
-
-**Fix snippet:**
-
-```javascript
-headers.forEach(function(header, index) {
-  const def = dashboard.columnDefinitions[header] || {};
-  const fontSize = Number(def.headerFontSize || defaultHeaderFontSize);
-  if (fontSize === Number(defaultHeaderFontSize)) return;
-  if (!rangesByFontSize[fontSize]) rangesByFontSize[fontSize] = [];
-  rangesByFontSize[fontSize].push(rowColToA1_(headerRow, index + 1));
-});
-
-function rowColToA1_(row, col) {
-  let n = col;
-  let letters = "";
-  while (n > 0) {
-    const r = (n - 1) % 26;
-    letters = String.fromCharCode(65 + r) + letters;
-    n = Math.floor((n - 1) / 26);
-  }
-  return letters + row;
-}
-```
-
-### Finding 3.2 — Number-format fallback performs per-range `getRange().setNumberFormat()` loops
-
-**Function/context:** `enforceDateAndNumberFormatsForHeaders_`, fallback inside `Object.keys(rangesByFormat).forEach`.
-
-**Risk:** The preferred path is batched with `RangeList`, but the fallback loops every A1 range and performs an Apps Script API call per range. If `RangeList` fails due to one malformed/oversized range, the fallback can hammer the API quota and still silently skip failures.
-
-**Fix snippet:**
-
-```javascript
-try {
-  sheet.getRangeList(ranges).setNumberFormat(googleSheetsFormat);
-} catch (err) {
-  throw new Error(
-    (logPrefix || "Date/number format") +
-    " failed for format " + googleSheetsFormat +
-    " on " + sheet.getName() + ": " + err.message
-  );
-}
-```
-
-### Finding 3.3 — Hidden-column fallback loops one column at a time after swallowing the batch failure
-
-**Function/context:** `applyHiddenColumnSettingsInRuns_`, fallback `for (let col = startCol; col < startCol + runLength; col++)` calls `hideColumns`/`showColumns` per column.
-
-**Risk:** This creates a worst-case per-column API loop and masks protected/invalid column failures. In Apps Script, `hideColumns(startCol, runLength)` is the correct bulk API; if that fails, single-column retries are likely to fail for the same structural reason and should not continue silently.
-
-**Fix snippet:**
-
-```javascript
-try {
-  if (currentHidden) {
-    sheet.hideColumns(startCol, runLength);
-  } else {
-    sheet.showColumns(startCol, runLength);
-  }
-} catch (err) {
-  throw new Error(
-    "Hidden column run failed for " + sheet.getName() +
-    " columns " + startCol + "-" + (startCol + runLength - 1) +
-    ": " + err.message
-  );
-}
-```
-
-### Finding 3.4 — Framework Test 9 summary sets column widths inside a loop
-
-**Function/context:** `writeFrameworkTest9Summary_`, loop calls `getColumnWidth()` and `setColumnWidth()` for each column.
-
-**Risk:** This is a surviving framework-test function and it performs column-level API calls in a loop. Even if retained, it should use `setColumnWidths` runs or be removed with the retired test suite.
-
-**Fix snippet:**
-
-```javascript
-// Preferred: delete writeFrameworkTest9Summary_ with the retired Test 9 system.
-// If retained:
-const widths = [190, 90, 420, 120, 120, 120];
-for (let i = 0; i < Math.min(colCount, widths.length); i++) {
-  sheet.setColumnWidths(i + 1, 1, widths[i]);
-}
-```
-
----
-
-## 4. V8 MEMORY LEAKS & O(N^2) TRAPS
-
-### Finding 4.1 — Monthly Change section diff rebuilds sorted signatures once per field, per PMR
-
-**Function/context:** `compareRawDemoPForSectionReport_` calls `getChangedColumnsForSectionRows_` for each section; that function loops fields and calls `buildColumnSignatureForSection_` separately for current and previous rows.
-
-**Risk:** For every PMR and every field, the code maps and sorts the row group twice. With 6,500+ rows and many fields, this becomes a high-constant O(PMR × fields × rows-per-PMR × log(rows-per-PMR)) path and duplicates temporary arrays/strings. It is not strictly quadratic across all rows, but it behaves like an avoidable nested-signature trap.
-
-**Fix snippet:**
-
-```javascript
-function getChangedColumnsForSectionRows_(currentItems, previousItems, currentHeaders, previousHeaders, columnsToCompare, currentHeaderMap, previousHeaderMap) {
-  const changed = new Set();
-  if (!currentItems || !currentItems.length || !previousItems || !previousItems.length) return changed;
-
-  const currentSignatures = buildSignaturesByHeader_(currentItems, currentHeaderMap, columnsToCompare);
-  const previousSignatures = buildSignaturesByHeader_(previousItems, previousHeaderMap, columnsToCompare);
-
-  columnsToCompare.forEach(function(header) {
-    if (currentHeaderMap[header] === undefined || previousHeaderMap[header] === undefined) return;
-    if ((currentSignatures.get(header) || "") !== (previousSignatures.get(header) || "")) changed.add(header);
-  });
-  return changed;
-}
-
-function buildSignaturesByHeader_(items, headerMap, headers) {
-  const out = new Map();
-  headers.forEach(function(header) {
-    const idx = headerMap[header];
-    if (idx === undefined || idx === -1) return;
-    out.set(header, items.map(function(item) {
-      return normalizeCompareValue_(item.values[idx]);
-    }).sort().join("||"));
-  });
-  return out;
-}
-```
-
-### Finding 4.2 — Demo P contact flattening duplicates primary rows with `slice()` and collects all flat rows before writing
-
-**Function/context:** `flattenDemoPContactsToPrimaryRows_`, `const output = primary.slice();`, `flatRows.push(output)`, then bulk clear/write.
-
-**Risk:** This is safe for small sheets, but at 6,500+ rows × wide Demo P headers it duplicates the data array in memory: original `data.values`, grouped arrays, `output` row copies, contact summary strings, and final `flatRows` all coexist until write completion. V8 heap pressure is likely on wide reports.
-
-**Fix snippet:**
-
-```javascript
-// Drop grouped row references as soon as each PMR is flattened and avoid retaining
-// unused contact arrays longer than necessary.
-const flatRows = [];
-grouped.forEach(function(rows, pmr) {
-  const primary = rows.find(function(row) { return isPrimaryPMRRowValue_(row[primaryIdx]); }) || rows[0];
-  const output = primary.slice(0, data.headers.length);
-  let targetCursor = 0;
-  const summaries = [];
-
-  rows.forEach(function(row) {
-    if (row === primary) return;
-    const summary = buildDemoPContactSummaryForFlatRecord_(row, headerMap);
-    if (!summary) return;
-    summaries.push(summary);
-    if (targetCursor < contactTargetIndexes.length) {
-      const targetIdx = contactTargetIndexes[targetCursor++];
-      if (normalizeCompareValue_(output[targetIdx]) === "") output[targetIdx] = summary;
-    }
-  });
-
-  if (summaryIdx !== undefined && summaries.length && normalizeCompareValue_(output[summaryIdx]) === "") {
-    output[summaryIdx] = summaries.join("\n");
-  }
-  flatRows.push(output);
-  grouped.set(pmr, null); // release row group reference earlier
-});
-```
-
-### Finding 4.3 — Monthly Change legacy comparer aligns contact rows by array position rather than stable key
-
-**Function/context:** `compareRawDemoPForChanges_`, contact diff uses `previousRows[i]` vs `currentRows[i]`.
-
-**Risk:** This is both a correctness edge case and a diff-amplification trap. If one contact row is inserted or sorted differently, every subsequent contact row for that PMR appears changed. That can produce inflated Monthly Change reports and unnecessary Master List updates.
-
-**Fix snippet:**
-
-```javascript
-function buildContactCompareMap_(rows, headerMap, pmr) {
-  const map = new Map();
-  (rows || []).forEach(function(item, ordinal) {
-    const key = [
-      pmr,
-      getFieldValueFromRow_(item.values, headerMap, "Contact - First Name"),
-      getFieldValueFromRow_(item.values, headerMap, "Contact - Last Name"),
-      getFieldValueFromRow_(item.values, headerMap, "Relationship"),
-      getFieldValueFromRow_(item.values, headerMap, "Type of Contact")
-    ].map(normalizeCompareValue_).join("|") || ("row#" + ordinal);
-    map.set(key, item);
-  });
-  return map;
-}
-
-// In compareRawDemoPForChanges_ contact section:
-const previousMap = buildContactCompareMap_(previousRows, previousData.headerMap, pmr);
-const currentMap = buildContactCompareMap_(currentRows, currentData.headerMap, pmr);
-const allKeys = new Set([].concat(Array.from(previousMap.keys()), Array.from(currentMap.keys())));
-allKeys.forEach(function(key) {
-  const previousItem = previousMap.get(key) || null;
-  const currentItem = currentMap.get(key) || null;
-  // existing field comparison loop
-});
-```
-
----
-
-## 5. GHOST ARTIFACTS & DEAD CODE
-
-### Finding 5.1 — Retired Framework Test 6, 7, 9, and 10 artifacts remain
-
-**Function/context:** Constants and function-name mappings for retired tests still exist, including `RFF_TEST7_VALIDATION_FAILURE_SHEET`, `RFF_TEST9_SUBHEADER_SHEET`, `runFrameworkTest6DateFormatting`, `runFrameworkTest7IntentionalValidationFailure`, `runFrameworkTest9MonthlyChangeSubheaders`, and `friendlyFrameworkSectionName_` mappings for Tests 6/7/9/10.
-
-**Risk:** The user stated Tests 6, 7, 9, and 10 were purged. Surviving constants/functions can keep old menu/report paths alive, confuse Dashboard Quality output, and allow accidental execution of retired destructive/validation workflows.
-
-**Fix snippet:**
-
-```javascript
-// Delete retired test constants and functions, then remove these mappings:
-// if (sectionKey === RFF_TEST6_DATE_FORMAT_SHEET) return "Framework Test 6 - Date Formatting";
-// if (sectionKey === RFF_TEST7_VALIDATION_FAILURE_SHEET) return "Framework Test 7 - Intentional Validation Failure";
-// if (sectionKey === RFF_TEST9_SUBHEADER_SHEET) return "Framework Test 9 - Monthly Change Subheaders";
-// if (sectionKey === RFF_TEST10_DASHBOARD_AUDIT_SHEET) return "Framework Test 10 - Dashboard Audit";
-```
-
-### Finding 5.2 — Standalone Monthly Change validation is retired but retained as a callable stub
-
-**Function/context:** `validateMonthlyChangeStandalone()` only notifies that the workflow is retired.
-
-**Risk:** A retired function still visible to Apps Script/manual invocation can confuse operators and may still be referenced by menus/triggers. Dead stubs should be removed or kept only as private compatibility wrappers outside UI menus.
-
-**Fix snippet:**
-
-```javascript
-// Remove validateMonthlyChangeStandalone entirely, or make it private and ensure
-// ML_MENU_CALLBACKS contains no references to it.
-function validateMonthlyChangeStandalone_() {
-  throw new Error("Standalone Monthly Change validation has been retired. Use Dashboard Quality Report.");
-}
-```
-
-### Finding 5.3 — Legacy audit names appear to be purged successfully
-
-**Function/context:** Whole-file search for `Update Master List Merge Audit` and `Primary Row Audit`.
-
-**Risk:** No surviving textual references were found for those two named audit systems in v1.6.26. This portion of the purge appears complete.
-
-**Fix snippet:** No change required.
-
----
-
-## Verification performed
-
-- `node --check /tmp/script.js` passed after copying the monolithic script to a temporary `.js` file for syntax checking.
-- Repository search was performed with `rg`/targeted scripts for `try/catch`, Spreadsheet API calls, Monthly Change, Demo P, and retired-test artifacts.
+Source audited: `Current_Production Script/v.1.6.26_Production_Script` (15,678 source lines; 675 `function` declarations detected by static scan).
+## Methodology
+* Parsed the monolithic script with `node --check` after copying it to `/tmp/v1626.js`.
+* Built a function/range inventory with a Python static scanner.
+* Used targeted `rg` searches for swallowed exceptions, one-row boundary inflation, SpreadsheetApp API hot paths, and retired framework-test artifacts.
+* Reviewed the high-risk ranges line by line: template/date formatting, Dashboard Quality, Demo P, Monthly Change, Master List merge/update, hidden column and styling helpers.
+## Executive Summary
+The script is syntactically valid JavaScript and many previously suspected hard failures are already mitigated: `enforceDateAndNumberFormatsForHeaders_`, `repairDateFormatForSectionG_`, and `enforceDemoPPostFlattenFormatting_` all now guard against writing synthetic row 5 ranges when there is no governed data region. The highest remaining risks are operational rather than parser-level: permissive logging catches around template/dashboard formatting, API-heavy fallback loops, retained retired Test 6 surface area, Monthly Change contact comparisons by ordinal position, and several formatting extension helpers that still use `Math.max(..., 1)` to paint a phantom data row.
+## Findings
+### HIGH: Output/template format extension can still paint phantom row 5
+
+`applyGovernedTextAndNumberFormats_` callers pass `Math.max(rowCount - dataStartRow + 1, 1)`, which means empty or short sheets can still get a one-row governed range even though no data row exists. Confirmed at template metadata-only/full-build paths and naked Master List initialization.
+
+**Evidence:** Lines 4385, 4479, 4710, and 11318 call this pattern; line 7429 does the same in universal canvas formatting.
+### HIGH: Hidden-column fallback can multiply Apps Script calls and mask structural failure
+
+`applyHiddenColumnSettingsInRuns_` logs a failed bulk hide/show operation and then retries one column at a time. Protected columns, invalid ranges, or sheet state errors are likely to fail repeatedly while extending runtime and producing partial visibility state.
+
+**Evidence:** Lines 5017-5026 show the per-column fallback.
+### HIGH: Monthly Change legacy comparer aligns contact rows by array position
+
+`compareRawDemoPForChanges_` compares `previousRows[i]` to `currentRows[i]`. If one contact row is inserted, deleted, or sorted differently, all later rows for the same PMR can be reported as changed.
+
+**Evidence:** Lines 10355-10370 start the ordinal comparison loop.
+### HIGH: Monthly Change section signatures rebuild and sort per field
+
+`getChangedColumnsForSectionRows_` loops each field and calls `buildColumnSignatureForSection_` for current and previous rows. That rebuilds maps/sorted strings repeatedly per PMR/section.
+
+**Evidence:** Lines 10205-10216 call the signature builder per header; lines 10222-10232 map/sort/join every time.
+### MEDIUM: Retired Framework Test 6 remains callable and writes Dashboard Quality rows
+
+The code still exposes `runFrameworkTest6DateFormatting`, its core/template checker/repair/report writer, and `writeFrameworkTest6DateFormatReport_`. If Test 6 is considered retired, this is dead operational surface rather than just comments.
+
+**Evidence:** Lines 6885-7051 define this retained Test 6 path.
+### MEDIUM: Template batch creation intentionally continues after individual failures
+
+`createOrRefreshAllReportTemplates` logs a failed template build but continues the batch. This improves batch resilience, but can leave mixed-version templates after a production refresh unless the final notification is treated as failure.
+
+**Evidence:** Line 3768 logs and continues.
+### MEDIUM: Many formatting/style catches downgrade errors to logs
+
+Static search found numerous `Logger.log("... skipped")` catches in dashboard/template/timing styling helpers. Some are acceptable cosmetic best-effort paths, but title rows, date formats, hidden columns, and template signatures are governance-significant and should not all be best effort.
+
+**Evidence:** Examples include lines 4752, 4781, 4828, 5086, 5180, 5256-5285, 5350-5371, and 6062.
+### LOW: Current row-5 boundary fixes are present in key functions
+
+The previous high-risk row-5 issues in date/number enforcement, Section G repair, and Demo P post-flatten wrap are fixed with explicit `rowCount < dataStartRow`, `maxRows < dataStartRow`, and `lastRow >= DATA_START_ROW` guards.
+
+**Evidence:** Lines 4891-4893, 7036-7042, and 8820-8823 confirm these guards.
+### LOW: No TODO/FIXME markers found
+
+The static scan found zero `TODO` or `FIXME` markers, so review cannot rely on developer breadcrumbs; risk is encoded in behavior and catches instead.
+
+**Evidence:** Scan command counted `TODO 0` and `FIXME 0`.
+## Line-by-line Static Inventory
+Every function declaration detected in the monolith is listed below with its source-line range. This is the practical line-by-line map used for review and future remediation triage.
+### Bootstrap/dashboard/defaults
+* Lines 235-241: `h_`.
+* Lines 242-355: `getDefaultColumnDefinitionRows_`.
+* Lines 356-374: `getAllUniqueHeaders_`.
+* Lines 375-474: `getColumnStandards_`.
+* Lines 475-488: `c_`.
+* Lines 489-502: `writeDashboardTitle_`.
+* Lines 503-537: `writeDashboardSection_`.
+* Lines 538-569: `styleDashboard_`.
+* Lines 570-573: `setupReportFormattingDashboard`.
+* Lines 574-582: `appendDashboardSectionRows_`.
+* Lines 583-616: `getResolvedDefaultColumnDefinitionRows_`.
+* Lines 617-691: `writeDashboardDefaultsFast_`.
+* Lines 692-695: `rebuildFormatDashboardDefaults`.
+* Lines 696-710: `setupReportFormattingDashboardFromScriptDefaults_`.
+* Lines 711-729: `normalizeDashboardSheetTypeKey_`.
+* Lines 730-736: `getSheetDefinitionByTypeOrNull_`.
+* Lines 737-742: `getSheetDefinitionByType_`.
+* Lines 743-756: `sortSheetDefinitionsByProductionOrder_`.
+* Lines 757-764: `notify_`.
+* Lines 765-776: `trimExcessRows_`.
+* Lines 777-810: `hideOldDisenrolledRows_`.
+* Lines 811-815: `showQuickStartToast_`.
+* Lines 816-827: `quickSystemSetup`.
+* Lines 828-835: `quickBuildAllTemplates`.
+* Lines 836-840: `notifyErrorWithTiming_`.
+* Lines 841-845: `isBlankCell_`.
+* Lines 846-895: `coerceToValidDate_`.
+* Lines 896-920: `spreadsheetSerialDateToLocalDate_`.
+* Lines 921-925: `isReasonableReportDate_`.
+* Lines 926-929: `createLocalDateOnly_`.
+* Lines 930-934: `getTodayLocalDate_`.
+* Lines 935-959: `getMonthDateParts_`.
+* Lines 960-963: `formatDateForSheetName_`.
+* Lines 964-968: `formatDateDisplay_`.
+* Lines 969-973: `dateKey_`.
+* Lines 974-977: `isSameDate_`.
+* Lines 978-982: `isSameMonth_`.
+* Lines 983-987: `buildMonthlySheetName_`.
+* Lines 988-993: `buildStandardMonthlySheetName_`.
+* Lines 994-1024: `getNewestFormattedMonthlySheetByPrefix_`.
+### Core utilities and timing
+* Lines 1025-1058: `getMonthlySheetByPrefixAndDate_`.
+* Lines 1059-1091: `setUniqueSheetName_`.
+* Lines 1092-1111: `getHeaders_`.
+* Lines 1112-1126: `getHeaderMap_`.
+* Lines 1127-1135: `buildHeaderIndexMap_`.
+* Lines 1136-1142: `findHeaderIndex_`.
+* Lines 1143-1150: `normalizeHeader_`.
+* Lines 1151-1157: `normalizePMR_`.
+* Lines 1158-1161: `getPMRIndex_`.
+* Lines 1162-1165: `getDOBIndex_`.
+* Lines 1166-1184: `normalizeKeyPart_`.
+* Lines 1185-1224: `getDataValues_`.
+* Lines 1225-1258: `getRawDataSourceDataForOutput_`.
+* Lines 1259-1273: `rawDataSourceHeaderRow_`.
+* Lines 1274-1290: `ensurePrimaryPMRRowColumn_`.
+* Lines 1291-1317: `assignPrimaryRowForBlock_`.
+* Lines 1318-1351: `deleteRowNumberBatches_`.
+* Lines 1352-1361: `buildMasterListHeadersBeforeDataCopy_`.
+* Lines 1362-1388: `ensureHeaders_`.
+* Lines 1389-1392: `ensureBannerSummaryOutputHeaders_`.
+* Lines 1393-1406: `ensureContactOutputHeaders_`.
+* Lines 1407-1416: `trimOutputSheetToDataSize_`.
+* Lines 1417-1451: `copyChangedPMRsFromDemoPToMasterList_`.
+* Lines 1452-1457: `applyFinalRowHeightLock_`.
+* Lines 1458-1487: `normalizeCompareValue_`.
+* Lines 1488-1491: `valuesAreEqual_`.
+* Lines 1492-1495: `normalizeText_`.
+* Lines 1496-1499: `normalizeKey_`.
+* Lines 1500-1504: `numberOrDefault_`.
+* Lines 1505-1514: `parseBoolean_`.
+* Lines 1515-1529: `clearHeaderCacheForSheet_`.
+* Lines 1530-1534: `clearSheetRuntimeCachesForSheet_`.
+* Lines 1535-1541: `getHeaderCacheKey_`.
+* Lines 1542-1547: `clearMonthlySheetLookupCache_`.
+* Lines 1548-1554: `getMonthlySheetLookupCacheKey_`.
+* Lines 1555-1558: `getSheetDimensionCacheKey_`.
+* Lines 1559-1564: `clearSheetDimensionCacheForSheet_`.
+* Lines 1565-1584: `getSheetDimensions_`.
+* Lines 1585-1590: `dateOnlyLocalClone_`.
+* Lines 1591-1595: `monthKey_`.
+* Lines 1596-1615: `parseStandardMonthlySheetDateFromName_`.
+* Lines 1616-1650: `buildRowsByPMR_`.
+* Lines 1651-1657: `safeSheetName_`.
+* Lines 1658-1661: `compareValues_`.
+* Lines 1662-1665: `toBool_`.
+* Lines 1666-1669: `truthy_`.
+* Lines 1670-1673: `toNumber_`.
+* Lines 1674-1689: `resizeSheetMinimum_`.
+* Lines 1690-1700: `getThemeColorsFromBase_`.
+* Lines 1701-1705: `getGlobalBorderStyle_`.
+* Lines 1706-1716: `normalizeHex_`.
+* Lines 1717-1723: `hexWithHslLightness_`.
+* Lines 1724-1732: `hexToRgb_`.
+* Lines 1733-1740: `rgbToHex_`.
+* Lines 1741-1762: `rgbToHsl_`.
+* Lines 1763-1785: `hslToRgb_`.
+* Lines 1786-1798: `startRuntimeTiming_`.
+* Lines 1799-1825: `markRuntimeStep_`.
+* Lines 1826-1830: `addRuntimeCounter_`.
+* Lines 1831-1835: `logRuntimeInfo_`.
+* Lines 1836-1840: `logRuntimeWarning_`.
+* Lines 1841-1845: `logRuntimeError_`.
+* Lines 1846-1862: `logRuntimeTiming_`.
+* Lines 1863-1870: `getRuntimeTimingSeverity_`.
+* Lines 1871-1874: `getRuntimeTimingReportName_`.
+* Lines 1875-1880: `writeRuntimeTimingReport_`.
+* Lines 1881-1884: `writeConsolidatedTimingSummaryReport_`.
+* Lines 1885-1902: `writeCombinedFrameworkTimingReport_`.
+* Lines 1903-1906: `getFrameworkTimingRetentionLimit_`.
+* Lines 1907-1910: `getFrameworkTimingReportSheetName_`.
+* Lines 1911-1935: `getFrameworkTimingSectionRegistry_`.
+* Lines 1936-1948: `findFrameworkTimingSectionRow_`.
+* Lines 1949-1961: `findNextFrameworkTimingSectionRow_`.
+* Lines 1962-1980: `collectExistingFrameworkTimingSectionBlocks_`.
+* Lines 1981-1992: `buildDefaultFrameworkTimingSectionBlock_`.
+* Lines 1993-2022: `normalizeFrameworkTimingSectionBlock_`.
+* Lines 2023-2064: `rebuildFrameworkTimingReportShellCompact_`.
+* Lines 2065-2090: `hasFrameworkTimingReportShell_`.
+* Lines 2091-2109: `initializeFrameworkTimingSheet_`.
+* Lines 2110-2113: `ensureFrameworkTimingReport_`.
+* Lines 2114-2127: `trimSheetToColumnCount_`.
+* Lines 2128-2230: `styleFrameworkTimingReport_`.
+* Lines 2231-2238: `getFrameworkTimingSectionForId_`.
+* Lines 2239-2283: `replaceFrameworkTimingSectionRows_`.
+* Lines 2284-2301: `getFrameworkTimingBenchmarkForProcess_`.
+* Lines 2302-2309: `getFrameworkTimingThresholdForSeverity_`.
+* Lines 2310-2318: `ensureFrameworkTimingReportShell_`.
+* Lines 2319-2325: `getFrameworkTimingDetailStartRow_`.
+* Lines 2326-2349: `getFrameworkTimingDetailRows_`.
+* Lines 2350-2370: `getLatestFrameworkTimingRowsByProcess_`.
+* Lines 2371-2380: `getFrameworkTimingBenchmarkSeverity_`.
+* Lines 2381-2389: `getFrameworkTimingModeForStep_`.
+* Lines 2390-2394: `mergeFrameworkTimingModes_`.
+* Lines 2395-2472: `buildFrameworkTimingProcessSummaryRows_`.
+* Lines 2473-2482: `formatTimingTimestampForSummary_`.
+* Lines 2483-2512: `buildFrameworkTimingIssueRows_`.
+* Lines 2513-2529: `buildFrameworkTimingRecommendationRows_`.
+* Lines 2530-2533: `writeFrameworkPerformanceRecommendationsSheet_`.
+* Lines 2534-2573: `getPerformanceRecommendationForTimingStep_`.
+* Lines 2574-2580: `worseTimingSeverity_`.
+* Lines 2581-2606: `appendRuntimeTimingToFrameworkTimingReport_`.
+* Lines 2607-2615: `formatSeconds_`.
+* Lines 2616-2619: `refreshFrameworkTimingReport`.
+* Lines 2620-2673: `writeFrameworkTimingPerformanceRecommendations`.
+* Lines 2674-2748: `onOpen`.
+### Menus, dashboard config, templates
+* Lines 2749-2757: `isFrameworkTimingEnabled_`.
+* Lines 2758-2765: `toggleFrameworkTiming`.
+* Lines 2766-2769: `hideTemplates_`.
+* Lines 2770-2773: `showTemplates_`.
+* Lines 2774-2777: `hideSystemSheets_`.
+* Lines 2778-2781: `showSystemSheets_`.
+* Lines 2782-2785: `formatDashboard`.
+* Lines 2786-2827: `saveActiveLayoutToDashboardSettings`.
+* Lines 2828-2840: `saveFormatDashboardConfigChanges_`.
+* Lines 2841-2859: `resolveSheetDefinitionForLayoutSnapshot_`.
+* Lines 2860-2912: `captureActiveSheetLayoutSnapshot_`.
+* Lines 2913-2920: `getHiddenColumnFlags_`.
+* Lines 2921-2925: `isDateNumberFormat_`.
+* Lines 2926-2938: `getDefaultLayoutSnapshotBorderConfig_`.
+* Lines 2939-2962: `upsertDashboardSheetDefinitionBaseColor_`.
+* Lines 2963-2999: `upsertDashboardColumnDefinitionRows_`.
+* Lines 3000-3027: `getDashboardSectionBounds_`.
+* Lines 3028-3043: `ensureDashboardSectionDataCapacity_`.
+* Lines 3044-3084: `writeDashboardLayoutSnapshotSection_`.
+* Lines 3085-3098: `applyLayoutSnapshotBorder_`.
+* Lines 3099-3207: `clearDiagnosticsAndTimingLogs`.
+* Lines 3208-3212: `clearDashboardConfigCache_`.
+* Lines 3213-3229: `getDashboardConfigCacheKey_`.
+* Lines 3230-3241: `getFormatDashboardSectionNames_`.
+* Lines 3242-3256: `getRequiredFrameworkSheetTypes_`.
+* Lines 3257-3321: `getDefaultGlobalSettingsRows_`.
+* Lines 3322-3330: `getDefaultTitleRowRows_`.
+* Lines 3331-3343: `getDefaultSheetDefinitionRows_`.
+* Lines 3344-3358: `getDefaultSheetDefinitionRowsWithColumnCounts_`.
+* Lines 3359-3371: `getDefaultBehaviorRows_`.
+* Lines 3372-3381: `getDefaultSystemSurfaceRows_`.
+* Lines 3382-3396: `getDefaultSheetHeaderRows_`.
+* Lines 3397-3743: `getDefaultHeaderSets_`.
+* Lines 3744-3783: `createOrRefreshAllReportTemplates`.
+* Lines 3784-3822: `ensureGoldenMasterTemplate_`.
+* Lines 3823-3833: `summarizeTemplateRefreshModes_`.
+* Lines 3834-3840: `hideReportTemplates`.
+* Lines 3841-3847: `showReportTemplates`.
+* Lines 3848-3880: `setReportTemplateVisibility_`.
+* Lines 3881-3888: `validateReportTemplates`.
+* Lines 3889-3898: `validateReportTemplatesCore_`.
+* Lines 3899-3943: `loadDashboardConfig_`.
+* Lines 3944-3965: `buildDashboardSectionIndex_`.
+* Lines 3966-4010: `loadGlobalSettings_`.
+* Lines 4011-4045: `loadTitleRows_`.
+* Lines 4046-4071: `parseTitleRowConfigRow_`.
+* Lines 4072-4077: `normalizeTitleTargetCell_`.
+* Lines 4078-4085: `getTitleRowConfigForSheet_`.
+* Lines 4086-4093: `getThemeFillForTitleRow_`.
+* Lines 4094-4100: `toWrapStrategy_`.
+* Lines 4101-4128: `loadSheetDefinitions_`.
+* Lines 4129-4162: `loadSheetHeaders_`.
+* Lines 4163-4189: `loadColumnDefinitions_`.
+* Lines 4190-4213: `loadSheetBehaviors_`.
+* Lines 4214-4221: `normalizeDashboardSectionTitle_`.
+* Lines 4222-4266: `readDashboardSectionRows_`.
+* Lines 4267-4272: `getBehaviorForSheetType_`.
+* Lines 4273-4344: `createOrRefreshTemplateFromDashboard_`.
+* Lines 4345-4351: `shouldUseStagedTemplateBuild_`.
+* Lines 4352-4362: `shouldRefreshTemplateMetadataOnly_`.
+* Lines 4363-4380: `buildTemplateRefreshDecisionMessage_`.
+* Lines 4381-4393: `refreshTemplateMetadataOnly_`.
+* Lines 4394-4422: `buildTemplateFromDashboardSafely_`.
+* Lines 4423-4426: `getTemplateBuildSheetName_`.
+* Lines 4427-4438: `promoteStagedTemplateBuild_`.
+* Lines 4439-4456: `validateBuiltTemplateMinimumStructure_`.
+* Lines 4457-4506: `buildTemplateFromDashboard_`.
+* Lines 4507-4511: `shouldSkipTemplateResize_`.
+* Lines 4512-4520: `ensureSheetMinimumColumns_`.
+* Lines 4521-4545: `clearTemplateForFullBuild_`.
+* Lines 4546-4551: `applyTemplateRowHeights_`.
+* Lines 4552-4555: `applyFinalRowHeightLockForSheetType_`.
+* Lines 4556-4583: `lockFinalOutputRowHeights_`.
+* Lines 4584-4594: `applyGlobalDefaultRowHeightsToSheet_`.
+* Lines 4595-4630: `safeSetRowHeights_`.
+* Lines 4631-4637: `applyRowHeightRuns_`.
+* Lines 4638-4652: `hideTemplateIfNeeded_`.
+* Lines 4653-4676: `resolveTemplateRowCount_`.
+* Lines 4677-4725: `applyTemplateBaseFormatting_`.
+* Lines 4726-4738: `ensureTitleRowConfig_`.
+* Lines 4739-4791: `applyTitleRows_`.
+* Lines 4792-4832: `applyHeaderRow_`.
+* Lines 4833-4843: `applyColumnWidths_`.
+* Lines 4844-4879: `applyColumnWidthsInRuns_`.
+* Lines 4880-4883: `applyDateAndNumberFormats_`.
+* Lines 4884-4888: `enforceTemplateDateAndNumberFormats_`.
+* Lines 4889-4948: `enforceDateAndNumberFormatsForHeaders_`.
+* Lines 4949-4955: `getExpectedNumberFormat_`.
+* Lines 4956-4974: `getGoogleSheetsNumberFormat_`.
+* Lines 4975-4979: `isDateFormatText_`.
+* Lines 4980-4989: `applyHiddenColumnSettings_`.
+* Lines 4990-5036: `applyHiddenColumnSettingsInRuns_`.
+* Lines 5037-5062: `applyDataRows_`.
+* Lines 5063-5089: `applyAlternatingColorRules_`.
+* Lines 5090-5119: `applyMonthlyChangeSpacerRow3Format_`.
+* Lines 5120-5165: `formatMonthlyChangeSubsectionBlock_`.
+* Lines 5166-5183: `writeTemplateMetadata_`.
+* Lines 5184-5216: `buildTemplateFormatSignature_`.
+* Lines 5217-5236: `compactTemplateFormatSignature_`.
+* Lines 5237-5245: `normalizeTemplateFormatSignature_`.
+* Lines 5246-5251: `getTemplateFormatSignatureKey_`.
+* Lines 5252-5260: `getStoredTemplateFormatSignature_`.
+* Lines 5261-5280: `getStoredTemplateFormatSignatureFromSheet_`.
+* Lines 5281-5288: `storeTemplateFormatSignature_`.
+* Lines 5289-5337: `ensureTemplateFilter_`.
+* Lines 5338-5375: `applyTemplateFreezeAndTabColor_`.
+* Lines 5376-5400: `resizeSheet_`.
+* Lines 5401-5433: `resizeSheetGrid_`.
+* Lines 5434-5438: `resizeSheetRows_`.
+* Lines 5439-5442: `resizeSheetColumns_`.
+* Lines 5443-5450: `getHeadersForSheetType_`.
+* Lines 5451-5460: `getDefaultBehavior_`.
+* Lines 5461-5472: `showSheetIfNeeded_`.
+* Lines 5473-5486: `hideSheetIfNeeded_`.
+* Lines 5487-5525: `formatMonthlySheets`.
+### Monthly import/output sync and retired framework-test surface
+* Lines 5526-5534: `buildPromptedMonthContext_`.
+* Lines 5535-5556: `formatMonthlyBannerSheet_`.
+* Lines 5557-5590: `formatMonthlyDashboardSheetFromSource_`.
+* Lines 5591-5618: `formatMonthlyRawDataSheetFromSource_`.
+* Lines 5619-5686: `formatBannerReport`.
+* Lines 5687-5708: `validateActiveBannerFormatterOutput`.
+* Lines 5709-5726: `archiveActiveRawDataSheet`.
+* Lines 5727-5759: `parseReportMonthInput_`.
+* Lines 5760-5803: `promptForLockedYearReportMonth_`.
+* Lines 5804-5807: `boolText_`.
+* Lines 5808-5812: `isPrimaryPMRRowValue_`.
+* Lines 5813-5840: `assignPrimaryPMRRows_`.
+* Lines 5841-5852: `getCurrentBannersSheet_`.
+* Lines 5853-5861: `getCurrentUnlockedCarePlanSheet_`.
+* Lines 5862-5873: `getCurrentCarePlanDueSheet_`.
+* Lines 5874-5879: `getPreviousMasterListSheet_`.
+* Lines 5880-5885: `getCurrentMasterListSheet_`.
+* Lines 5886-5928: `applyStandardFormatting_`.
+* Lines 5929-5938: `applyStandardFormattingAfterHeadersAndData_`.
+* Lines 5939-5947: `forceStandardTitleCellAlignment_`.
+* Lines 5948-5956: `captureHiddenSheetNames_`.
+* Lines 5957-5973: `restorePreviouslyHiddenSheets_`.
+* Lines 5974-5981: `finalizeWorkflowAfterCreateOrUpdate_`.
+* Lines 5982-5985: `hidePreviousMonthSheets_`.
+* Lines 5986-6000: `autoHidePreviousMonthSheetsAfterWorkflow_`.
+* Lines 6001-6021: `applyIndexSheetRowFills_`.
+* Lines 6022-6044: `applyCurrentVsOlderTabColors_`.
+* Lines 6045-6048: `organizeSheetTabs_`.
+* Lines 6049-6067: `formatDateColumnsByHeader_`.
+* Lines 6068-6076: `rowObjectFromHeaders_`.
+* Lines 6077-6081: `appendMasterListChangeLog_`.
+* Lines 6082-6085: `getLiveDashboardAuditStatus_`.
+* Lines 6086-6089: `getLiveTemplateValidationStatus_`.
+* Lines 6090-6093: `getLiveFrameworkHealthStatus_`.
+* Lines 6094-6099: `getLiveSheetStatus_`.
+* Lines 6100-6105: `setMonthlySheetNameFast_`.
+* Lines 6106-6261: `writePMRContactsToParticipantRows_`.
+* Lines 6262-6270: `buildParticipantContactKey_`.
+* Lines 6271-6277: `isExpiredContactPhoneDate_`.
+* Lines 6278-6284: `capitalizeContactPart_`.
+* Lines 6285-6300: `formatRankedContact_`.
+* Lines 6301-6312: `getMostRecentDateFromRowsByHeader_`.
+* Lines 6313-6323: `isDateInStrictLocalRangeInclusive_`.
+* Lines 6324-6327: `isDateDisplayInReportWindow_`.
+* Lines 6328-6337: `isParticipantEnrollmentStatusDisenrolled_`.
+* Lines 6338-6352: `getSheetTypeForOrganization_`.
+* Lines 6353-6363: `collectFrameworkHealthCheckRows_`.
+* Lines 6364-6371: `collectWorkflowSyncVerificationRows_`.
+* Lines 6372-6380: `runDashboardQualityMasterListHealthCheck_`.
+* Lines 6381-6391: `buildCombinedFrameworkTestDashboardRows_`.
+* Lines 6392-6402: `applyDashboardTemplateFormattingToActiveReportSheet_`.
+* Lines 6403-6444: `applyDashboardSortOrderAlternatingColors_`.
+* Lines 6445-6462: `ensureStandardTitleRows_`.
+* Lines 6463-6471: `isDateLikeHeader_`.
+* Lines 6472-6475: `buildMonthlySheetNameNoDashAfterPrefix_`.
+* Lines 6476-6482: `formatReportDateLabel_`.
+* Lines 6483-6487: `buildBannerReportOutputName_`.
+* Lines 6488-6501: `renameSheetSafely_`.
+* Lines 6502-6525: `deleteSheetIfExists_`.
+* Lines 6526-6534: `writeBannerReportDates_`.
+* Lines 6535-6585: `copyRawBannerDataToOutput_`.
+* Lines 6586-6592: `ensureSheetHasAtLeastRows_`.
+* Lines 6593-6620: `validateBannerFormatterOutput_`.
+* Lines 6621-6644: `archiveRawSourceAndDeleteLocal_`.
+* Lines 6645-6667: `archiveRawDataSheet_`.
+* Lines 6668-6679: `hideMonthlyImportSheets`.
+* Lines 6680-6690: `hideMonthlyActiveSheets`.
+* Lines 6691-6715: `hideMonthlySheetsBySpecs_`.
+* Lines 6716-6732: `archiveMonthlyImportSheets`.
+* Lines 6733-6749: `archiveMonthlyActiveSheets`.
+* Lines 6750-6788: `archiveMonthlySheetsBySpecs_`.
+* Lines 6789-6812: `findArchiveMonthlyCandidateSheets_`.
+* Lines 6813-6837: `copySheetToArchiveAndDeleteLocal_`.
+* Lines 6838-6846: `notifyArchiveMonthlySheetsResult_`.
+* Lines 6847-6863: `deleteArchiveSheetIfExists_`.
+* Lines 6864-6867: `formatMonthlyChangeSubheaderRow`.
+* Lines 6868-6879: `formatMonthlyChangeSubsectionBlock`.
+* Lines 6880-6884: `getMonthlyChangeSubsectionLabels`.
+* Lines 6885-6892: `runFrameworkTest6DateFormatting`.
+* Lines 6893-6908: `runFrameworkTest6DateFormattingCore_`.
+* Lines 6909-7024: `testDateFormattingForTemplate_`.
+* Lines 7025-7033: `collectUniqueDateFormatsForCheck_`.
+* Lines 7034-7048: `repairDateFormatForSectionG_`.
+* Lines 7049-7054: `writeFrameworkTest6DateFormatReport_`.
+* Lines 7055-7074: `normalizeNumberFormatForCompare_`.
+* Lines 7075-7080: `numberFormatsMatch_`.
+* Lines 7081-7224: `validateTemplateFromDashboard_`.
+* Lines 7225-7230: `writeTemplateValidationReport_`.
+* Lines 7231-7317: `formatRawData`.
+* Lines 7318-7335: `ensureRawDataHeaderRows_`.
+* Lines 7336-7345: `rowLooksLikeParticipantHeader_`.
+* Lines 7346-7352: `getRawDataCurrentHeadersOrDefaults_`.
+* Lines 7353-7396: `enforceDemoPStrictDashboardSchema_`.
+* Lines 7397-7408: `buildRawDataSourceArchiveName_`.
+* Lines 7409-7420: `mapRowsToHeaders_`.
+* Lines 7421-7436: `applyUniversalFastCanvasFormatting_`.
+* Lines 7437-7460: `applyGovernedTextAndNumberFormats_`.
+* Lines 7461-7472: `applyOutputVisibilityPolicy_`.
+* Lines 7473-7546: `createOutputSheetFromDashboardTemplate_`.
+* Lines 7547-7624: `createRawDataOutputSheetFromTemplateFast_`.
+* Lines 7625-7657: `ensureOutputSheetHasFormattedRows_`.
+* Lines 7658-7739: `syncRawDataBannerColumns_`.
+* Lines 7740-7781: `buildSourceMapByCompositeKeyForDemoPBanner_`.
+* Lines 7782-7790: `formatCarePlanDueReport`.
+* Lines 7791-7799: `formatUnlockedCarePlanReport`.
+* Lines 7800-7894: `formatCarePlanDueOrUnlockedFromDashboard_`.
+* Lines 7895-7921: `buildRawArchiveNameForSheetType_`.
+* Lines 7922-7948: `collectAndClearMovedTitleInfoCells_`.
+* Lines 7949-7955: `prepareCarePlanSourceSheetForDashboardFormat_`.
+* Lines 7956-7969: `prepareRawDataSourceSheetForDashboardFormat_`.
+* Lines 7970-7980: `buildRawDataHeadersForFormatting_`.
+* Lines 7981-7986: `getRawDataApprovedAddedColumns_`.
+* Lines 7987-8010: `processRawDataApprovedSyncColumns_`.
+* Lines 8011-8052: `writeChangedColumnsOnly_`.
+* Lines 8053-8111: `getRawDataDemoPSourceHeaders_`.
+* Lines 8112-8162: `getRawDataDisallowedWorkingColumns_`.
+* Lines 8163-8170: `isOngoingOutputSheetType_`.
+* Lines 8171-8205: `buildDashboardOutputSheetName_`.
+* Lines 8206-8211: `syncMasterListMonthlySourcesIntoData_`.
+* Lines 8212-8240: `syncBannerSourceIntoData_`.
+* Lines 8241-8275: `syncUnlockedCarePlanSourceIntoData_`.
+* Lines 8276-8309: `syncCarePlanDueSourceIntoData_`.
+* Lines 8310-8349: `syncRowsFromSourceMapData_`.
+* Lines 8350-8387: `buildSourceMapBySingleKeyForPart5_`.
+* Lines 8388-8429: `buildSourceMapByCompositeKeyForPart5_`.
+* Lines 8430-8454: `shouldProcessRowByPMR_`.
+* Lines 8455-8462: `normalizeSyncFieldPairs_`.
+* Lines 8463-8492: `syncMasterListFromBanners_`.
+* Lines 8493-8528: `syncMasterListFromUnlockedCarePlan_`.
+* Lines 8529-8562: `syncMasterListFromCarePlanDue_`.
+* Lines 8563-8725: `syncRowsFromSourceMap_`.
+* Lines 8726-8743: `getDefaultDemoPMetadataHeaderRows_v155_`.
+* Lines 8744-8768: `buildDemoPFromScratch`.
+* Lines 8769-8808: `updateDemoPMonthlySync`.
+### Demo P and Monthly Change
+* Lines 8809-8827: `enforceDemoPPostFlattenFormatting_`.
+* Lines 8828-8849: `sortSheetAlphabeticallyByParticipantName_`.
+* Lines 8850-8905: `getDemoPMonthlySyncChangedPMRs_`.
+* Lines 8906-8929: `processDemoPDataWithFillBlankMask_`.
+* Lines 8930-8951: `buildDemoPFreshRowsForPMRs_`.
+* Lines 8952-8962: `processDemoPFreshRowsInMemory_`.
+* Lines 8963-9023: `flattenDemoPContactsToPrimaryRows_`.
+* Lines 9024-9042: `buildDemoPContactSummaryForFlatRecord_`.
+* Lines 9043-9056: `sortDemoPFlatRows_`.
+* Lines 9057-9136: `processDemoP`.
+* Lines 9137-9184: `processDemoPAsWorkingSource_`.
+* Lines 9185-9214: `markPrimaryPMRRowsForSequentialData_`.
+* Lines 9215-9235: `assignPrimaryPMRRowsInData_`.
+* Lines 9236-9239: `formatDemoPStructure`.
+* Lines 9240-9243: `buildRawDataSheetName_`.
+* Lines 9244-9318: `getOrCreateDemoPProcessingSheet_`.
+* Lines 9319-9332: `deleteSheetIfExistsForDemoPProcess_`.
+* Lines 9333-9340: `getLastRawDataDisenrolledBuildResult_`.
+* Lines 9341-9347: `setLastRawDataDisenrolledBuildResult_`.
+* Lines 9348-9407: `updateExistingDemoPFromRawData_`.
+* Lines 9408-9515: `createActiveDemoPFromRawData_`.
+* Lines 9516-9533: `populateDemoPUpdateColumns_`.
+* Lines 9534-9576: `populateUniversalMetadataColumns_`.
+* Lines 9577-9594: `buildSourceHashByPMR_`.
+* Lines 9595-9617: `buildSourceHashForRows_`.
+* Lines 9618-9621: `buildSourceHashForRow_`.
+* Lines 9622-9637: `buildColumnsUpdatedText_`.
+* Lines 9638-9645: `normalizeHashValue_`.
+* Lines 9646-9653: `computeStableHash_`.
+* Lines 9654-9662: `verifyPrimaryPMRColumnFromRawData_`.
+* Lines 9663-9670: `createOrRefreshDemoPTemplate_`.
+* Lines 9671-9677: `getOrCreateDemoPTemplate_`.
+* Lines 9678-9693: `initializeDemoPTemplateTitleRows_`.
+* Lines 9694-9715: `applyDemoPTemplateFormatting_`.
+* Lines 9716-9751: `applyDemoPTemplateToSheet_`.
+* Lines 9752-9810: `applyDemoPDateFormattingByHeader_`.
+* Lines 9811-9828: `buildMonthlyChangeReport`.
+* Lines 9829-9938: `buildMonthlyChangeReportForMonth_`.
+* Lines 9939-9995: `getOrBuildMonthlyChangeReport_`.
+* Lines 9996-10188: `compareRawDemoPForSectionReport_`.
+* Lines 10189-10194: `rowsWithDOBOnlyForSection_`.
+* Lines 10195-10221: `getChangedColumnsForSectionRows_`.
+* Lines 10222-10234: `buildColumnSignatureForSection_`.
+* Lines 10235-10403: `compareRawDemoPForChanges_`.
+* Lines 10404-10471: `getRawDemoPDataForCompare_`.
+* Lines 10472-10520: `compareSingleFieldAndAdd_`.
+* Lines 10521-10563: `addMCRRow_`.
+* Lines 10564-10569: `getFieldValueFromRow_`.
+* Lines 10570-10586: `buildParticipantName_`.
+* Lines 10587-10594: `displayValueForReport_`.
+* Lines 10595-10618: `buildMonthlyChangeReportSectionLayout_`.
+* Lines 10619-10624: `padRowToWidth_`.
+* Lines 10625-10634: `stripMonthlyChangeNativeBandings_`.
+* Lines 10635-10681: `getMonthlyChangeSectionSpecs_`.
+* Lines 10682-10728: `buildMonthlyChangeSectionRows_`.
+* Lines 10729-10736: `appendMonthlyChangeCompiledRow_`.
+* Lines 10737-10766: `appendMonthlyChangeSectionBlock_`.
+* Lines 10767-10819: `populateMonthlyChangeReportSections_`.
+* Lines 10820-10835: `findMonthlyChangeSectionTitleRow_`.
+* Lines 10836-10856: `findNextMonthlyChangeSectionTitleRow_`.
+* Lines 10857-10950: `getChangedPMRsFromMonthlyChangeReport_`.
+* Lines 10951-10990: `writeDiagnosticReport_`.
+* Lines 10991-11017: `runMonthlyUpdate`.
+* Lines 11018-11023: `updateMasterList`.
+* Lines 11024-11117: `updateMasterListForMonth_`.
+* Lines 11118-11190: `createMasterList`.
+* Lines 11191-11257: `copyPrimaryDemoPRowsToMasterListByHeader_`.
+### Master List and merge/update flows
+* Lines 11258-11264: `getMasterListTemplateHeaders_`.
+* Lines 11265-11272: `createOrRefreshMasterListTemplate_`.
+* Lines 11273-11279: `getOrCreateMasterListTemplate_`.
+* Lines 11280-11336: `createMasterListSheetFromTemplate_`.
+* Lines 11337-11343: `writeMasterListTitleDateBlock_`.
+* Lines 11344-11352: `initializeMasterListTitleRows_`.
+* Lines 11353-11370: `copyDemoPHeaderRowsToMasterList_`.
+* Lines 11371-11396: `copyQualifyingDemoPRowsToMasterList_`.
+* Lines 11397-11404: `formatMasterListSheet_`.
+* Lines 11405-11416: `getMonthPartsFromTitleRows_`.
+* Lines 11417-11424: `updateCopiedMasterListHeader_`.
+* Lines 11425-11579: `createIndexSheet`.
+* Lines 11580-11583: `generateArchiveFileIndex_`.
+* Lines 11584-11666: `enforceGlobalSheetSortOrder_`.
+* Lines 11667-11685: `extractFirstDateFromSheetName_`.
+* Lines 11686-11709: `parseIndexMonthDate_`.
+* Lines 11710-11756: `organizeWorkbookTabs_`.
+* Lines 11757-11774: `hideSystemAndTestingSheets_`.
+* Lines 11775-11791: `getSystemAndTestingSheetNames_`.
+* Lines 11792-11810: `isSystemOrTestingSheet_`.
+* Lines 11811-11817: `assignSortOrderAndHideExtraRows`.
+* Lines 11818-11823: `applySortOrderDisplayForMasterList_`.
+* Lines 11824-11850: `buildParticipantBlocksForSortOrder_`.
+* Lines 11851-11858: `showAllMasterListRows`.
+* Lines 11859-11863: `groupMasterListRowsByPMR_`.
+* Lines 11864-11867: `hideRowsWithBlankDOB_`.
+* Lines 11868-11927: `sortMasterListByParticipantNameAndPMR_`.
+* Lines 11928-11946: `getPrimaryRowScore_`.
+* Lines 11947-11971: `hideNonPrimaryPMRRows_`.
+* Lines 11972-11989: `hideRowNumberBatches_`.
+* Lines 11990-12001: `clearAllRowGroupsIfPossible_`.
+* Lines 12002-12008: `prepareMasterListSortOrderBeforeFormatting_`.
+* Lines 12009-12014: `applyFinalMasterListColorAndDisplay_`.
+* Lines 12015-12018: `applyMasterListDisplaySettings_`.
+* Lines 12019-12026: `processMasterListFull_`.
+* Lines 12027-12030: `processMasterListDataOnly_`.
+* Lines 12031-12065: `processMasterListSingleDataPass_`.
+* Lines 12066-12084: `populateParticipantNameData_`.
+* Lines 12085-12101: `populateDemoPNameData_`.
+* Lines 12102-12126: `updateBannerColumnData_`.
+* Lines 12127-12140: `combineAddressesData_`.
+* Lines 12141-12162: `handleLanguageData_`.
+* Lines 12163-12189: `splitPhoneNumbersData_`.
+* Lines 12190-12194: `runMasterContactProcessData_`.
+* Lines 12195-12221: `combineNotesSummaryData_`.
+* Lines 12222-12231: `rebuildChangedPMRsFromDemoP_`.
+* Lines 12232-12257: `copyPreviousMasterListToCurrentMonth_`.
+* Lines 12258-12284: `rebuildChangedPMRsOnExistingMaster_`.
+* Lines 12285-12314: `updateMasterListFromMonthlyChangeActions_`.
+* Lines 12315-12325: `getPMRsForMonthlyChangeSections_`.
+* Lines 12326-12354: `deletePMRBlocksFromMasterListBySet_`.
+* Lines 12355-12402: `updatePrimaryRowsFromDemoPForPMRs_`.
+* Lines 12403-12474: `mergeSecondaryRowsFromDemoPForPMRs_`.
+* Lines 12475-12484: `buildMappedMasterRowFromDemoRow_`.
+* Lines 12485-12494: `mutateMasterRowColumnsFromDemoRow_`.
+* Lines 12495-12502: `hideSystemSheetsNow`.
+* Lines 12503-12535: `showSystemSheetsNow`.
+* Lines 12536-12554: `getPrimaryMergeRowItem_`.
+* Lines 12555-12624: `getPrimaryRowChangedColumnDetails_`.
+* Lines 12625-12634: `formatMergeAuditValueForDisplay_`.
+* Lines 12635-12640: `getMergeAuditParticipantName_`.
+* Lines 12641-12661: `getMergeAuditParticipantNameFromRows_`.
+* Lines 12662-12685: `buildMergeAuditContactSummary_`.
+* Lines 12686-12718: `getMergeAuditChangedFields_`.
+* Lines 12719-12742: `buildMergeRowsByPMRFromData_`.
+* Lines 12743-12772: `buildSecondaryMergeKeyMapForRows_`.
+* Lines 12773-12802: `buildMergeKeyMapForRows_`.
+* Lines 12803-12826: `buildContactMergeRowKey_`.
+* Lines 12827-12841: `getMergeRowValue_`.
+* Lines 12842-12872: `createDisenrolledList`.
+### Disenrolled/exclusion and legacy change formatting
+* Lines 12873-12893: `processBlankContactSummariesOnDemoP_`.
+* Lines 12894-12945: `splitRawDataRowsIntoActiveAndDisenrolled_`.
+* Lines 12946-12963: `buildDisenrolledPMRSetFromDemoPValues_`.
+* Lines 12964-12981: `loadDisenrolledPMRSetForMonth_`.
+* Lines 12982-12986: `appendDisenrolledRowsFromRawDataToExclusion_`.
+* Lines 12987-13085: `moveDisenrolledPMRsFromDemoPToExclusion_`.
+* Lines 13086-13153: `appendDisenrolledDeltasToExclusionSheet_`.
+* Lines 13154-13165: `appendDisenrolledPMRBlocksToExclusion_`.
+* Lines 13166-13207: `createDisenrolledExclusionSheetFromDashboardTemplate_`.
+* Lines 13208-13227: `loadDisenrolledExclusionPMRsForPart3_`.
+* Lines 13228-13267: `removeDisenrolledPMRBlocksFromMasterUsingDemoP_`.
+* Lines 13268-13380: `applyDisenrolledExclusionCreateFormattingOnly_`.
+* Lines 13381-13385: `getCurrentRawDataSheet_`.
+* Lines 13386-13390: `getPreviousRawDataSheet_`.
+* Lines 13391-13398: `getCurrentDemoPSheet_`.
+* Lines 13399-13404: `getPreviousDemoPSheet_`.
+* Lines 13405-13416: `getMonthlyChangeReportHeaders_`.
+* Lines 13417-13422: `getMonthlyChangeReportDateIndexes_`.
+* Lines 13423-13452: `convertMonthlyChangeReportDateValues_`.
+* Lines 13453-13473: `buildMonthlyChangeReportRow_`.
+* Lines 13474-13493: `formatMonthlyChangeReportSectionSheet_`.
+* Lines 13494-13500: `runDashboardQualityStartUp`.
+### Dashboard Quality/System Health/Timing
+* Lines 13501-13554: `runDashboardQualityDashboardVerificationSections_`.
+* Lines 13555-13564: `getDashboardVerificationPassRow_`.
+* Lines 13565-13569: `appendDashboardVerificationPassIfNoIssues_`.
+* Lines 13570-13575: `getDashboardSectionHeaderWidth_`.
+* Lines 13576-13585: `collectBlankDashboardCells_`.
+* Lines 13586-13617: `collectFormatDashboardGlobalInputVerificationRows_`.
+* Lines 13618-13654: `collectFormatDashboardTitleRowsVerificationRows_`.
+* Lines 13655-13683: `collectFormatDashboardSheetDefinitionVerificationRows_`.
+* Lines 13684-13720: `collectFormatDashboardSheetHeaderVerificationRows_`.
+* Lines 13721-13750: `collectFormatDashboardColumnDefinitionVerificationRows_`.
+* Lines 13751-13779: `collectFormatDashboardSheetBehaviorVerificationRows_`.
+* Lines 13780-13789: `getDashboardQualitySectionLastRunMillis_`.
+* Lines 13790-13794: `dashboardQualitySectionRanWithinLastHour_`.
+* Lines 13795-13802: `runDashboardQualitySectionIfDue_`.
+* Lines 13803-13806: `runDashboardQualityQuick`.
+* Lines 13807-13814: `runDashboardQualityValidateTemplates`.
+* Lines 13815-13856: `runDashboardQualityTemplateAndFormatSections_`.
+* Lines 13857-13868: `getDashboardQualitySectionRegistry_`.
+* Lines 13869-13918: `collectDashboardQualityPerformanceSummaryRows_`.
+* Lines 13919-13925: `runDashboardQualityPerformanceSummary_`.
+* Lines 13926-13946: `runDashboardQualityCarePlanSyncDiagnostics_`.
+* Lines 13947-13999: `runDashboardQualityFull`.
+* Lines 14000-14008: `runAllFrameworkTestsAndBuildDashboard`.
+* Lines 14009-14082: `repairAllTemplateDateFormats`.
+* Lines 14083-14088: `normalizeSectionRowForWidth_`.
+* Lines 14089-14094: `rowHasAnyValue_`.
+* Lines 14095-14100: `trimTrailingBlankRows_`.
+* Lines 14101-14122: `getDefaultDashboardQualityDetailHeader_`.
+* Lines 14123-14140: `collectExistingDashboardQualitySectionBlocks_`.
+* Lines 14141-14148: `getDashboardQualityNotRunMessage_`.
+* Lines 14149-14164: `buildDefaultDashboardQualitySectionBlock_`.
+* Lines 14165-14204: `normalizeDashboardQualitySectionBlock_`.
+* Lines 14205-14247: `rebuildDashboardQualityReportShellCompact_`.
+* Lines 14248-14255: `getDashboardQualitySectionTitleForKey_`.
+* Lines 14256-14263: `getDashboardQualitySectionKeyForTitle_`.
+* Lines 14264-14280: `hasDashboardQualityTemplateShell_`.
+* Lines 14281-14299: `initializeDashboardQualitySheet_`.
+* Lines 14300-14317: `initializeSystemSheets_`.
+* Lines 14318-14332: `deleteLegacyOperationalAndDiagnosticSheets_`.
+* Lines 14333-14336: `ensureDashboardQualityReportSheet_`.
+* Lines 14337-14345: `ensureDashboardQualityTemplateShell_`.
+* Lines 14346-14350: `ensureDashboardQualitySectionShells_`.
+* Lines 14351-14356: `getDashboardQualityFixedSectionStartRow_`.
+* Lines 14357-14404: `applyDashboardQualityReportColumnSettings_`.
+* Lines 14405-14415: `styleDashboardQualityReport_`.
+* Lines 14416-14419: `normalizeDashboardQualityHeaderLabels_`.
+* Lines 14420-14424: `isDashboardQualityNotesLabel_`.
+* Lines 14425-14455: `normalizeDashboardQualityOutputRow_`.
+* Lines 14456-14460: `getDashboardQualitySectionLetter_`.
+* Lines 14461-14466: `normalizeDashboardQualityIssueValue_`.
+* Lines 14467-14499: `normalizeDashboardQualityRowsForSection_`.
+* Lines 14500-14507: `normalizeDashboardQualityDataRows_`.
+* Lines 14508-14530: `buildTimestampedDashboardQualitySectionRows_`.
+* Lines 14531-14549: `getStatusFromDashboardQualityRows_`.
+* Lines 14550-14571: `getMostRecentTimingDurationForSectionKey_`.
+* Lines 14572-14592: `getTimingProcessNameForDashboardQualitySection_`.
+* Lines 14593-14600: `dashboardQualityRowsEqualValues_`.
+* Lines 14601-14630: `saveDashboardQualitySectionRows_`.
+* Lines 14631-14642: `getDashboardQualitySectionRows_`.
+* Lines 14643-14653: `deleteLegacyQualityReportSheet_`.
+* Lines 14654-14661: `deleteLegacyStandaloneQualityReports_`.
+* Lines 14662-14686: `saveDashboardQualityRowsForTest6_`.
+* Lines 14687-14694: `saveDashboardQualityRowsForTemplateValidation_`.
+* Lines 14695-14707: `saveDashboardQualityRowsForHealthCheck_`.
+* Lines 14708-14716: `getStoredDashboardQualityOverallStatus_`.
+* Lines 14717-14728: `getStoredDashboardQualityFailureNotes_`.
+* Lines 14729-14734: `buildDatedDisenrolledOutputName_`.
+* Lines 14735-14745: `forceSheetRowCount_`.
+* Lines 14746-14779: `buildCombinedFrameworkTestDashboard`.
+* Lines 14780-14785: `updateDashboardQualitySummaryTimingAndSignoffSections_`.
+* Lines 14786-14797: `updateDashboardQualitySignoffSection_`.
+* Lines 14798-14808: `updateDashboardQualitySummarySection_`.
+* Lines 14809-14812: `updateDashboardQualityTimingSummarySection_`.
+* Lines 14813-14841: `getDashboardQualitySectionBoundsMap_`.
+* Lines 14842-14902: `replaceDashboardQualitySectionsRows_`.
+* Lines 14903-14919: `tryDashboardQualityAnchoredColumnWrite_`.
+* Lines 14920-14993: `replaceDashboardQualitySectionRows_`.
+* Lines 14994-15008: `findDashboardQualitySectionRow_`.
+* Lines 15009-15019: `findNextDashboardQualitySectionRow_`.
+* Lines 15020-15039: `dashboardQualitySectionContentMatches_`.
+* Lines 15040-15057: `mergeDashboardQualityStyleRanges_`.
+* Lines 15058-15147: `styleDashboardQualityUpdatedSections_`.
+* Lines 15148-15168: `appendCombinedDashboardSignOffRows_`.
+* Lines 15169-15201: `buildFrameworkSummaryRows_`.
+* Lines 15202-15221: `getStoredSectionStatusAndNotes_`.
+* Lines 15222-15237: `getReportOverallStatus_`.
+* Lines 15238-15257: `getReportFailureNotes_`.
+* Lines 15258-15284: `runFrameworkHealthCheck`.
+* Lines 15285-15290: `getFrameworkHealthCheckIssueRows_`.
+* Lines 15291-15302: `formatFrameworkHealthCheckIssuesForTiming_`.
+* Lines 15303-15309: `appendRequiredFunctionChecks_`.
+* Lines 15310-15317: `existsFunctionByName_`.
+* Lines 15318-15322: `writeFrameworkHealthCheckReport_`.
+* Lines 15323-15334: `normalizeFrameworkHealthCheckRows_`.
+* Lines 15335-15350: `getRequiredHelperFunctionNames_`.
+* Lines 15351-15392: `getRequiredMenuFunctionNames_`.
+* Lines 15393-15402: `getRequiredDashboardFunctionNames_`.
+* Lines 15403-15411: `getRequiredTemplateFunctionNames_`.
+* Lines 15412-15419: `getRequiredValidationFunctionNames_`.
+* Lines 15420-15428: `getRequiredTimingFunctionNames_`.
+* Lines 15429-15441: `getRequiredFrameworkDashboardFunctionNames_`.
+* Lines 15442-15445: `runWorkflowSyncVerification`.
+* Lines 15446-15453: `runDashboardQualityWorkflowSyncVerification_`.
+* Lines 15454-15459: `setupSystemSheets`.
+* Lines 15460-15515: `verifyFrameworkConfiguration`.
+* Lines 15516-15535: `runFrameworkTimed_`.
+* Lines 15536-15546: `startFrameworkTiming_`.
+* Lines 15547-15571: `markFrameworkStep_`.
+* Lines 15572-15577: `writeFrameworkTimingReport_`.
+* Lines 15578-15581: `writeTimingReport_`.
+* Lines 15582-15598: `trimTimingReportRows_`.
+* Lines 15599-15678: `rebuildProductionMonthlyChangeTemplate`.
+## Recommended Remediation Order
+1. Replace remaining `Math.max(..., 1)` governed-data formatting calls with no-op guards when `lastRow < DATA_START_ROW`.
+2. Remove or privatize retired Test 6 entry points if Dashboard Quality Section G is now the only supported path.
+3. Change Monthly Change contact comparison to stable contact keys rather than array ordinals.
+4. Precompute Monthly Change per-section signatures once per PMR/section instead of once per field.
+5. Classify catch blocks into cosmetic best-effort vs. governance-critical; throw or return structured failures for governance-critical formatting/template/signature paths.
