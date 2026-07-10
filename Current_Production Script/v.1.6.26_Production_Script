@@ -1,5 +1,5 @@
 /**
- * Master List Framework v1.6.26 Full Script
+ * Master List Framework v1.6.26.4 Full Script
  *
  * Required section structure for this and all future full-script rebuilds:
  * 1. CONFIGURATION
@@ -29,7 +29,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.6.26";
+const MASTER_LIST_MERGE_ML_VERSION = "1.6.26.5";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -89,14 +89,20 @@ const RFF_OUTPUT_EXTEND_TEMPLATE_FORMATTING = true;
 
 const RFF_SKIP_DUPLICATE_TEMPLATE_FORMAT_ENFORCEMENT = false;
 
-const RFF_REPAIR_DATE_FORMATS_DURING_SECTION_G = true;
-
 const RFF_TEMPLATE_SIGNATURE_MAX_CHARS = 8500;
 
 
 const HEADER_ROW = 4;
 
 const DATA_START_ROW = 5;
+
+const RFF_MIN_SERIAL_DATE = 30000;
+
+const RFF_EXCEL_EPOCH_YEAR = 1899;
+
+const RFF_EXCEL_EPOCH_MONTH = 11;
+
+const RFF_EXCEL_EPOCH_DAY = 30;
 
 
 const FORMAT_ALLOWED_EMPTY_COLUMNS = 2;
@@ -112,8 +118,7 @@ const SHEET_TYPE = Object.freeze({
   DEMO_P: "Demo P",
   DISENROLLED_EXCLUSION: "Disenrolled Exclusion",
   MASTER_LIST: "Master List",
-  MONTHLY_CHANGE: "Monthly Change",
-  MASTER_LIST_CHANGE_LOG: "Master List Change Log"
+  MONTHLY_CHANGE: "Monthly Change"
 });
 
 const SHEET_BASE_COLORS = {
@@ -124,7 +129,6 @@ const SHEET_BASE_COLORS = {
   [SHEET_TYPE.DEMO_P]: "#657FCC",
   [SHEET_TYPE.MASTER_LIST]: "#7665CC",
   [SHEET_TYPE.MONTHLY_CHANGE]: "#A165CC",
-  [SHEET_TYPE.MASTER_LIST_CHANGE_LOG]: "#CC65CC",
   [SHEET_TYPE.DISENROLLED_EXCLUSION]: "#CC65A1"
 };
 
@@ -153,8 +157,6 @@ const DISENROLLED_EXCLUSION_SHEET = "Disenrolled Exclusion";
 
 const INDEX_SHEET = "Index";
 
-const MASTER_LIST_CHANGE_LOG_SHEET = "Master List Change Log";
-
 const SHEET_TAB_ORDER = [
   "Index",
   "Master List",
@@ -163,8 +165,7 @@ const SHEET_TAB_ORDER = [
   "Care Plan Due Date Report",
   "Unlocked Care Plan Report",
   "Banner Report",
-  "Disenrolled Exclusion",
-  "Master List Change Log"
+  "Disenrolled Exclusion"
 ];
 
 const INDEX_HEADERS = [
@@ -554,7 +555,7 @@ function styleDashboard_(sheet) {
     try {
       sheet.setColumnWidth(index + 1, width);
     } catch (err) {
-      Logger.log("Dashboard column width skipped: " + err.message);
+      logBestEffortWarning_("Dashboard column width skipped: " + err.message);
     }
   });
 
@@ -563,7 +564,7 @@ function styleDashboard_(sheet) {
     const filter = sheet.getFilter();
     if (filter) filter.remove();
   } catch (err) {
-    Logger.log("Dashboard filter remove skipped: " + err.message);
+    logBestEffortWarning_("Dashboard filter remove skipped: " + err.message);
   }
 }
 
@@ -652,9 +653,9 @@ function writeDashboardDefaultsFast_(sheet) {
   for (let r = 0; r < rows.length; r++) {
     const first = String(rows[r][0] || "").trim();
     if (first.indexOf("SECTION ") === 0) {
-      sectionRanges.push(sheet.getRange(r + 1, 1, 1, width).getA1Notation());
+      sectionRanges.push(rowColToA1_(r + 1, 1) + ":" + rowColToA1_(r + 1, width));
       if (r + 2 <= rows.length) {
-        sectionHeaderRanges.push(sheet.getRange(r + 2, 1, 1, width).getA1Notation());
+        sectionHeaderRanges.push(rowColToA1_(r + 2, 1) + ":" + rowColToA1_(r + 2, width));
       }
     }
   }
@@ -676,7 +677,7 @@ function writeDashboardDefaultsFast_(sheet) {
     try {
       sheet.setColumnWidth(index + 1, colWidth);
     } catch (err) {
-      Logger.log("Dashboard column width skipped: " + err.message);
+      logBestEffortWarning_("Dashboard column width skipped: " + err.message);
     }
   });
 
@@ -684,7 +685,7 @@ function writeDashboardDefaultsFast_(sheet) {
     const filter = sheet.getFilter();
     if (filter) filter.remove();
   } catch (err) {
-    Logger.log("Dashboard filter remove skipped: " + err.message);
+    logBestEffortWarning_("Dashboard filter remove skipped: " + err.message);
   }
   sheet.setFrozenRows(1);
 }
@@ -721,8 +722,7 @@ function normalizeDashboardSheetTypeKey_(sheetType) {
     "demop": RFF_SHEET_TYPES.DEMO_P,
     "disenrolledexclusion": RFF_SHEET_TYPES.DISENROLLED_EXCLUSION,
     "masterlist": RFF_SHEET_TYPES.MASTER_LIST,
-    "monthlychange": RFF_SHEET_TYPES.MONTHLY_CHANGE,
-    "masterlistchangelog": RFF_SHEET_TYPES.MASTER_LIST_CHANGE_LOG
+    "monthlychange": RFF_SHEET_TYPES.MONTHLY_CHANGE
   };
   return aliases[key] || normalized;
 }
@@ -758,7 +758,7 @@ function notify_(message) {
   try {
     SpreadsheetApp.getActiveSpreadsheet().toast(String(message), "Master List Tools", 5);
   } catch (err) {
-    Logger.log(message);
+    logBestEffortWarning_(message);
   }
 }
 
@@ -786,7 +786,7 @@ function hideOldDisenrolledRows_(sheet) {
   try {
     sheet.showRows(DATA_START_ROW, data.values.length);
   } catch (err) {
-    Logger.log("Disenrolled row unhide skipped: " + err.message);
+    logBestEffortWarning_("Disenrolled row unhide skipped: " + err.message);
   }
   const cutoff = createLocalDateOnly_(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
   cutoff.setDate(cutoff.getDate() - 365);
@@ -798,13 +798,9 @@ function hideOldDisenrolledRows_(sheet) {
       .sort(function(a, b) { return b.getTime() - a.getTime(); })[0];
     if (matchedDate && matchedDate.getTime() < cutoff.getTime()) rowsToHide.push(DATA_START_ROW + index);
   });
-  rowsToHide.forEach(function(rowNumber) {
-    try {
-      sheet.hideRows(rowNumber);
-    } catch (err) {
-      Logger.log("Disenrolled old-row hide skipped at row " + rowNumber + ": " + err.message);
-    }
-  });
+  if (rowsToHide.length > 0) {
+    hideRowNumberBatches_(sheet, rowsToHide);
+  }
   return rowsToHide.length;
 }
 
@@ -853,7 +849,7 @@ function coerceToValidDate_(value) {
 
 
   if (typeof value === "number") {
-    if (value < 30000) return null;
+    if (value < RFF_MIN_SERIAL_DATE) return null;
     return spreadsheetSerialDateToLocalDate_(value);
   }
 
@@ -895,25 +891,20 @@ function coerceToValidDate_(value) {
 
 function spreadsheetSerialDateToLocalDate_(serialValue) {
   if (serialValue === null || serialValue === undefined || serialValue === "") return null;
-
-
   const serial = Number(serialValue);
   if (isNaN(serial) || serial < 1) return null;
-
 
   const wholeDays = Math.floor(serial);
   const fractional = serial - wholeDays;
 
-
-  const date = new Date(1899, 11, 30);
+  const date = new Date(RFF_EXCEL_EPOCH_YEAR, RFF_EXCEL_EPOCH_MONTH, RFF_EXCEL_EPOCH_DAY);
   date.setDate(date.getDate() + wholeDays);
-
 
   if (fractional > 0) {
     const millisInDay = Math.round(fractional * 24 * 60 * 60 * 1000);
     date.setMilliseconds(date.getMilliseconds() + millisInDay);
+    date.setMilliseconds(0);
   }
-
 
   return isReasonableReportDate_(date) ? date : null;
 }
@@ -1843,6 +1834,10 @@ function logRuntimeError_(processName, message, details) {
   Logger.log("[ERROR] " + String(processName || "Master List") + " | " + String(message || "") + suffix);
 }
 
+function logBestEffortWarning_(message, details) {
+  logRuntimeWarning_("Best Effort", message, details);
+}
+
 function logRuntimeTiming_(processName, stepName, stepSeconds, totalSeconds, severity, details) {
   const detailText = details ? " | " + details : "";
   Logger.log(
@@ -2056,7 +2051,7 @@ function rebuildFrameworkTimingReportShellCompact_(sheet) {
       .setBackground(RFF_SYSTEM_SHEET_TITLE_COLOR);
     sheet.setFrozenRows(1);
   } catch (err) {
-    Logger.log("Framework Timing compact shell formatting skipped: " + err.message);
+    logBestEffortWarning_("Framework Timing compact shell formatting skipped: " + err.message);
   }
 
   styleFrameworkTimingReport_(sheet);
@@ -2121,7 +2116,7 @@ function trimSheetToColumnCount_(sheet, requiredCols, label) {
       sheet.deleteColumns(requiredCols + 1, maxCols - requiredCols);
     }
   } catch (err) {
-    Logger.log((label || "Sheet") + " column resize skipped: " + err.message);
+    logBestEffortWarning_((label || "Sheet") + " column resize skipped: " + err.message);
   }
 }
 
@@ -2134,7 +2129,7 @@ function styleFrameworkTimingReport_(sheet, sectionIds) {
     try {
       if (sheet.getColumnWidth(i + 1) !== widths[i]) sheet.setColumnWidth(i + 1, widths[i]);
     } catch (err) {
-      Logger.log("Framework Timing width skipped for column " + (i + 1) + ": " + err.message);
+      logBestEffortWarning_("Framework Timing width skipped for column " + (i + 1) + ": " + err.message);
     }
   }
 
@@ -2224,7 +2219,7 @@ function styleFrameworkTimingReport_(sheet, sectionIds) {
 
     sheet.setFrozenRows(1);
   } catch (err) {
-    Logger.log("Framework Timing styling skipped: " + err.message);
+    logBestEffortWarning_("Framework Timing styling skipped: " + err.message);
   }
 }
 
@@ -2538,7 +2533,7 @@ function getPerformanceRecommendationForTimingStep_(process, step, seconds, seve
     return "Separate first-build/full-rebuild timing from metadata-only refresh, apply the governed benchmark for that mode, and optimize the largest full-build steps before treating this as a steady-state failure.";
   }
   if (text.indexOf("dashboard loaded for sections f-g") !== -1) {
-    return "Dashboard config reads are capped to governed dashboard columns and Sections F-G are batch-written; rerun Validate Templates and compare this step against the v1.5.38 baseline.";
+    return "Dashboard config reads are capped to governed dashboard columns and Section F is batch-written; rerun Validate Templates and compare this step against the v1.5.38 baseline.";
   }
   if (text.indexOf("dashboard quality sections a-e updated") !== -1) {
     return "A-E section writes now skip redundant unmerge work in batch mode and merge adjacent style ranges to reduce Apps Script range calls.";
@@ -2559,7 +2554,7 @@ function getPerformanceRecommendationForTimingStep_(process, step, seconds, seve
     return "Use the contiguous A-O Dashboard Quality shell and repair stale shells before section writes. Keep section writes scoped between adjacent section titles.";
   }
   if (text.indexOf("apply row heights") !== -1) {
-    return "Keep row-height work out of CP Due/Unlocked CP/Banner/Change Log outputs. Use final forced 25px row lock only after Raw Data, Demo P, Master List, and Disenrolled processing because processing/data writes can expand rows.";
+    return "Keep row-height work out of CP Due/Unlocked CP/Banner outputs. Use final forced 25px row lock only after Raw Data, Demo P, Master List, and Disenrolled processing because processing/data writes can expand rows.";
   }
   if (text.indexOf("create filter") !== -1) {
     return "Skip filter recreation when the existing filter already matches the governed template range.";
@@ -2600,7 +2595,7 @@ function appendRuntimeTimingToFrameworkTimingReport_(timing) {
     const combined = existing.concat(rows).slice(-getFrameworkTimingRetentionLimit_());
     replaceFrameworkTimingSectionRows_(sheet, "D", combined, { skipStyle: true });
   } catch (err) {
-    Logger.log("[WARNING] Framework Timing Report append skipped | " + err.message);
+    logBestEffortWarning_("[WARNING] Framework Timing Report append skipped | " + err.message);
   }
 }
 
@@ -2633,6 +2628,7 @@ const ML_MENU_CALLBACKS = Object.freeze({
     "updateDemoPMonthlySync",
     "buildDemoPFromScratch",
     "createDisenrolledList",
+    "buildMonthlyChangeReport",
     "createMasterList"
   ]),
   sheetLayout: Object.freeze([
@@ -2682,6 +2678,7 @@ function onOpen() {
     .addItem("📚 Format Monthly Sheets", "formatMonthlySheets")
     .addSubMenu(demoPMenu)
     .addItem("⛔ Create / Update Disenrolled List", "createDisenrolledList")
+    .addItem("🗓️ Monthly Change Report", "buildMonthlyChangeReport")
     .addItem("💡 Create Master List", "createMasterList");
 
   const monthlyImportSheetsMenu = ui.createMenu("🗄️ Monthly Import Sheets")
@@ -2738,6 +2735,7 @@ function onOpen() {
 
   ui.createMenu("Master List")
     .addSubMenu(dataProcessingMenu)
+    .addItem("📅 Build Monthly Change Report", "buildMonthlyChangeReport")
     .addSubMenu(sheetLayoutMenu)
     .addSubMenu(quickStartMenu)
     .addSubMenu(maintenanceMenu)
@@ -2750,7 +2748,7 @@ function isFrameworkTimingEnabled_() {
   try {
     return PropertiesService.getDocumentProperties().getProperty("RFF_FRAMEWORK_TIMING_ENABLED") !== "false";
   } catch (err) {
-    Logger.log("Framework timing toggle read skipped: " + err.message);
+    logBestEffortWarning_("Framework timing toggle read skipped: " + err.message);
     return true;
   }
 }
@@ -3128,8 +3126,6 @@ const RFF_FRAMEWORK_TIMING_SHEET = RFF_TIMING_SHEET;
 
 const RFF_TIMING_SUMMARY_SHEET = RFF_TIMING_SHEET;
 
-const RFF_TEST6_DATE_FORMAT_SHEET = "Date Format Integrity";
-
 const RFF_TEST_DASHBOARD_SHEET = "Dashboard Quality Report";
 
 const RFF_HEALTH_CHECK_SHEET = "Framework Health Check";
@@ -3190,8 +3186,7 @@ const RFF_SHEET_TYPES = {
   DEMO_P: "Demo P",
   DISENROLLED_EXCLUSION: "Disenrolled Exclusion",
   MASTER_LIST: "Master List",
-  MONTHLY_CHANGE: "Monthly Change",
-  MASTER_LIST_CHANGE_LOG: "Master List Change Log"
+  MONTHLY_CHANGE: "Monthly Change"
 };
 
 const RFF_MONTHLY_CHANGE_SUBSECTIONS = [
@@ -3248,8 +3243,7 @@ function getRequiredFrameworkSheetTypes_() {
     RFF_SHEET_TYPES.DEMO_P,
     RFF_SHEET_TYPES.MASTER_LIST,
     RFF_SHEET_TYPES.MONTHLY_CHANGE,
-    RFF_SHEET_TYPES.DISENROLLED_EXCLUSION,
-    RFF_SHEET_TYPES.MASTER_LIST_CHANGE_LOG
+    RFF_SHEET_TYPES.DISENROLLED_EXCLUSION
   ];
 }
 
@@ -3666,16 +3660,6 @@ function getDefaultHeaderSets_() {
       h_("Enrollment Status", "Demo P"),
       h_("Primary PMR Row", "Demo P")
     ],
-    [RFF_SHEET_TYPES.MASTER_LIST_CHANGE_LOG]: [
-      h_("Log Timestamp", "Process"),
-      h_("Change Month", "Process"),
-      h_("Participant PMR#", "Process"),
-      h_("Reason", "Process"),
-      h_("Removed From Sheet", "Process"),
-      h_("Original Row Number", "Process"),
-      h_("Source Monthly Change Report", "Process"),
-      h_("Removed Row Data", "Process")
-    ],
     [RFF_SHEET_TYPES.MONTHLY_CHANGE]: [
       h_("Last Name", "Populates via process Compare Raw Data to Raw Data"),
       h_("First Name", "Populates via process Compare Raw Data to Raw Data"),
@@ -3765,7 +3749,7 @@ function createOrRefreshAllReportTemplates() {
           issue: err.message
         });
         markFrameworkStep_(timing, "ERROR - Template build failed but batch continued: " + sheetDef.templateName + " - " + err.message);
-        Logger.log("Template build failed but batch continued for " + sheetDef.templateName + ": " + err.message);
+        logBestEffortWarning_("Template build failed but batch continued for " + sheetDef.templateName + ": " + err.message);
       }
     });
     const failedTemplates = templateResults.filter(function(result) {
@@ -3804,14 +3788,14 @@ function ensureGoldenMasterTemplate_(dashboard, timing) {
       .setVerticalAlignment(globals.defaultVerticalAlignment || "middle")
       .setWrapStrategy(toWrapStrategy_(globals.defaultDataWrap || "CLIP"));
   } catch (err) {
-    Logger.log("Golden Master base style skipped: " + err.message);
+    logBestEffortWarning_("Golden Master base style skipped: " + err.message);
   }
 
 
   try {
     safeSetRowHeights_(baseSheet, 1, baseSheet.getMaxRows(), globals.dataRowHeight || 25, "Golden Master Base");
   } catch (err) {
-    Logger.log("Golden Master row heights skipped: " + err.message);
+    logBestEffortWarning_("Golden Master row heights skipped: " + err.message);
   }
 
 
@@ -4382,7 +4366,7 @@ function refreshTemplateMetadataOnly_(sheet, dashboard, sheetDef, colCount, expe
   const globals = (dashboard && dashboard.globals) || RFF_DEFAULTS;
   const rowCount = resolveTemplateRowCount_(sheetDef, globals);
   const dataStartRow = globals.dataStartRow || DATA_START_ROW;
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, getHeadersForSheetType_(dashboard, sheetDef.sheetType), dataStartRow, Math.max(rowCount - dataStartRow + 1, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, getHeadersForSheetType_(dashboard, sheetDef.sheetType), dataStartRow, rowCount - dataStartRow + 1);
   writeTemplateMetadata_(sheet, dashboard, sheetDef, colCount, expectedSignature);
   storeTemplateFormatSignature_(sheetDef, expectedSignature);
   markFrameworkStep_(timing, "Metadata-only refresh; template unchanged: " + sheetDef.templateName);
@@ -4414,7 +4398,7 @@ function buildTemplateFromDashboardSafely_(existingSheet, dashboard, sheetDef, h
       buildSheet.setName(tempName + " FAILED");
       buildSheet.showSheet();
     } catch (renameErr) {
-      Logger.log("Failed staged template rename skipped for " + sheetDef.templateName + ": " + renameErr.message);
+      logBestEffortWarning_("Failed staged template rename skipped for " + sheetDef.templateName + ": " + renameErr.message);
     }
     throw err;
   }
@@ -4476,7 +4460,7 @@ function buildTemplateFromDashboard_(sheet, dashboard, sheetDef, headers, rowCou
   markFrameworkStep_(timing, "Apply full template formatting: " + sheetDef.templateName);
 
 
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, getHeadersForSheetType_(dashboard, sheetDef.sheetType), (dashboard.globals || {}).dataStartRow || DATA_START_ROW, Math.max(rowCount - (((dashboard.globals || {}).dataStartRow || DATA_START_ROW)) + 1, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, getHeadersForSheetType_(dashboard, sheetDef.sheetType), (dashboard.globals || {}).dataStartRow || DATA_START_ROW, rowCount - (((dashboard.globals || {}).dataStartRow || DATA_START_ROW)) + 1);
   writeTemplateMetadata_(sheet, dashboard, sheetDef, colCount, expectedSignature);
   storeTemplateFormatSignature_(sheetDef, expectedSignature);
   markFrameworkStep_(timing, "Write metadata/signature: " + sheetDef.templateName);
@@ -4537,7 +4521,7 @@ function clearTemplateForFullBuild_(sheet, sheetDef, timing, templateExisted) {
       sheet.clearFormats();
       sheet.setConditionalFormatRules([]);
     } catch (fallbackErr) {
-      Logger.log("Template governed-range clear skipped for " + sheet.getName() + ": " + fallbackErr.message);
+      logBestEffortWarning_("Template governed-range clear skipped for " + sheet.getName() + ": " + fallbackErr.message);
     }
   }
   markFrameworkStep_(timing, "Clear governed template range for full build: " + sheetDef.templateName);
@@ -4577,7 +4561,7 @@ function lockFinalOutputRowHeights_(sheet, label) {
       safeSetRowHeights_(sheet, dataStartRow, lastRow - dataStartRow + 1, Number(globals.dataRowHeight || 25), "final output data rows");
     }
   } catch (err) {
-    Logger.log("Final row height lock skipped for " + (label || sheet.getName()) + ": " + err.message);
+    logBestEffortWarning_("Final row height lock skipped for " + (label || sheet.getName()) + ": " + err.message);
   }
 }
 
@@ -4588,7 +4572,7 @@ function applyGlobalDefaultRowHeightsToSheet_(sheet, label) {
     const globals = dashboard.globals || {};
     safeSetRowHeights_(sheet, 1, sheet.getMaxRows(), Number(globals.dataRowHeight || 25), label || sheet.getName());
   } catch (err) {
-    Logger.log("Global default row height application skipped for " + (label || sheet.getName()) + ": " + err.message);
+    logBestEffortWarning_("Global default row height application skipped for " + (label || sheet.getName()) + ": " + err.message);
   }
 }
 
@@ -4618,12 +4602,12 @@ function safeSetRowHeights_(sheet, startRow, count, height, label) {
     } else if (typeof sheet.setRowHeights === "function") {
       sheet.setRowHeights(startRow, safeCount, height);
     } else {
-      Logger.log("Row height batch API unavailable for " + (label || sheet.getName()) + "; skipped " + safeCount + " row(s).");
+      logBestEffortWarning_("Row height batch API unavailable for " + (label || sheet.getName()) + "; skipped " + safeCount + " row(s).");
       return 0;
     }
     return safeCount;
   } catch (err) {
-    Logger.log("Row height batch skipped for " + (label || sheet.getName()) + " rows " + startRow + "-" + (startRow + safeCount - 1) + ": " + err.message);
+    logBestEffortWarning_("Row height batch skipped for " + (label || sheet.getName()) + " rows " + startRow + "-" + (startRow + safeCount - 1) + ": " + err.message);
     return 0;
   }
 }
@@ -4645,7 +4629,7 @@ function hideTemplateIfNeeded_(sheet, sheetDef, timing) {
 
     hideSheetIfNeeded_(sheet, timing, "Hide template: " + sheetDef.templateName);
   } catch (err) {
-    Logger.log("Template hide skipped for " + sheetDef.templateName + ": " + err.message);
+    logBestEffortWarning_("Template hide skipped for " + sheetDef.templateName + ": " + err.message);
     markFrameworkStep_(timing, "Hide template skipped/error: " + sheetDef.templateName);
   }
 }
@@ -4707,7 +4691,7 @@ function applyTemplateBaseFormatting_(sheet, dashboard, sheetDef, headers, rowCo
   markFrameworkStep_(timing, "Apply column widths: " + sheetDef.templateName);
 
 
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStartRow, Math.max(rowCount - dataStartRow + 1, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStartRow, rowCount - dataStartRow + 1);
   markFrameworkStep_(timing, "Apply governed text/date/number formats: " + sheetDef.templateName);
 
 
@@ -4749,7 +4733,7 @@ function applyTitleRows_(sheet, dashboard, sheetDef, theme, colCount) {
     try {
       sheet.setRowHeight(rowConfig.row, rowConfig.height);
     } catch (err) {
-      Logger.log("Title row height skipped for row " + rowConfig.row + ": " + err.message);
+      logBestEffortWarning_("Title row height skipped for row " + rowConfig.row + ": " + err.message);
     }
     sheet.getRange(rowConfig.row, 1, 1, colCount)
       .setBackground(getThemeFillForTitleRow_(theme, rowConfig.fillLevel))
@@ -4778,7 +4762,7 @@ function applyTitleRows_(sheet, dashboard, sheetDef, theme, colCount) {
       .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
       .setVerticalAlignment("middle");
   } catch (err) {
-    Logger.log("Title info merge skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Title info merge skipped for " + sheet.getName() + ": " + err.message);
   }
 
 
@@ -4787,6 +4771,17 @@ function applyTitleRows_(sheet, dashboard, sheetDef, theme, colCount) {
   sheet.getRange("B2").setValue("").setNumberFormat(globals.defaultDateFormat);
   sheet.getRange("C2").setValue("to").setHorizontalAlignment("center");
   sheet.getRange("D2").setValue("").setNumberFormat(globals.defaultDateFormat);
+}
+
+function rowColToA1_(row, col) {
+  let column = Math.max(Number(col || 1), 1);
+  let letters = "";
+  while (column > 0) {
+    const remainder = (column - 1) % 26;
+    letters = String.fromCharCode(65 + remainder) + letters;
+    column = Math.floor((column - 1) / 26);
+  }
+  return letters + Math.max(Number(row || 1), 1);
 }
 
 function applyHeaderRow_(sheet, dashboard, sheetDef, headers, theme, colCount) {
@@ -4818,14 +4813,14 @@ function applyHeaderRow_(sheet, dashboard, sheetDef, headers, theme, colCount) {
     const fontSize = Number(def.headerFontSize || defaultHeaderFontSize);
     if (fontSize === Number(defaultHeaderFontSize)) return;
     if (!rangesByFontSize[fontSize]) rangesByFontSize[fontSize] = [];
-    rangesByFontSize[fontSize].push(sheet.getRange(headerRow, index + 1).getA1Notation());
+    rangesByFontSize[fontSize].push(rowColToA1_(headerRow, index + 1));
   });
 
   Object.keys(rangesByFontSize).forEach(function(fontSize) {
     try {
       sheet.getRangeList(rangesByFontSize[fontSize]).setFontSize(Number(fontSize));
     } catch (err) {
-      Logger.log("Header font size batch skipped for " + fontSize + ": " + err.message);
+      logBestEffortWarning_("Header font size batch skipped for " + fontSize + ": " + err.message);
     }
   });
 }
@@ -4865,10 +4860,10 @@ function applyColumnWidthsInRuns_(sheet, widths) {
       if (typeof sheet.setColumnWidths === "function") {
         sheet.setColumnWidths(startCol, runLength, currentWidth);
       } else {
-        Logger.log("Column width batch API unavailable for columns " + startCol + "-" + (startCol + runLength - 1) + "; skipped.");
+        logBestEffortWarning_("Column width batch API unavailable for columns " + startCol + "-" + (startCol + runLength - 1) + "; skipped.");
       }
     } catch (err) {
-      Logger.log("Column width batch skipped for columns " + startCol + "-" + (startCol + runLength - 1) + ": " + err.message);
+      logBestEffortWarning_("Column width batch skipped for columns " + startCol + "-" + (startCol + runLength - 1) + ": " + err.message);
     }
 
 
@@ -4932,13 +4927,10 @@ function enforceDateAndNumberFormatsForHeaders_(sheet, dashboard, headers, rowCo
 
 
     try {
-      if (typeof sheet.getRangeList === "function") {
-        sheet.getRangeList(ranges).setNumberFormat(googleSheetsFormat);
-      } else {
-        ranges.forEach(function(a1Notation) {
-          sheet.getRange(a1Notation).setNumberFormat(googleSheetsFormat);
-        });
+      if (typeof sheet.getRangeList !== "function") {
+        throw new Error("RangeList API is unavailable");
       }
+      sheet.getRangeList(ranges).setNumberFormat(googleSheetsFormat);
     } catch (err) {
       throw new Error((logPrefix || "Date/number format") + " failed for " + sheet.getName() + " with format " + googleSheetsFormat + ": " + err.message);
     }
@@ -5014,18 +5006,7 @@ function applyHiddenColumnSettingsInRuns_(sheet, hiddenFlags) {
         sheet.showColumns(startCol, runLength);
       }
     } catch (err) {
-      Logger.log("Hidden column run skipped for columns " + startCol + "-" + (startCol + runLength - 1) + ": " + err.message);
-      for (let col = startCol; col < startCol + runLength; col++) {
-        try {
-          if (currentHidden) {
-            sheet.hideColumns(col);
-          } else {
-            sheet.showColumns(col);
-          }
-        } catch (colErr) {
-          Logger.log("Hidden column setting skipped for column " + col + ": " + colErr.message);
-        }
-      }
+      throw new Error("Hidden column run failed for " + sheet.getName() + " columns " + startCol + "-" + (startCol + runLength - 1) + ": " + err.message);
     }
 
 
@@ -5083,7 +5064,7 @@ function applyAlternatingColorRules_(sheet, range, theme) {
     rules.push(evenRule);
     sheet.setConditionalFormatRules(rules);
   } catch (err) {
-    Logger.log("Alternating color rules skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Alternating color rules skipped for " + sheet.getName() + ": " + err.message);
   }
 }
 
@@ -5101,7 +5082,7 @@ function applyMonthlyChangeSpacerRow3Format_(sheet, spacerRow, colCount, globals
     const row3Height = Number(globals && globals.row3Height) || 10;
     safeSetRowHeights_(sheet, spacerRow, 1, row3Height, "Monthly Change subsection spacer row 3 format");
   } catch (err) {
-    Logger.log("Monthly Change row 3 spacer formatting skipped: " + err.message);
+    logBestEffortWarning_("Monthly Change row 3 spacer formatting skipped: " + err.message);
 
 
     try {
@@ -5112,7 +5093,7 @@ function applyMonthlyChangeSpacerRow3Format_(sheet, spacerRow, colCount, globals
         .setFontColor((globals && globals.standardFontColor) || "#000000");
       safeSetRowHeights_(sheet, spacerRow, 1, Number(globals && globals.row3Height) || 10, "Monthly Change subsection spacer fallback");
     } catch (fallbackErr) {
-      Logger.log("Monthly Change spacer fallback skipped: " + fallbackErr.message);
+      logBestEffortWarning_("Monthly Change spacer fallback skipped: " + fallbackErr.message);
     }
   }
 }
@@ -5177,7 +5158,7 @@ function writeTemplateMetadata_(sheet, dashboard, sheetDef, colCount, signature)
 
     sheet.getRange(1, Math.max(colCount, 1)).setNote(note);
   } catch (err) {
-    Logger.log("Template metadata skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Template metadata skipped for " + sheet.getName() + ": " + err.message);
   }
 }
 
@@ -5218,18 +5199,12 @@ function compactTemplateFormatSignature_(signature) {
   const text = String(signature || "");
   if (text.length <= RFF_TEMPLATE_SIGNATURE_MAX_CHARS) return text;
 
-
-  let hash = 0;
-  for (let i = 0; i < text.length; i++) {
-    hash = ((hash << 5) - hash) + text.charCodeAt(i);
-    hash |= 0;
-  }
-
+  const md5Hash = computeStableHash_(text);
 
   return [
     "compact=true",
     "length=" + text.length,
-    "hash=" + Math.abs(hash).toString(16),
+    "hash=" + md5Hash,
     "prefix=" + text.slice(0, 500)
   ].join("|");
 }
@@ -5253,7 +5228,7 @@ function getStoredTemplateFormatSignature_(sheetDef) {
   try {
     return PropertiesService.getDocumentProperties().getProperty(getTemplateFormatSignatureKey_(sheetDef)) || "";
   } catch (err) {
-    Logger.log("Template signature read skipped for " + sheetDef.templateName + ": " + err.message);
+    logBestEffortWarning_("Template signature read skipped for " + sheetDef.templateName + ": " + err.message);
     return "";
   }
 }
@@ -5271,7 +5246,7 @@ function getStoredTemplateFormatSignatureFromSheet_(sheet) {
       if (match && match[1]) return match[1].trim();
     }
   } catch (err) {
-    Logger.log("Template signature note read skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Template signature note read skipped for " + sheet.getName() + ": " + err.message);
   }
 
 
@@ -5282,7 +5257,7 @@ function storeTemplateFormatSignature_(sheetDef, signature) {
   try {
     PropertiesService.getDocumentProperties().setProperty(getTemplateFormatSignatureKey_(sheetDef), signature || "");
   } catch (err) {
-    Logger.log("Template signature store skipped for " + sheetDef.templateName + ": " + err.message);
+    logBestEffortWarning_("Template signature store skipped for " + sheetDef.templateName + ": " + err.message);
   }
 }
 
@@ -5294,7 +5269,7 @@ function ensureTemplateFilter_(sheet, headerRow, rowCount, colCount, sheetDef, t
   try {
     existing = sheet.getFilter();
   } catch (err) {
-    Logger.log("Template filter lookup skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Template filter lookup skipped for " + sheet.getName() + ": " + err.message);
   }
 
 
@@ -5312,14 +5287,14 @@ function ensureTemplateFilter_(sheet, headerRow, rowCount, colCount, sheetDef, t
         return;
       }
     } catch (err) {
-      Logger.log("Template filter comparison skipped for " + sheet.getName() + ": " + err.message);
+      logBestEffortWarning_("Template filter comparison skipped for " + sheet.getName() + ": " + err.message);
     }
 
 
     try {
       existing.remove();
     } catch (err) {
-      Logger.log("Template filter removal skipped for " + sheet.getName() + ": " + err.message);
+      logBestEffortWarning_("Template filter removal skipped for " + sheet.getName() + ": " + err.message);
     }
     markFrameworkStep_(timing, "Remove existing filter: " + sheetDef.templateName);
   } else {
@@ -5330,7 +5305,7 @@ function ensureTemplateFilter_(sheet, headerRow, rowCount, colCount, sheetDef, t
   try {
     sheet.getRange(headerRow, 1, expectedRows, colCount).createFilter();
   } catch (err) {
-    Logger.log("Template filter creation skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Template filter creation skipped for " + sheet.getName() + ": " + err.message);
   }
   markFrameworkStep_(timing, "Create filter: " + sheetDef.templateName);
 }
@@ -5347,7 +5322,7 @@ function applyTemplateFreezeAndTabColor_(sheet, dashboard, sheetDef, colCount, t
       sheet.setFrozenRows(expectedFrozenRows);
     }
   } catch (err) {
-    Logger.log("Frozen rows skipped for " + sheetDef.templateName + ": " + err.message);
+    logBestEffortWarning_("Frozen rows skipped for " + sheetDef.templateName + ": " + err.message);
   }
   markFrameworkStep_(timing, "Ensure frozen rows: " + sheetDef.templateName);
 
@@ -5357,7 +5332,7 @@ function applyTemplateFreezeAndTabColor_(sheet, dashboard, sheetDef, colCount, t
       sheet.setFrozenColumns(expectedFrozenCols);
     }
   } catch (err) {
-    Logger.log("Frozen columns skipped for " + sheetDef.templateName + ": " + err.message);
+    logBestEffortWarning_("Frozen columns skipped for " + sheetDef.templateName + ": " + err.message);
   }
   markFrameworkStep_(timing, "Ensure frozen columns: " + sheetDef.templateName);
 
@@ -5368,7 +5343,7 @@ function applyTemplateFreezeAndTabColor_(sheet, dashboard, sheetDef, colCount, t
       sheet.setTabColor(expectedTabColor);
     }
   } catch (err) {
-    Logger.log("Tab color skipped for " + sheetDef.templateName + ": " + err.message);
+    logBestEffortWarning_("Tab color skipped for " + sheetDef.templateName + ": " + err.message);
   }
   markFrameworkStep_(timing, "Ensure tab color: " + sheetDef.templateName);
 }
@@ -5466,7 +5441,7 @@ function showSheetIfNeeded_(sheet, timing, stepName) {
       if (timing && stepName) markFrameworkStep_(timing, stepName);
     }
   } catch (err) {
-    Logger.log("Sheet show skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Sheet show skipped for " + sheet.getName() + ": " + err.message);
   }
 }
 
@@ -5478,7 +5453,7 @@ function hideSheetIfNeeded_(sheet, timing, stepName) {
       if (timing && stepName) markFrameworkStep_(timing, stepName);
     }
   } catch (err) {
-    Logger.log("Sheet hide skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Sheet hide skipped for " + sheet.getName() + ": " + err.message);
   }
 }
 
@@ -5503,7 +5478,7 @@ function formatMonthlySheets() {
     routes.forEach(function(route) {
       const sourceSheet = ss.getSheetByName(route.code);
       if (!sourceSheet) {
-        Logger.log("Format Monthly Sheets skipped missing import tab: " + route.code + " (" + route.label + ")");
+        logBestEffortWarning_("Format Monthly Sheets skipped missing import tab: " + route.code + " (" + route.label + ")");
         markFrameworkStep_(timing, "Skipped missing import tab: " + route.code);
         skipped.push(route.code);
         return;
@@ -5578,7 +5553,7 @@ function formatMonthlyDashboardSheetFromSource_(sourceSheet, sheetType, monthPar
     outputSheet.getRange("A1").setValue(sheetDef.reportTitle || sheetType);
     if (titleInfoText) outputSheet.getRange("C1").setValue(titleInfoText);
   } catch (err) {
-    Logger.log("Could not write " + sheetType + " title info: " + err.message);
+    throw new Error("Fatal: Could not write title info: " + err.message);
   }
   lockFinalOutputRowHeights_(outputSheet, sheetType);
   markFrameworkStep_(timing, "Locked monthly dashboard row heights: " + outputName);
@@ -5921,7 +5896,7 @@ function applyStandardFormatting_(sheet, options) {
     sheet.setFrozenRows(Math.max(headerRow, 1));
     forceStandardTitleCellAlignment_(sheet);
   } catch (err) {
-    Logger.log("Standard formatting skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Standard formatting skipped for " + sheet.getName() + ": " + err.message);
   }
   return sheet;
 }
@@ -5941,7 +5916,7 @@ function forceStandardTitleCellAlignment_(sheet) {
   try {
     sheet.getRange("A1:D3").setHorizontalAlignment("left").setVerticalAlignment("middle");
   } catch (err) {
-    Logger.log("Title alignment skipped for " + sheet.getName() + ": " + err.message);
+    logBestEffortWarning_("Title alignment skipped for " + sheet.getName() + ": " + err.message);
   }
 }
 
@@ -5966,7 +5941,7 @@ function restorePreviouslyHiddenSheets_(hiddenNames, sheetToKeepVisible) {
         hideSheetIfNeeded_(sheet);
       }
     } catch (err) {
-      Logger.log("Hidden state restore skipped for " + sheet.getName() + ": " + err.message);
+      logBestEffortWarning_("Hidden state restore skipped for " + sheet.getName() + ": " + err.message);
     }
   });
 }
@@ -5975,7 +5950,7 @@ function finalizeWorkflowAfterCreateOrUpdate_() {
   try {
     createIndexSheet();
   } catch (err) {
-    Logger.log("Workflow final index refresh skipped: " + err.message);
+    logBestEffortWarning_("Workflow final index refresh skipped: " + err.message);
   }
 }
 
@@ -5993,7 +5968,7 @@ function autoHidePreviousMonthSheetsAfterWorkflow_(monthParts) {
         hideSheetIfNeeded_(sheet);
       }
     } catch (err) {
-      Logger.log("Previous-month hide skipped for " + sheet.getName() + ": " + err.message);
+      logBestEffortWarning_("Previous-month hide skipped for " + sheet.getName() + ": " + err.message);
     }
   });
 }
@@ -6015,7 +5990,7 @@ function applyIndexSheetRowFills_(sheet) {
       sheet.getRange(2, 1, backgrounds.length, lastCol).setBackgrounds(backgrounds);
     }
   } catch (err) {
-    Logger.log("Index row fills skipped: " + err.message);
+    logBestEffortWarning_("Index row fills skipped: " + err.message);
   }
 }
 
@@ -6037,7 +6012,7 @@ function applyCurrentVsOlderTabColors_(ss, currentMonthParts) {
       const sheetDate = extractFirstDateFromSheetName_(sheet.getName());
       sheet.setTabColor(currentFirst && sheetDate && sheetDate.getTime() < currentFirst.getTime() ? "#CCCCCC" : baseColor);
     } catch (err) {
-      Logger.log("Tab color skipped for " + sheet.getName() + ": " + err.message);
+      logBestEffortWarning_("Tab color skipped for " + sheet.getName() + ": " + err.message);
     }
   });
 }
@@ -6059,7 +6034,7 @@ function formatDateColumnsByHeader_(sheet, headerRow, dataStartRow) {
       try {
         sheet.getRange(dataStartRow, index + 1, lastRow - dataStartRow + 1, 1).setNumberFormat("m/d/yy");
       } catch (err) {
-        Logger.log("Date format skipped for " + header + ": " + err.message);
+        logBestEffortWarning_("Date format skipped for " + header + ": " + err.message);
       }
     }
   });
@@ -6074,10 +6049,6 @@ function rowObjectFromHeaders_(headers, row) {
   return obj;
 }
 
-function appendMasterListChangeLog_(logRows) {
-  if (!logRows || !logRows.length) return;
-  Logger.log("Master List Change Log sheet is retired; suppressed " + logRows.length + " legacy change-log row(s).");
-}
 
 function getLiveDashboardAuditStatus_() {
   return getLiveSheetStatus_(RFF_DASHBOARD_QUALITY_SHEET, "Dashboard Audit");
@@ -6338,7 +6309,6 @@ function isParticipantEnrollmentStatusDisenrolled_(rows, headerMap) {
 function getSheetTypeForOrganization_(sheetName) {
   const name = String(sheetName || "").trim().toLowerCase();
   if (name === "index") return "Index";
-  if (name.indexOf("master list change log") !== -1) return SHEET_TYPE.MASTER_LIST_CHANGE_LOG;
   if (name.indexOf("master list") !== -1) return SHEET_TYPE.MASTER_LIST;
   if (name.indexOf("monthly change") !== -1) return SHEET_TYPE.MONTHLY_CHANGE;
   if (name.indexOf("demo p") !== -1) return SHEET_TYPE.DEMO_P;
@@ -6657,7 +6627,7 @@ function archiveRawDataSheet_(sourceSheet, archiveName) {
   try {
     hideSheetIfNeeded_(archived);
   } catch (err) {
-    Logger.log("Archive sheet hide skipped for " + safeName + ": " + err.message);
+    logBestEffortWarning_("Archive sheet hide skipped for " + safeName + ": " + err.message);
   }
 
 
@@ -6757,7 +6727,7 @@ function archiveMonthlySheetsBySpecs_(parsedMonth, specs, timing) {
     const sheets = findArchiveMonthlyCandidateSheets_(ss, spec.keywords, parsedMonth.monthLabel);
     if (!sheets.length) {
       const message = "No local sheet found for " + spec.label + " " + parsedMonth.monthLabel;
-      Logger.log(message);
+      logBestEffortWarning_(message);
       markFrameworkStep_(timing, "Archive skipped: " + spec.label, message);
       result.skipped.push(spec.label);
       return;
@@ -6771,7 +6741,7 @@ function archiveMonthlySheetsBySpecs_(parsedMonth, specs, timing) {
         markFrameworkStep_(timing, "Archived and removed local sheet: " + sheetName);
       } catch (err) {
         const message = sheetName + ": " + err.message;
-        Logger.log("Archive monthly sheet failed: " + message);
+        logBestEffortWarning_("Archive monthly sheet failed: " + message);
         markFrameworkStep_(timing, "Archive failed: " + sheetName, err.message);
         result.failed.push(message);
       }
@@ -6820,7 +6790,7 @@ function copySheetToArchiveAndDeleteLocal_(ss, archiveSs, sourceSheet, archiveNa
   try {
     hideSheetIfNeeded_(archived);
   } catch (err) {
-    Logger.log("Archived sheet hide skipped for " + archiveName + ": " + err.message);
+    logBestEffortWarning_("Archived sheet hide skipped for " + archiveName + ": " + err.message);
   }
 
   const verified = archiveSs.getSheetByName(archiveName);
@@ -6879,176 +6849,6 @@ function formatMonthlyChangeSubsectionBlock(sheet, titleRow, label) {
 
 function getMonthlyChangeSubsectionLabels() {
   return RFF_MONTHLY_CHANGE_SUBSECTIONS.slice();
-}
-
-
-function runFrameworkTest6DateFormatting() {
-  return runFrameworkTimed_("Framework Test 6 - Date Formatting", function(timing) {
-    const dashboard = loadDashboardConfig_();
-    markFrameworkStep_(timing, "Dashboard loaded");
-    return runFrameworkTest6DateFormattingCore_(dashboard, timing);
-  });
-}
-
-function runFrameworkTest6DateFormattingCore_(dashboard, timing, options) {
-  const activeDashboard = dashboard || loadDashboardConfig_();
-  const results = [];
-
-  activeDashboard.sheetDefinitions.forEach(function(sheetDef) {
-    const templateResults = testDateFormattingForTemplate_(activeDashboard, sheetDef);
-    results.push.apply(results, templateResults);
-    markFrameworkStep_(timing, "Checked date formats: " + sheetDef.templateName);
-  });
-
-  writeFrameworkTest6DateFormatReport_(results, options);
-  markFrameworkStep_(timing, options && options.deferDashboardWrite ? "Dashboard Quality Section G staged" : "Dashboard Quality Section G saved");
-
-  return results;
-}
-
-function testDateFormattingForTemplate_(dashboard, sheetDef) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const sheet = ss.getSheetByName(sheetDef.templateName);
-  const globals = dashboard.globals;
-  const headers = getHeadersForSheetType_(dashboard, sheetDef.sheetType);
-  const results = [];
-
-
-  if (!sheet) {
-    results.push({
-      templateName: sheetDef.templateName,
-      sheetType: sheetDef.sheetType,
-      header: "",
-      column: "",
-      expectedFormat: "",
-      actualFormats: "Template missing",
-      status: "FAIL"
-    });
-    return results;
-  }
-
-
-  const dateChecks = [];
-  headers.forEach(function(header, index) {
-    const def = dashboard.columnDefinitions[header] || {};
-    if (!def.dateColumn) return;
-    const expectedFormat = getExpectedNumberFormat_(def, globals);
-    const expectedSheetsFormat = getGoogleSheetsNumberFormat_(expectedFormat, true);
-    dateChecks.push({
-      header: header,
-      column: index + 1,
-      expectedFormat: expectedFormat,
-      expectedSheetsFormat: expectedSheetsFormat
-    });
-  });
-
-
-  if (dateChecks.length === 0) return results;
-
-
-  if (sheet.getMaxColumns() < headers.length) {
-    dateChecks.forEach(function(check) {
-      results.push({
-        templateName: sheetDef.templateName,
-        sheetType: sheetDef.sheetType,
-        header: check.header,
-        column: check.column,
-        expectedFormat: check.expectedFormat,
-        actualFormats: "Template has " + sheet.getMaxColumns() + " column(s), expected at least " + headers.length,
-        status: "FAIL"
-      });
-    });
-    return results;
-  }
-
-
-  const sampleRows = Math.min(10, Math.max(sheet.getMaxRows() - globals.dataStartRow + 1, 1));
-  const lastCol = Math.max(headers.length, 1);
-  let allFormats = [];
-
-
-  try {
-    allFormats = sheet.getRange(globals.dataStartRow, 1, sampleRows, lastCol).getNumberFormats();
-  } catch (err) {
-    dateChecks.forEach(function(check) {
-      results.push({
-        templateName: sheetDef.templateName,
-        sheetType: sheetDef.sheetType,
-        header: check.header,
-        column: check.column,
-        expectedFormat: check.expectedFormat,
-        actualFormats: "Read error: " + err.message,
-        status: "FAIL"
-      });
-    });
-    return results;
-  }
-
-
-  dateChecks.forEach(function(check) {
-    let uniqueActualFormats = collectUniqueDateFormatsForCheck_(allFormats, check.column);
-    let failedFormats = uniqueActualFormats.filter(function(actualFormat) {
-      return !numberFormatsMatch_(actualFormat, check.expectedSheetsFormat);
-    });
-    let repaired = false;
-
-    if (failedFormats.length && RFF_REPAIR_DATE_FORMATS_DURING_SECTION_G) {
-      repaired = repairDateFormatForSectionG_(sheet, globals, check);
-      if (repaired) {
-        try {
-          const repairedFormats = sheet.getRange(globals.dataStartRow, check.column, sampleRows, 1).getNumberFormats();
-          uniqueActualFormats = collectUniqueDateFormatsForCheck_(repairedFormats, 1);
-          failedFormats = uniqueActualFormats.filter(function(actualFormat) {
-            return !numberFormatsMatch_(actualFormat, check.expectedSheetsFormat);
-          });
-        } catch (readErr) {
-          Logger.log("Section G repaired format read skipped for " + sheetDef.templateName + " / " + check.header + ": " + readErr.message);
-        }
-      }
-    }
-
-    results.push({
-      templateName: sheetDef.templateName,
-      sheetType: sheetDef.sheetType,
-      header: check.header,
-      column: check.column,
-      expectedFormat: check.expectedFormat,
-      actualFormats: uniqueActualFormats.join(", ") + (repaired ? " (repaired)" : ""),
-      status: failedFormats.length === 0 ? "PASS" : "FAIL"
-    });
-  });
-
-
-  return results;
-}
-
-function collectUniqueDateFormatsForCheck_(formatRows, column) {
-  const uniqueActualFormats = [];
-  (formatRows || []).forEach(function(row) {
-    const actualFormat = (row || [])[column - 1];
-    if (uniqueActualFormats.indexOf(actualFormat) === -1) uniqueActualFormats.push(actualFormat);
-  });
-  return uniqueActualFormats;
-}
-
-function repairDateFormatForSectionG_(sheet, globals, check) {
-  try {
-    const dataStartRow = Number(globals.dataStartRow || DATA_START_ROW);
-    const maxRows = sheet.getMaxRows();
-    if (maxRows < dataStartRow) return false;
-    const dataRows = maxRows - dataStartRow + 1;
-    const sampleRows = Math.min(25, dataRows);
-    sheet.getRange(dataStartRow, check.column, dataRows, 1).setNumberFormat(check.expectedSheetsFormat);
-    sheet.getRange(dataStartRow, check.column, sampleRows, 1).setNumberFormat(check.expectedSheetsFormat);
-    return true;
-  } catch (err) {
-    throw new Error("Section G date format repair failed for " + sheet.getName() + " / " + check.header + ": " + err.message);
-  }
-}
-
-function writeFrameworkTest6DateFormatReport_(results, options) {
-  saveDashboardQualityRowsForTest6_(results, options);
-  deleteLegacyQualityReportSheet_(RFF_TEST6_DATE_FORMAT_SHEET);
 }
 
 
@@ -7175,7 +6975,9 @@ function validateTemplateFromDashboard_(dashboard, sheetDef, options) {
 
 
   try {
-    const sampleRows = Math.min(10, Math.max(sheet.getMaxRows() - globals.dataStartRow + 1, 1));
+    const availableFormatRows = sheet.getMaxRows() - globals.dataStartRow + 1;
+    if (availableFormatRows < 1) return issues;
+    const sampleRows = Math.min(10, availableFormatRows);
     const formatWidth = Math.max(expectedHeaders.length, 1);
     const allFormats = sheet.getRange(globals.dataStartRow, 1, sampleRows, formatWidth).getNumberFormats();
 
@@ -7381,7 +7183,7 @@ function enforceDemoPStrictDashboardSchema_(sheet) {
 
 
   if (missing.length || unexpected.length) {
-    Logger.log(
+    logBestEffortWarning_(
       "Demo P header drift detected. Missing: " +
       missing.join(", ") +
       " Unexpected: " +
@@ -7420,17 +7222,19 @@ function mapRowsToHeaders_(sourceRows, sourceHeaders, targetHeaders) {
 
 function applyUniversalFastCanvasFormatting_(sheet, dashboard, headers) {
   if (!sheet || !dashboard || !headers) return;
+  const lastRow = sheet.getLastRow();
+  if (lastRow < DATA_START_ROW) return;
   try {
     applyColumnWidths_(sheet, dashboard, headers);
     applyHiddenColumnSettings_(sheet, dashboard, headers);
     sheet.getRange(
       DATA_START_ROW,
       1,
-      Math.max(sheet.getLastRow() - DATA_START_ROW + 1, 1),
+      lastRow - DATA_START_ROW + 1,
       Math.max(sheet.getLastColumn(), 1)
     ).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
   } catch (err) {
-    Logger.log("Universal canvas formatting skipped: " + err.message);
+    throw new Error("Universal canvas formatting failed for " + sheet.getName() + ": " + err.message);
   }
 }
 
@@ -7439,7 +7243,10 @@ function applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStart
   const globals = (dashboard && dashboard.globals) || {};
   const columnDefinitions = (dashboard && dashboard.columnDefinitions) || {};
   const startRow = Number(dataStartRow || DATA_START_ROW);
-  const rows = Math.max(Number(rowCount || (sheet.getMaxRows() - startRow + 1)), 1);
+  const hasExplicitRowCount = rowCount !== undefined && rowCount !== null;
+  const requestedRows = hasExplicitRowCount ? Number(rowCount || 0) : Number(sheet.getMaxRows() - startRow + 1);
+  if (requestedRows < 1) return;
+  const rows = requestedRows;
   const formatsByA1 = {};
 
   headers.forEach(function(header, index) {
@@ -7448,13 +7255,18 @@ function applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStart
     if (!format) {
       format = columnDef.dateColumn || isDateLikeHeader_(header) ? (globals.defaultDateFormat || "mm/dd/yyyy") : "@";
     }
-    const rangeA1 = sheet.getRange(startRow, index + 1, rows, 1).getA1Notation();
+    const column = index + 1;
+    const rangeA1 = rowColToA1_(startRow, column) + ":" + rowColToA1_(startRow + rows - 1, column);
     if (!formatsByA1[format]) formatsByA1[format] = [];
     formatsByA1[format].push(rangeA1);
   });
 
   Object.keys(formatsByA1).forEach(function(format) {
-    sheet.getRangeList(formatsByA1[format]).setNumberFormat(format);
+    try {
+      sheet.getRangeList(formatsByA1[format]).setNumberFormat(format);
+    } catch (err) {
+      throw new Error("Governed text/number format failed for " + sheet.getName() + " with format " + format + ": " + err.message);
+    }
   });
 }
 
@@ -7496,7 +7308,7 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
   // 2. RIGHT-SIZE GRID: Force dimensions before writing to save rendering ticks
   resizeSheetGrid_(sheet, requiredRows, width);
 
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, Math.max(rows.length, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, rows.length);
 
   // 3. NAKED WRITE: Set raw values instantly on unformatted cells
   if (rows.length) {
@@ -7523,7 +7335,7 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
     if (endDate) sheet.getRange("D2").setValue(endDate);
     if (headers.length) sheet.getRange(HEADER_ROW, 1, 1, width).setValues([headers]);
   } catch (err) {
-    Logger.log("Output style paint skipped for " + outputName + ": " + err.message);
+    throw new Error("Output style paint failed for " + outputName + ": " + err.message);
   }
 
   // 5. ENFORCE SYSTEM ENVIRONMENT: Set frozen attributes, filters, and color palettes
@@ -7536,7 +7348,7 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
     if (existingFilter) existingFilter.remove();
     sheet.getRange(HEADER_ROW, 1, Math.max(sheet.getMaxRows() - HEADER_ROW + 1, 1), width).createFilter();
   } catch (err) {
-    Logger.log("Environmental configurations skipped for " + outputName + ": " + err.message);
+    throw new Error("Environmental configurations failed for " + outputName + ": " + err.message);
   }
 
   applyUniversalFastCanvasFormatting_(sheet, dashboard, headers);
@@ -7570,7 +7382,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
   // 2. RIGHT-SIZE GRID: Force dimensions before writing to save rendering ticks
   resizeSheetGrid_(sheet, requiredRows, width);
 
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, Math.max(rows.length, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, rows.length);
 
   // 3. NAKED WRITE: Set raw values instantly on unformatted cells (~2-3 seconds)
   if (rows.length) {
@@ -7601,7 +7413,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
     if (endDate) sheet.getRange("D2").setValue(endDate);
     if (headers.length) sheet.getRange(HEADER_ROW, 1, 1, width).setValues([headers]);
   } catch (err) {
-    Logger.log("Raw Data output style paint skipped for " + outputName + ": " + err.message);
+    throw new Error("Raw Data output style paint failed for " + outputName + ": " + err.message);
   }
 
   // 5. ENFORCE SYSTEM ENVIRONMENT: Set frozen attributes, filters, and color palettes
@@ -7614,7 +7426,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
     if (existingFilter) existingFilter.remove();
     sheet.getRange(HEADER_ROW, 1, Math.max(sheet.getMaxRows() - HEADER_ROW + 1, 1), width).createFilter();
   } catch (err) {
-    Logger.log("Raw Data environmental configurations skipped for " + outputName + ": " + err.message);
+    throw new Error("Raw Data environmental configurations failed for " + outputName + ": " + err.message);
   }
 
   applyUniversalFastCanvasFormatting_(sheet, dashboard, headers);
@@ -7648,7 +7460,7 @@ function ensureOutputSheetHasFormattedRows_(sheet, requiredRows, width) {
       sheet.getRange(DATA_START_ROW, 1, 1, width)
         .copyTo(sheet.getRange(currentRows + 1, 1, rowsToAdd, width), { formatOnly: true });
     } catch (err) {
-      Logger.log("Output template formatting extension skipped for " + sheet.getName() + ": " + err.message);
+      logBestEffortWarning_("Output template formatting extension skipped for " + sheet.getName() + ": " + err.message);
     }
   }
 }
@@ -7659,7 +7471,7 @@ function syncRawDataBannerColumns_(rawSheet, monthParts) {
   if (!rawSheet) return 0;
   const bannerSheet = getCurrentBannersSheet_(monthParts);
   if (!bannerSheet) {
-    Logger.log("Raw Data Banner sync skipped: Banners sheet not found.");
+    logBestEffortWarning_("Raw Data Banner sync skipped: Banners sheet not found.");
     return 0;
   }
 
@@ -7674,7 +7486,7 @@ function syncRawDataBannerColumns_(rawSheet, monthParts) {
   const rawLastNameIdx = rawHeaderMap["Last Name"];
   const rawFirstNameIdx = rawHeaderMap["First Name"];
   if (rawPMRIdx === -1 || rawLastNameIdx === undefined || rawFirstNameIdx === undefined) {
-    Logger.log("Raw Data Banner sync skipped: missing Participant PMR#, Last Name, or First Name.");
+    logBestEffortWarning_("Raw Data Banner sync skipped: missing Participant PMR#, Last Name, or First Name.");
     return 0;
   }
 
@@ -7869,7 +7681,7 @@ function formatCarePlanDueOrUnlockedFromDashboard_(sheetType, promptTitle, start
       outputSheet.getRange("A1").setValue(sheetDef.reportTitle || sheetType);
       if (titleInfoText) outputSheet.getRange("C1").setValue(titleInfoText);
     } catch (err) {
-      Logger.log("Could not write " + sheetType + " title info: " + err.message);
+      throw new Error("Fatal: Could not write title info: " + err.message);
     }
 
 
@@ -7929,7 +7741,7 @@ function collectAndClearMovedTitleInfoCells_(sheet, sheetType) {
       const value = String(sheet.getRange(a1).getDisplayValue() || "").trim();
       if (value) parts.push(value);
     } catch (err) {
-      Logger.log("Could not read moved source cell " + a1 + ": " + err.message);
+      logBestEffortWarning_("Could not read moved source cell " + a1 + ": " + err.message);
     }
   });
 
@@ -7938,7 +7750,7 @@ function collectAndClearMovedTitleInfoCells_(sheet, sheetType) {
     try {
       sheet.getRange(a1).clearContent();
     } catch (err) {
-      Logger.log("Could not clear moved source cell " + a1 + ": " + err.message);
+      logBestEffortWarning_("Could not clear moved source cell " + a1 + ": " + err.message);
     }
   });
 
@@ -8905,7 +8717,22 @@ function getDemoPMonthlySyncChangedPMRs_(monthParts) {
 
 function processDemoPDataWithFillBlankMask_(data, changedPMRs) {
   if (!data || !data.values || !data.values.length) return [];
-  const beforeValues = data.values.map(function(row) { return row.slice(); });
+
+  const pmrIdx = getPMRIndex_(data.headerMap);
+  const keptRows = [];
+  const beforeValues = [];
+
+  data.values.forEach(function(row) {
+    const pmr = pmrIdx === -1 ? "" : normalizePMR_(row[pmrIdx]);
+    if (pmr && changedPMRs && changedPMRs.has(pmr)) return;
+
+    keptRows.push(row);
+    beforeValues.push(row.slice());
+  });
+
+  const originalValues = data.values;
+  data.values = keptRows;
+
   populateParticipantNameData_(data, null);
   populateDemoPNameData_(data, null);
   combineAddressesData_(data, null);
@@ -8914,16 +8741,13 @@ function processDemoPDataWithFillBlankMask_(data, changedPMRs) {
   runMasterContactProcessData_(data, null);
   combineNotesSummaryData_(data, null);
 
-  const pmrIdx = getPMRIndex_(data.headerMap);
-  const keptRows = [];
   data.values.forEach(function(row, r) {
-    const pmr = pmrIdx === -1 ? "" : normalizePMR_(row[pmrIdx]);
-    if (pmr && changedPMRs && changedPMRs.has(pmr)) return;
     for (let c = 0; c < row.length; c++) {
       if (normalizeCompareValue_(beforeValues[r][c]) !== "") row[c] = beforeValues[r][c];
     }
-    keptRows.push(row);
   });
+
+  data.values = originalValues;
   return keptRows;
 }
 
@@ -9486,7 +9310,7 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
 
     demoSheet.getRange("A1").setValue(sheetDef.reportTitle || "Demo P");
   } catch (err) {
-    Logger.log("Demo P layout structural paint skipped: " + err.message);
+    logBestEffortWarning_("Demo P layout structural paint skipped: " + err.message);
   }
 
   // 5. Apply environmental rules
@@ -9495,7 +9319,7 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
     demoSheet.setFrozenColumns(Math.min(template.getFrozenColumns(), width));
     demoSheet.setTabColor(template.getTabColor());
   } catch (err) {
-    Logger.log("Demo P environment settings skipped: " + err.message);
+    logBestEffortWarning_("Demo P environment settings skipped: " + err.message);
   }
 
   applyUniversalFastCanvasFormatting_(demoSheet, dashboard, headers);
@@ -9742,7 +9566,7 @@ function applyDemoPTemplateToSheet_(targetSheet, monthParts) {
   try {
     targetSheet.getRange("A1").setValue(sheetDef.reportTitle || "Demo P");
   } catch (err) {
-    Logger.log("Could not refresh Demo P title after dashboard template apply: " + err.message);
+    throw new Error("Could not refresh Demo P title after dashboard template apply: " + err.message);
   }
 
 
@@ -9751,30 +9575,25 @@ function applyDemoPTemplateToSheet_(targetSheet, monthParts) {
 
 function applyDemoPDateFormattingByHeader_(sheet) {
   if (!sheet) return;
-
-
-  const lastRow = Math.max(sheet.getLastRow(), DATA_START_ROW);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < DATA_START_ROW) return;
   const headers = getHeaders_(sheet, HEADER_ROW);
-
+  const dataRows = lastRow - DATA_START_ROW + 1;
 
   DEMO_P_TEMPLATE_DATE_HEADERS.forEach(headerName => {
     const idx = headers.indexOf(headerName);
     if (idx === -1) return;
-
-
     try {
-      sheet.getRange(DATA_START_ROW, idx + 1, Math.max(lastRow - DATA_START_ROW + 1, 1), 1);
+      sheet.getRange(DATA_START_ROW, idx + 1, dataRows, 1).setNumberFormat("m/d/yyyy");
     } catch (err) {
-      Logger.log("Could not apply Demo P date format for " + headerName + ": " + err.message);
+      throw new Error("Could not apply Demo P date format for " + headerName + ": " + err.message);
     }
   });
 
-
   try {
-    sheet.getRange("B2");
-    sheet.getRange("D2");
+    sheet.getRange("B2:D2").setNumberFormat("m/d/yyyy");
   } catch (err) {
-    Logger.log("Could not apply Demo P title date format: " + err.message);
+    throw new Error("Could not apply Demo P title date format: " + err.message);
   }
 }
 
@@ -10194,42 +10013,31 @@ function rowsWithDOBOnlyForSection_(items, headerMap) {
 
 function getChangedColumnsForSectionRows_(currentItems, previousItems, currentHeaders, previousHeaders, columnsToCompare, currentHeaderMap, previousHeaderMap) {
   const changed = new Set();
-
-
   if (!currentItems || currentItems.length === 0) return changed;
-
-
   if (!previousItems || previousItems.length === 0) return changed;
 
+  const currentSignatures = buildColumnSignaturesForSection_(currentItems, currentHeaderMap, columnsToCompare);
+  const previousSignatures = buildColumnSignaturesForSection_(previousItems, previousHeaderMap, columnsToCompare);
 
   columnsToCompare.forEach(header => {
-
-
     if (currentHeaderMap[header] === undefined || previousHeaderMap[header] === undefined) return;
-
-
-    const currentSig = buildColumnSignatureForSection_(currentItems, currentHeaderMap, [header]);
-    const previousSig = buildColumnSignatureForSection_(previousItems, previousHeaderMap, [header]);
-
-
-    if (currentSig !== previousSig) changed.add(header);
+    if ((currentSignatures[header] || "") !== (previousSignatures[header] || "")) changed.add(header);
   });
-
 
   return changed;
 }
 
-function buildColumnSignatureForSection_(items, headerMap, columnsToCompare) {
-  return (items || [])
-    .map(item => {
-      return columnsToCompare.map(header => {
-        const idx = headerMap[header];
-        if (idx === undefined || idx === -1) return "";
-        return normalizeCompareValue_(item.values[idx]);
-      }).join("~");
-    })
-    .sort()
-    .join("||");
+function buildColumnSignaturesForSection_(items, headerMap, columnsToCompare) {
+  const signatures = {};
+  (columnsToCompare || []).forEach(function(header) {
+    const idx = headerMap[header];
+    if (idx === undefined || idx === -1) return;
+    signatures[header] = (items || [])
+      .map(function(item) { return normalizeCompareValue_(item.values[idx]); })
+      .sort()
+      .join("||");
+  });
+  return signatures;
 }
 
 function compareRawDemoPForChanges_(previousDemo, currentDemo, monthParts) {
@@ -10356,23 +10164,17 @@ function compareRawDemoPForChanges_(previousDemo, currentDemo, monthParts) {
   allCurrentPMRs.forEach(pmr => {
     if (!previousData.allPMRs.has(pmr)) return;
 
+    const previousMap = buildContactCompareMap_(previousData.rowsByPMR.get(pmr) || [], previousData.headerMap, pmr);
+    const currentMap = buildContactCompareMap_(currentData.rowsByPMR.get(pmr) || [], currentData.headerMap, pmr);
+    const allContactKeys = new Set([].concat(Array.from(previousMap.keys()), Array.from(currentMap.keys())));
 
-    const previousRows = previousData.rowsByPMR.get(pmr) || [];
-    const currentRows = currentData.rowsByPMR.get(pmr) || [];
-
-
-    const maxLength = Math.max(previousRows.length, currentRows.length);
-
-
-    for (let i = 0; i < maxLength; i++) {
-      const previousItem = previousRows[i] || null;
-      const currentItem = currentRows[i] || null;
-
+    allContactKeys.forEach(key => {
+      const previousItem = previousMap.get(key) || null;
+      const currentItem = currentMap.get(key) || null;
 
       RAW_DEMO_P_CONTACT_FIELDS.forEach(field => {
         const previousValue = previousItem ? getFieldValueFromRow_(previousItem.values, previousData.headerMap, field) : "";
         const currentValue = currentItem ? getFieldValueFromRow_(currentItem.values, currentData.headerMap, field) : "";
-
 
         if (!valuesAreEqual_(previousValue, currentValue)) {
           addMCRRow_(
@@ -10391,7 +10193,7 @@ function compareRawDemoPForChanges_(previousDemo, currentDemo, monthParts) {
           );
         }
       });
-    }
+    });
   });
 
 
@@ -10559,6 +10361,25 @@ function addMCRRow_(
 
   if (!changedPMRs.has(pmr)) changedPMRs.set(pmr, new Set());
   changedPMRs.get(pmr).add(section);
+}
+
+function buildContactCompareMap_(rows, headerMap, pmr) {
+  const map = new Map();
+  (rows || []).forEach(function(item, ordinal) {
+    const values = item && item.values ? item.values : [];
+    const keyParts = [
+      pmr,
+      getFieldValueFromRow_(values, headerMap, "Contact - First Name"),
+      getFieldValueFromRow_(values, headerMap, "Contact - Last Name"),
+      getFieldValueFromRow_(values, headerMap, "Relationship"),
+      getFieldValueFromRow_(values, headerMap, "AD1 - Phone") || getFieldValueFromRow_(values, headerMap, "Phone")
+    ].map(normalizeCompareValue_);
+    let key = keyParts.join("|");
+    if (key.replace(/[|]/g, "") === normalizeCompareValue_(pmr)) key = normalizeCompareValue_(pmr) + "|row#" + ordinal;
+    if (map.has(key)) key += "|dup#" + ordinal;
+    map.set(key, item);
+  });
+  return map;
 }
 
 function getFieldValueFromRow_(row, headerMap, field) {
@@ -11010,7 +10831,7 @@ function runMonthlyUpdate() {
   try {
     createIndexSheet();
   } catch (err) {
-    Logger.log("Monthly Update final index refresh skipped: " + err.message);
+    logBestEffortWarning_("Monthly Update final index refresh skipped: " + err.message);
   }
   notify_("Monthly Update complete.\n\n" + messages.join("\n"));
 }
@@ -11102,7 +10923,7 @@ function updateMasterListForMonth_(monthParts) {
     try {
       writeRuntimeTimingReport_(timing);
     } catch (reportErr) {
-      Logger.log("Could not write timing report: " + reportErr.message);
+      logBestEffortWarning_("Could not write timing report: " + reportErr.message);
     }
     throw err;
   }
@@ -11182,7 +11003,7 @@ function createMasterList() {
     try {
       writeRuntimeTimingReport_(timing);
     } catch (reportErr) {
-      Logger.log("Could not write timing report: " + reportErr.message);
+      logBestEffortWarning_("Could not write timing report: " + reportErr.message);
     }
     throw err;
   }
@@ -11312,10 +11133,10 @@ function createMasterListSheetFromTemplate_(ss, targetName, monthParts) {
         );
     }
   } catch (err) {
-    Logger.log("Master List naked canvas style paint skipped: " + err.message);
+    logBestEffortWarning_("Master List naked canvas style paint skipped: " + err.message);
   }
   applyColumnWidths_(sheet, dashboard, headers);
-  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, Math.max(requiredRows - DATA_START_ROW + 1, 1));
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, requiredRows >= DATA_START_ROW ? requiredRows - DATA_START_ROW + 1 : 0);
 
   try {
     sheet.getRange("A1:D2").setValues([
@@ -11327,7 +11148,7 @@ function createMasterListSheetFromTemplate_(ss, targetName, monthParts) {
     sheet.setFrozenColumns(Math.min(template.getFrozenColumns(), width));
     sheet.setTabColor(template.getTabColor());
   } catch (err) {
-    Logger.log("Master List naked canvas initialization skipped: " + err.message);
+    logBestEffortWarning_("Master List naked canvas initialization skipped: " + err.message);
   }
 
   clearSheetRuntimeCachesForSheet_(sheet);
@@ -11364,7 +11185,7 @@ function copyDemoPHeaderRowsToMasterList_(demoSheet, masterSheet, monthParts) {
     }
 
   } catch (err) {
-    Logger.log("Column growth skipped while copying Demo P headers: " + err.message);
+    logBestEffortWarning_("Column growth skipped while copying Demo P headers: " + err.message);
   }
 }
 
@@ -11436,7 +11257,7 @@ function createIndexSheet() {
     try {
       sheet.getDataRange().clearContent().clearFormat().breakApart();
     } catch (err) {
-      Logger.log("Index governed-range reset skipped: " + err.message);
+      logBestEffortWarning_("Index governed-range reset skipped: " + err.message);
     }
   }
 
@@ -11558,7 +11379,7 @@ function createIndexSheet() {
     for (let r = 5; r <= finalIndexMatrix.length; r++) {
       const label = String(finalIndexMatrix[r - 1][0] || "");
       if (["Current Sheets", "Imported Data", "System Sheets", "Templates"].indexOf(label) !== -1) {
-        sectionRows.push(sheet.getRange(r, 1, 1, 4).getA1Notation());
+        sectionRows.push(rowColToA1_(r, 1) + ":" + rowColToA1_(r, 4));
       }
     }
     if (sectionRows.length) {
@@ -11657,7 +11478,7 @@ function enforceGlobalSheetSortOrder_(monthParts) {
         if (inferredType) applyOutputVisibilityPolicy_(sheet, dashboard, inferredType, null);
       }
     } catch (err) {
-      Logger.log("Global sheet sort skipped for " + sheetName + ": " + err.message);
+      logBestEffortWarning_("Global sheet sort skipped for " + sheetName + ": " + err.message);
     }
   });
   return moves;
@@ -11744,7 +11565,7 @@ function organizeWorkbookTabs_(monthParts) {
       const inferredType = inferSheetTypeFromName_(sheetName);
       if (inferredType) applyOutputVisibilityPolicy_(sheet, dashboard, inferredType, null);
     } catch (err) {
-      Logger.log("Could not move sheet " + sheetName + ": " + err.message);
+      logBestEffortWarning_("Could not move sheet " + sheetName + ": " + err.message);
     }
   });
   hideSystemAndTestingSheets_();
@@ -11765,7 +11586,7 @@ function hideSystemAndTestingSheets_(timing) {
         hiddenCount++;
       }
     } catch (err) {
-      Logger.log("Could not hide system/testing sheet " + sheet.getName() + ": " + err.message);
+      logBestEffortWarning_("Could not hide system/testing sheet " + sheet.getName() + ": " + err.message);
     }
   });
   if (timing) markFrameworkStep_(timing, "System/testing sheets hidden", "Sheets hidden: " + hiddenCount);
@@ -11778,7 +11599,6 @@ function getSystemAndTestingSheetNames_() {
     RFF_DASHBOARD_SHEET,
     RFF_VALIDATION_SHEET,
     RFF_TIMING_SHEET,
-    RFF_TEST6_DATE_FORMAT_SHEET,
     RFF_TEST_DASHBOARD_SHEET,
     RFF_HEALTH_CHECK_SHEET
   ].forEach(function(name) {
@@ -12326,27 +12146,13 @@ function getPMRsForMonthlyChangeSections_(changedInfo, sectionsToMatch) {
 function deletePMRBlocksFromMasterListBySet_(masterSheet, pmrSet, reportSheet, monthParts, reasonText) {
   if (!masterSheet || !pmrSet || pmrSet.size === 0) return 0;
   const rowsByPMR = buildRowsByPMR_(masterSheet, HEADER_ROW, DATA_START_ROW);
-  const headers = getHeaders_(masterSheet, HEADER_ROW);
-  const logRows = [];
   const rowsToDelete = [];
-  const timestamp = new Date();
   pmrSet.forEach(pmr => {
     const items = rowsByPMR.get(pmr) || [];
     items.forEach(item => {
-      logRows.push([
-        timestamp,
-        monthParts.firstDay,
-        pmr,
-        reasonText || "Monthly Change action",
-        masterSheet.getName(),
-        item.rowNumber,
-        reportSheet ? reportSheet.getName() : "",
-        JSON.stringify(rowObjectFromHeaders_(headers, item.values))
-      ]);
       rowsToDelete.push(item.rowNumber);
     });
   });
-  appendMasterListChangeLog_(logRows);
   deleteRowNumberBatches_(masterSheet, rowsToDelete);
   clearSheetRuntimeCachesForSheet_(masterSheet);
   return rowsToDelete.length;
@@ -12516,7 +12322,7 @@ function showSystemSheetsNow() {
           shownCount++;
         }
       } catch (err) {
-        Logger.log("Could not show system/testing sheet " + sheetName + ": " + err.message);
+        logBestEffortWarning_("Could not show system/testing sheet " + sheetName + ": " + err.message);
       }
     });
 
@@ -13005,7 +12811,7 @@ function moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts) {
   const disenrollEffectiveIdx = findHeaderIndex_(headerMap, ["Disenrollment Effective Date", "Disenrollment Date", "Date of Death"]);
 
   if (pmrIdx === -1 || primaryIdx === undefined || disenrollEffectiveIdx === -1) {
-    Logger.log("Surgical disenrollment sweep skipped: missing critical schema headers.");
+    logBestEffortWarning_("Surgical disenrollment sweep skipped: missing critical schema headers.");
     return result;
   }
 
@@ -13037,46 +12843,36 @@ function moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts) {
   });
 
   if (workspaceDisenrolledPMRs.size === 0) {
-    Logger.log("Workspace sweep complete: No new unlinked disenrolled records found on Demo P.");
+    logBestEffortWarning_("Workspace sweep complete: No new unlinked disenrolled records found on Demo P.");
     return result;
   }
 
-  const keepRows = [];
-  let removedCount = 0;
+  const rowNumbersToDelete = [];
   const rowsToAppendByPMR = new Map();
 
-  // 3. SEGREGATE RETAINED PARTICIPANTS FROM EXCLUDED BLOCKS
-  values.forEach(function(row) {
+  // 3. COLLECT DISENROLLED PARTICIPANT ROW NUMBERS FOR PHYSICAL DELETION
+  values.forEach(function(row, offset) {
     const pmr = normalizePMR_(row[pmrIdx]);
-    if (!pmr || !workspaceDisenrolledPMRs.has(pmr)) {
-      keepRows.push(row);
-      return;
-    }
+    if (!pmr || !workspaceDisenrolledPMRs.has(pmr)) return;
 
     if (!rowsToAppendByPMR.has(pmr)) {
       rowsToAppendByPMR.set(pmr, []);
     }
     rowsToAppendByPMR.get(pmr).push(row);
-    removedCount++;
+    rowNumbersToDelete.push(DATA_START_ROW + offset);
   });
 
   result.pmrsRemoved = workspaceDisenrolledPMRs.size;
-  result.rowsRemoved = removedCount;
+  result.rowsRemoved = rowNumbersToDelete.length;
 
   // Bulk write new delta rows directly into your database sheet
   result.rowsCopied = appendDisenrolledDeltasToExclusionSheet_(exclusionSheet, headers, rowsToAppendByPMR, monthParts);
 
-  // 4. BULK FLUSH DISENROLLED WORKSPACE LINES
-  demoDataRange.clearContent();
-  if (keepRows.length > 0) {
-    demoSheet.getRange(DATA_START_ROW, 1, keepRows.length, lastCol).setValues(keepRows);
+  // 4. BULK DELETE DISENROLLED WORKSPACE LINES AND COLLAPSE GRID BUFFER
+  if (rowNumbersToDelete.length > 0) {
+    deleteRowNumberBatches_(demoSheet, rowNumbersToDelete);
   }
-
-  const newLastRow = DATA_START_ROW + keepRows.length - 1;
-  const maxRows = demoSheet.getMaxRows();
-  if (maxRows > newLastRow) {
-    demoSheet.getRange(newLastRow + 1, 1, maxRows - newLastRow, lastCol).clearContent().breakApart();
-  }
+  trimExcessRows_(demoSheet, 500);
 
   clearSheetRuntimeCachesForSheet_(demoSheet);
   clearSheetRuntimeCachesForSheet_(exclusionSheet);
@@ -13143,7 +12939,7 @@ function appendDisenrolledDeltasToExclusionSheet_(exclusionSheet, sourceHeaders,
     exclusionSheet.getRange(DATA_START_ROW, 1, 1, width)
       .copyTo(targetRange, SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
   } catch (err) {
-    Logger.log("Incremental format brush extension skipped: " + err.message);
+    logBestEffortWarning_("Incremental format brush extension skipped: " + err.message);
   }
 
   lockFinalOutputRowHeights_(exclusionSheet, "Disenrolled Exclusion");
@@ -13191,7 +12987,7 @@ function createDisenrolledExclusionSheetFromDashboardTemplate_(ss, monthParts) {
     sheet.getRange("D2").setValue(endDate);
     if (headers.length) sheet.getRange(HEADER_ROW, 1, 1, headers.length).setValues([headers]);
     applyDashboardTemplateFormattingToActiveReportSheet_(sheet, dashboard, sheetDef, headers, getBehaviorForSheetType_(dashboard, SHEET_TYPE.DISENROLLED_EXCLUSION), monthParts, monthParts && monthParts.lastDay, "Initialized without template", null);
-    Logger.log("Template layer missing for Disenrolled Exclusion; initialized persistent sheet from dashboard schema.");
+    logBestEffortWarning_("Template layer missing for Disenrolled Exclusion; initialized persistent sheet from dashboard schema.");
   }
 
   const startDate = monthParts && monthParts.firstDay ? monthParts.firstDay : getTodayLocalDate_();
@@ -13808,16 +13604,15 @@ function runDashboardQualityValidateTemplates() {
   return runFrameworkTimed_("Dashboard Quality Validate Templates", function(timing) {
     const sheet = ensureDashboardQualityReportSheet_();
     runDashboardQualityTemplateAndFormatSections_(timing, false, false);
-    markFrameworkStep_(timing, "Dashboard Quality Sections F-G updated");
+    markFrameworkStep_(timing, "Dashboard Quality Section F updated");
   });
 }
 
 function runDashboardQualityTemplateAndFormatSections_(timing, includeDashboardAudit, includeHealthAndSignoff) {
   const dashboard = loadDashboardConfig_();
-  markFrameworkStep_(timing, "Dashboard loaded for Sections F-G");
+  markFrameworkStep_(timing, "Dashboard loaded for Section F");
 
   const previousValidationRows = getDashboardQualitySectionRows_(RFF_VALIDATION_SHEET);
-  const previousDateRows = getDashboardQualitySectionRows_(RFF_TEST6_DATE_FORMAT_SHEET);
   const stagedSectionWrites = [];
 
   validateReportTemplatesCore_(dashboard, timing, { deferDashboardWrite: true });
@@ -13829,20 +13624,11 @@ function runDashboardQualityTemplateAndFormatSections_(timing, includeDashboardA
     });
   }
 
-  runFrameworkTest6DateFormattingCore_(dashboard, timing, { deferDashboardWrite: true });
-  const dateRows = getDashboardQualitySectionRows_(RFF_TEST6_DATE_FORMAT_SHEET);
-  if (!dashboardQualityRowsEqualValues_(previousDateRows, dateRows)) {
-    stagedSectionWrites.push({
-      title: getDashboardQualitySectionTitleForKey_(RFF_TEST6_DATE_FORMAT_SHEET),
-      rows: buildTimestampedDashboardQualitySectionRows_(RFF_TEST6_DATE_FORMAT_SHEET, dateRows)
-    });
-  }
-
   if (stagedSectionWrites.length) {
     replaceDashboardQualitySectionsRows_(ensureDashboardQualityReportSheet_(), stagedSectionWrites);
-    markFrameworkStep_(timing, "Dashboard Quality Sections F-G batch written");
+    markFrameworkStep_(timing, "Dashboard Quality Section F batch written");
   } else {
-    markFrameworkStep_(timing, "Dashboard Quality Sections F-G sheet write skipped - unchanged");
+    markFrameworkStep_(timing, "Dashboard Quality Section F sheet write skipped - unchanged");
   }
 
   if (includeDashboardAudit) {
@@ -14053,7 +13839,6 @@ const RFF_DASHBOARD_QUALITY_SECTIONS = [
   { key: RFF_DASHBOARD_VERIFY_COLUMNS_KEY, title: "SECTION D - COLUMN DEFINITIONS VERIFICATION" },
   { key: RFF_DASHBOARD_VERIFY_BEHAVIORS_KEY, title: "SECTION E - SHEET BEHAVIOR VERIFICATION" },
   { key: RFF_VALIDATION_SHEET, title: "SECTION F - TEMPLATE STRUCTURE & VALIDATION" },
-  { key: RFF_TEST6_DATE_FORMAT_SHEET, title: "SECTION G - DATE FORMAT INTEGRITY VALIDATION" },
   { key: RFF_HEALTH_CHECK_SHEET, title: "SECTION H - FRAMEWORK HEALTH CHECK" },
   { key: RFF_PERFORMANCE_SUMMARY_KEY, title: "SECTION I - PERFORMANCE SUMMARY" },
   { key: RFF_MASTER_LIST_HEALTH_KEY, title: "SECTION J - MASTER LIST VALIDATION" },
@@ -14236,7 +14021,7 @@ function rebuildDashboardQualityReportShellCompact_(sheet) {
       .setBackground(RFF_SYSTEM_SHEET_TITLE_COLOR);
     sheet.setFrozenRows(1);
   } catch (err) {
-    Logger.log("Dashboard Quality shell title formatting skipped: " + err.message);
+    logBestEffortWarning_("Dashboard Quality shell title formatting skipped: " + err.message);
   }
 
   applyDashboardQualityReportColumnSettings_(sheet);
@@ -14305,7 +14090,7 @@ function initializeSystemSheets_() {
   try {
     dashboard = loadDashboardConfig_();
   } catch (err) {
-    Logger.log("Golden Master dashboard defaults fallback used: " + err.message);
+    logBestEffortWarning_("Golden Master dashboard defaults fallback used: " + err.message);
   }
   const baseTemplate = ensureGoldenMasterTemplate_(dashboard, null);
   return {
@@ -14316,18 +14101,7 @@ function initializeSystemSheets_() {
 }
 
 function deleteLegacyOperationalAndDiagnosticSheets_() {
-  const legacySheetNames = [
-    MASTER_LIST_CHANGE_LOG_SHEET
-  ];
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  legacySheetNames.forEach(function(sheetName) {
-    try {
-      const sheet = ss.getSheetByName(sheetName);
-      if (sheet && ss.getSheets().length > 1) ss.deleteSheet(sheet);
-    } catch (err) {
-      Logger.log("Legacy sheet cleanup skipped for " + sheetName + ": " + err.message);
-    }
-  });
+  return;
 }
 
 function ensureDashboardQualityReportSheet_() {
@@ -14367,7 +14141,7 @@ function applyDashboardQualityReportColumnSettings_(sheet, options) {
         sheet.setColumnWidth(i + 1, width);
       }
     } catch (err) {
-      Logger.log("Dashboard Quality width skipped for column " + (i + 1) + ": " + err.message);
+      logBestEffortWarning_("Dashboard Quality width skipped for column " + (i + 1) + ": " + err.message);
     }
   }
 
@@ -14375,7 +14149,7 @@ function applyDashboardQualityReportColumnSettings_(sheet, options) {
     try {
       sheet.setFrozenRows(1);
     } catch (err) {
-      Logger.log("Dashboard Quality freeze skipped: " + err.message);
+      logBestEffortWarning_("Dashboard Quality freeze skipped: " + err.message);
     }
     return;
   }
@@ -14398,7 +14172,7 @@ function applyDashboardQualityReportColumnSettings_(sheet, options) {
 
     sheet.setFrozenRows(1);
   } catch (err) {
-    Logger.log("Dashboard Quality base style skipped: " + err.message);
+    logBestEffortWarning_("Dashboard Quality base style skipped: " + err.message);
   }
 }
 
@@ -14564,7 +14338,7 @@ function getMostRecentTimingDurationForSectionKey_(sectionKey) {
       return values[i][4] || values[i][3] || "";
     }
   } catch (err) {
-    Logger.log("Dashboard Quality timing lookup skipped: " + err.message);
+    logBestEffortWarning_("Dashboard Quality timing lookup skipped: " + err.message);
   }
   return "";
 }
@@ -14577,7 +14351,6 @@ function getTimingProcessNameForDashboardQualitySection_(sectionKey) {
   if (sectionKey === RFF_DASHBOARD_VERIFY_BEHAVIORS_KEY) return "Verify Framework Configuration";
   if (sectionKey === RFF_VALIDATION_SHEET) return "Validate Templates";
   if (sectionKey === "Template Header Audit") return "Template Header Audit";
-  if (sectionKey === RFF_TEST6_DATE_FORMAT_SHEET) return "Framework Test 6 - Date Formatting";
   if (sectionKey === RFF_HEALTH_CHECK_SHEET) return "Framework Health Check";
   if (sectionKey === "Signoff") return "Dashboard Quality Signoff";
   if (sectionKey === "Summary") return "Dashboard Quality Summary";
@@ -14610,7 +14383,7 @@ function saveDashboardQualitySectionRows_(sectionKey, rows, options) {
       String(new Date().getTime())
     );
   } catch (err) {
-    Logger.log("Could not save Dashboard Quality section " + sectionKey + ": " + err.message);
+    logBestEffortWarning_("Could not save Dashboard Quality section " + sectionKey + ": " + err.message);
   }
 
   if ((options && options.deferSheetWrite) || RFF_DASHBOARD_QUALITY_DEFER_WRITES_) return;
@@ -14624,7 +14397,7 @@ function saveDashboardQualitySectionRows_(sectionKey, rows, options) {
     const sectionRows = buildTimestampedDashboardQualitySectionRows_(sectionKey, rows || []);
     replaceDashboardQualitySectionRows_(sheet, getDashboardQualitySectionTitleForKey_(sectionKey), sectionRows);
   } catch (err) {
-    Logger.log("Could not write Dashboard Quality section " + sectionKey + ": " + err.message);
+    logBestEffortWarning_("Could not write Dashboard Quality section " + sectionKey + ": " + err.message);
   }
 }
 
@@ -14635,7 +14408,7 @@ function getDashboardQualitySectionRows_(sectionKey) {
     const rows = JSON.parse(raw);
     return Array.isArray(rows) ? rows : [];
   } catch (err) {
-    Logger.log("Could not read Dashboard Quality section " + sectionKey + ": " + err.message);
+    logBestEffortWarning_("Could not read Dashboard Quality section " + sectionKey + ": " + err.message);
     return [];
   }
 }
@@ -14647,41 +14420,15 @@ function deleteLegacyQualityReportSheet_(sheetName) {
     const sheet = ss.getSheetByName(sheetName);
     if (sheet && ss.getSheets().length > 1) ss.deleteSheet(sheet);
   } catch (err) {
-    Logger.log("Could not delete legacy quality report sheet " + sheetName + ": " + err.message);
+    logBestEffortWarning_("Could not delete legacy quality report sheet " + sheetName + ": " + err.message);
   }
 }
 
 function deleteLegacyStandaloneQualityReports_() {
   [
-    RFF_TEST6_DATE_FORMAT_SHEET,
     RFF_HEALTH_CHECK_SHEET,
     RFF_VALIDATION_SHEET,
   ].forEach(deleteLegacyQualityReportSheet_);
-}
-
-function saveDashboardQualityRowsForTest6_(results, options) {
-  const rows = [["Template", "Sheet Type", "Header", "Expected", "Actual", "Status", "Issues"]];
-  const failures = (results || []).filter(function(item) {
-    return String(item && item.status || "").toUpperCase() !== "PASS";
-  });
-
-  if (!failures.length) {
-    rows.push(["All templates", "All governed sheet types", "Date format columns", "Governed formats", "Matched", "PASS", "All date format checks passed."]);
-  } else {
-    failures.forEach(function(item) {
-      rows.push([
-        item.templateName || "",
-        item.sheetType || "",
-        item.header || "",
-        item.expectedFormat || "",
-        item.actualFormats || "",
-        item.status || "FAIL",
-        item.issues || "Date format mismatch"
-      ]);
-    });
-  }
-
-  saveDashboardQualitySectionRows_(RFF_TEST6_DATE_FORMAT_SHEET, rows, options);
 }
 
 function saveDashboardQualityRowsForTemplateValidation_(results, options) {
@@ -14959,7 +14706,7 @@ function replaceDashboardQualitySectionRows_(sheet, sectionTitle, rows, options)
     try {
       sheet.getRange(replaceStartRow + 2, 2).setValue(output[2][1]).setNumberFormat("mm/dd/yyyy hh:mm:ss");
     } catch (err) {
-      Logger.log("Dashboard Quality Last Updated date-time format skipped for unchanged " + sectionTitle + ": " + err.message);
+      logBestEffortWarning_("Dashboard Quality Last Updated date-time format skipped for unchanged " + sectionTitle + ": " + err.message);
     }
     return;
   }
@@ -14968,7 +14715,7 @@ function replaceDashboardQualitySectionRows_(sheet, sectionTitle, rows, options)
     try {
       sheet.getRange(replaceStartRow + 2, 2).setNumberFormat("mm/dd/yyyy hh:mm:ss");
     } catch (err) {
-      Logger.log("Dashboard Quality Last Updated date-time format skipped for anchored " + sectionTitle + ": " + err.message);
+      logBestEffortWarning_("Dashboard Quality Last Updated date-time format skipped for anchored " + sectionTitle + ": " + err.message);
     }
     if (!options || !options.deferStyle) {
       styleDashboardQualityUpdatedSections_(sheet, [sectionTitle], { highlightProblemRows: true });
@@ -14983,7 +14730,7 @@ function replaceDashboardQualitySectionRows_(sheet, sectionTitle, rows, options)
   try {
     sheet.getRange(replaceStartRow + 2, 2).setNumberFormat("mm/dd/yyyy hh:mm:ss");
   } catch (err) {
-    Logger.log("Dashboard Quality Last Updated date-time format skipped for " + sectionTitle + ": " + err.message);
+    logBestEffortWarning_("Dashboard Quality Last Updated date-time format skipped for " + sectionTitle + ": " + err.message);
   }
 
   if (!options || !options.deferStyle) {
@@ -15032,7 +14779,7 @@ function dashboardQualitySectionContentMatches_(range, output) {
     }
     return true;
   } catch (err) {
-    Logger.log("Dashboard Quality unchanged-section comparison skipped: " + err.message);
+    logBestEffortWarning_("Dashboard Quality unchanged-section comparison skipped: " + err.message);
     return false;
   }
 }
@@ -15141,7 +14888,7 @@ function styleDashboardQualityUpdatedSections_(sheet, sectionTitles, options) {
     // OPTIMIZATION: Format columns 2 through 8 in one batch API call
     sheet.getRange(startRow, 2, rowCount, 7).setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP);
   } catch (err) {
-    Logger.log("Dashboard Quality section styling skipped: " + err.message);
+    logBestEffortWarning_("Dashboard Quality section styling skipped: " + err.message);
   }
 }
 
@@ -15158,7 +14905,6 @@ function appendCombinedDashboardSignOffRows_(rows) {
   rows.push(["SECTION N - SIGNOFF"]);
   rows.push(["Dashboard Integrity", dashboardAudit.status, dashboardAudit.notes]);
   rows.push(["Template Validation", templateValidation.status, templateValidation.notes]);
-  rows.push(["Date Formatting", getReportOverallStatus_(RFF_TEST6_DATE_FORMAT_SHEET, 7), getReportFailureNotes_(RFF_TEST6_DATE_FORMAT_SHEET, 7)]);
   rows.push(["Framework Health Check", frameworkHealth.status, frameworkHealth.notes]);
   rows.push(["Performance Summary", performance.status, performance.notes]);
   rows.push(["Master List Validation", masterHealth.status, masterHealth.notes]);
@@ -15174,7 +14920,6 @@ function buildFrameworkSummaryRows_() {
   const dashboardColumns = getStoredSectionStatusAndNotes_(RFF_DASHBOARD_VERIFY_COLUMNS_KEY, 2);
   const dashboardBehaviors = getStoredSectionStatusAndNotes_(RFF_DASHBOARD_VERIFY_BEHAVIORS_KEY, 2);
   const templateValidation = getStoredSectionStatusAndNotes_(RFF_VALIDATION_SHEET, 2);
-  const dateIntegrity = getStoredSectionStatusAndNotes_(RFF_TEST6_DATE_FORMAT_SHEET, 3);
   const frameworkHealth = getStoredSectionStatusAndNotes_(RFF_HEALTH_CHECK_SHEET, 2);
   const performance = getStoredSectionStatusAndNotes_(RFF_PERFORMANCE_SUMMARY_KEY, 3);
   const masterHealth = getStoredSectionStatusAndNotes_(RFF_MASTER_LIST_HEALTH_KEY, 2);
@@ -15186,7 +14931,6 @@ function buildFrameworkSummaryRows_() {
   rows.push(["Dashboard Column Definitions", dashboardColumns.status, dashboardColumns.notes, "Dashboard Quality Report Section D"]);
   rows.push(["Dashboard Sheet Behaviors", dashboardBehaviors.status, dashboardBehaviors.notes, "Dashboard Quality Report Section E"]);
   rows.push(["Template Structure & Validation", templateValidation.status, templateValidation.notes, "Dashboard Quality Report Section F"]);
-  rows.push(["Date Format Integrity Validation", dateIntegrity.status, dateIntegrity.notes, "Dashboard Quality Report Section G"]);
   rows.push(["Framework Health Check", frameworkHealth.status, frameworkHealth.notes, "Dashboard Quality Report Section H"]);
   rows.push(["Performance Summary", performance.status, performance.notes, "Dashboard Quality Report Section I"]);
   rows.push(["Master List Validation", masterHealth.status, masterHealth.notes, "Dashboard Quality Report Section J"]);
@@ -15592,7 +15336,7 @@ function trimTimingReportRows_(sheet) {
       sheet.deleteRows(2, rowsToDelete);
     }
   } catch (err) {
-    Logger.log("Timing row trim skipped: " + err.message);
+    logBestEffortWarning_("Timing row trim skipped: " + err.message);
   }
 }
 
