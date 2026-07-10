@@ -1284,6 +1284,34 @@ function ensurePrimaryPMRRowColumn_(sheet) {
 function assignPrimaryRowForBlock_(block, headerMap, primaryIdx) {
   if (!block || !block.rows || !block.rows.length || primaryIdx === undefined) return;
   const dobIdx = getDOBIndex_(headerMap);
+<<<<<<< HEAD
+  const capitationIdx = headerMap["Capitation Date"];
+
+  if (capitationIdx !== undefined && capitationIdx !== -1) {
+    block.rows.sort(function(a, b) {
+      const dateA = coerceToValidDate_(a.row[capitationIdx]);
+      const dateB = coerceToValidDate_(b.row[capitationIdx]);
+      const timeA = dateA ? dateA.getTime() : 0;
+      const timeB = dateB ? dateB.getTime() : 0;
+
+      if (timeA !== timeB) {
+        return timeB - timeA;
+      }
+      return a.originalIndex - b.originalIndex;
+    });
+  }
+
+  let foundPrimary = false;
+  block.rows.forEach(function(item, idx) {
+    if (idx === 0) {
+      item.row[primaryIdx] = "Yes";
+      foundPrimary = true;
+    } else {
+      item.row[primaryIdx] = "";
+    }
+  });
+
+=======
   let foundPrimary = false;
 
 
@@ -1299,6 +1327,7 @@ function assignPrimaryRowForBlock_(block, headerMap, primaryIdx) {
   });
 
 
+>>>>>>> origin/main
   if (!foundPrimary && block.rows.length > 0) {
     let target = block.rows.find(function(item) {
       return dobIdx !== -1 && normalizeCompareValue_(item.row[dobIdx]) !== "";
@@ -2739,7 +2768,10 @@ function onOpen() {
 
   ui.createMenu("Master List")
     .addSubMenu(dataProcessingMenu)
+<<<<<<< HEAD
+=======
     .addItem("📅 Build Monthly Change Report", "buildMonthlyChangeReport")
+>>>>>>> origin/main
     .addSubMenu(sheetLayoutMenu)
     .addSubMenu(quickStartMenu)
     .addSubMenu(maintenanceMenu)
@@ -4583,6 +4615,22 @@ function applyGlobalDefaultRowHeightsToSheet_(sheet, label) {
 function safeSetRowHeights_(sheet, startRow, count, height, label) {
   if (!sheet) return 0;
 
+<<<<<<< HEAD
+  startRow = Math.max(1, Number(startRow || 1));
+  count = Math.max(0, Number(count || 0));
+  height = Number(height || 25);
+  if (count < 1) return 0;
+
+  const maxRows = Math.max(sheet.getMaxRows(), 1);
+  if (startRow > maxRows) return 0;
+
+  const safeCount = Math.min(count, maxRows - startRow + 1);
+  if (safeCount < 1) return 0;
+
+  if (safeCount > 2500) {
+    return safeCount;
+  }
+=======
 
   startRow = Math.max(1, Number(startRow || 1));
   count = Math.max(0, Number(count || 0));
@@ -4599,6 +4647,7 @@ function safeSetRowHeights_(sheet, startRow, count, height, label) {
   const safeCount = Math.min(count, maxRows - startRow + 1);
   if (safeCount < 1) return 0;
 
+>>>>>>> origin/main
 
   try {
     if (typeof sheet.setRowHeightsForced === "function") {
@@ -4606,7 +4655,10 @@ function safeSetRowHeights_(sheet, startRow, count, height, label) {
     } else if (typeof sheet.setRowHeights === "function") {
       sheet.setRowHeights(startRow, safeCount, height);
     } else {
+<<<<<<< HEAD
+=======
       logBestEffortWarning_("Row height batch API unavailable for " + (label || sheet.getName()) + "; skipped " + safeCount + " row(s).");
+>>>>>>> origin/main
       return 0;
     }
     return safeCount;
@@ -6664,6 +6716,15 @@ function validateBannerFormatterOutput_(sheet) {
 }
 
 function archiveRawSourceAndDeleteLocal_(ss, rawSheet, archiveName, outputSheet, timing) {
+<<<<<<< HEAD
+  if (RFF_ENABLE_AUTO_ARCHIVE_RAW_DATA === true) {
+    try {
+      archiveRawDataSheet_(rawSheet, archiveName);
+      if (timing) markFrameworkStep_(timing, "Raw data copied to archive: " + archiveName);
+    } catch (err) {
+      const message = "Raw source was not deleted because archive copy failed for " + archiveName + ": " + err.message;
+      if (timing) markFrameworkStep_(timing, "ERROR - " + message);
+=======
   // 1. Handle Archiving (if enabled)
   if (RFF_ENABLE_AUTO_ARCHIVE_RAW_DATA) {
     try {
@@ -6672,10 +6733,20 @@ function archiveRawSourceAndDeleteLocal_(ss, rawSheet, archiveName, outputSheet,
     } catch (err) {
       const message = "Raw source was not deleted because archive copy failed for " + archiveName + ": " + err.message;
       markFrameworkStep_(timing, "ERROR - " + message);
+>>>>>>> origin/main
       notify_(message);
       throw new Error(message);
     }
   } else {
+<<<<<<< HEAD
+    if (timing) markFrameworkStep_(timing, "External archiving is disabled - skipping archive step");
+  }
+
+  if (RFF_DELETE_LOCAL_RAW_AFTER_ARCHIVE) {
+    ss.setActiveSheet(outputSheet);
+    ss.deleteSheet(rawSheet);
+    if (timing) markFrameworkStep_(timing, "Local raw sheet deleted to preserve workbook speed");
+=======
     markFrameworkStep_(timing, "External archiving is disabled - skipping archive step");
   }
 
@@ -6684,6 +6755,7 @@ function archiveRawSourceAndDeleteLocal_(ss, rawSheet, archiveName, outputSheet,
     ss.setActiveSheet(outputSheet);
     ss.deleteSheet(rawSheet);
     markFrameworkStep_(timing, "Local raw sheet deleted to preserve workbook speed");
+>>>>>>> origin/main
   }
 }
 
@@ -7514,26 +7586,46 @@ function ensureOutputSheetHasFormattedRows_(sheet, requiredRows, width) {
 
   requiredRows = Math.max(Number(requiredRows || 1), DATA_START_ROW);
   width = Math.max(Number(width || 1), 1);
+<<<<<<< HEAD
+  const currentRows = sheet.getMaxRows();
+
+=======
 
   const currentRows = sheet.getMaxRows();
 
 
   // OPTIMIZATION: If the template is already big enough, exit immediately.
   // Do NOT execute any redundant formatting.
+>>>>>>> origin/main
   if (currentRows >= requiredRows) {
     return;
   }
 
+<<<<<<< HEAD
+=======
 
   // We only reach here if the raw data exceeded the template's max rows.
+>>>>>>> origin/main
   const rowsToAdd = requiredRows - currentRows;
   sheet.insertRowsAfter(currentRows, rowsToAdd);
 
   if (RFF_OUTPUT_EXTEND_TEMPLATE_FORMATTING) {
     try {
+<<<<<<< HEAD
+      const batchChunk = 1000;
+      let processed = 0;
+
+      while (processed < rowsToAdd) {
+        const chunk = Math.min(batchChunk, rowsToAdd - processed);
+        sheet.getRange(DATA_START_ROW, 1, 1, width)
+          .copyTo(sheet.getRange(currentRows + 1 + processed, 1, chunk, width), { formatOnly: true });
+        processed += chunk;
+      }
+=======
       // FAST PAINT: Copy formatting ONLY to the newly inserted blank rows at the bottom.
       sheet.getRange(DATA_START_ROW, 1, 1, width)
         .copyTo(sheet.getRange(currentRows + 1, 1, rowsToAdd, width), { formatOnly: true });
+>>>>>>> origin/main
     } catch (err) {
       logBestEffortWarning_("Output template formatting extension skipped for " + sheet.getName() + ": " + err.message);
     }
@@ -8750,6 +8842,22 @@ function getDemoPMonthlySyncChangedPMRs_(monthParts) {
     }
   }
 
+<<<<<<< HEAD
+  const exclusionSheet = ss.getSheetByName(DISENROLLED_EXCLUSION_SHEET);
+  const exclusionPmrSet = new Set();
+  if (exclusionSheet && exclusionSheet.getLastRow() >= DATA_START_ROW) {
+    const exclusionData = getDataValues_(exclusionSheet, HEADER_ROW, DATA_START_ROW);
+    const exPmrIdx = getPMRIndex_(exclusionData.headerMap);
+    if (exPmrIdx !== -1) {
+      exclusionData.values.forEach(function(exRow) {
+        const exPmr = normalizePMR_(exRow[exPmrIdx]);
+        if (exPmr) exclusionPmrSet.add(exPmr);
+      });
+    }
+  }
+
+=======
+>>>>>>> origin/main
   const demoSheet = getCurrentDemoPSheet_(monthParts);
   const rawSheet = getCurrentRawDataSheet_(monthParts);
 
@@ -8761,17 +8869,29 @@ function getDemoPMonthlySyncChangedPMRs_(monthParts) {
     const demoHashIdx = demoData.headerMap["Source Hash"];
     const rawPmrIdx = getPMRIndex_(rawData.headerMap);
 
+<<<<<<< HEAD
+    if (demoPmrIdx !== -1 && rawPmrIdx !== -1) {
+=======
     if (demoPmrIdx !== -1 && demoHashIdx !== undefined && rawPmrIdx !== -1) {
+>>>>>>> origin/main
       const rawHashesByPmr = buildSourceHashByPMR_(rawData, rawPmrIdx);
       const demoPmrSet = new Set();
 
       demoData.values.forEach(function(row) {
         const pmr = normalizePMR_(row[demoPmrIdx]);
+<<<<<<< HEAD
+        const demoHash = demoHashIdx !== undefined ? String(row[demoHashIdx] || "").trim() : "";
+
+        if (pmr) {
+          demoPmrSet.add(pmr);
+          if (demoHash && rawHashesByPmr[pmr] && rawHashesByPmr[pmr] !== demoHash) {
+=======
         const demoHash = String(row[demoHashIdx] || "").trim();
 
         if (pmr) {
           demoPmrSet.add(pmr);
           if (rawHashesByPmr[pmr] && rawHashesByPmr[pmr] !== demoHash) {
+>>>>>>> origin/main
             set.add(pmr);
           }
         }
@@ -8779,13 +8899,22 @@ function getDemoPMonthlySyncChangedPMRs_(monthParts) {
 
       rawData.values.forEach(function(row) {
         const pmr = normalizePMR_(row[rawPmrIdx]);
+<<<<<<< HEAD
+        if (!pmr) return;
+
+        if (exclusionPmrSet.has(pmr) || !demoPmrSet.has(pmr)) {
+=======
         if (pmr && !demoPmrSet.has(pmr)) {
+>>>>>>> origin/main
           set.add(pmr);
         }
       });
     }
   }
+<<<<<<< HEAD
+=======
 
+>>>>>>> origin/main
   return set;
 }
 
@@ -9316,6 +9445,11 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
     throw new Error("Raw Data is missing Participant PMR# / PMR # column.");
   }
 
+<<<<<<< HEAD
+  const movedResult = { pmrsRemoved: 0, rowsRemoved: 0, rowsCopied: 0 };
+  setLastRawDataDisenrolledBuildResult_(movedResult);
+  if (timing) markFrameworkStep_(timing, "Raw Data rows prepared for Demo P without disenrollment exclusion");
+=======
   const movedResult = {
     pmrsRemoved: 0,
     rowsRemoved: 0,
@@ -9326,6 +9460,7 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
 
   setLastRawDataDisenrolledBuildResult_(movedResult);
   markRuntimeStep_(timing, "Raw Data rows prepared for Demo P without disenrollment exclusion | Rows Read: " + rawData.values.length + "; Rows Written: " + rawData.values.length);
+>>>>>>> origin/main
 
   const dashboard = loadDashboardConfig_();
   const sheetDef = getSheetDefinitionByType_(dashboard, SHEET_TYPE.DEMO_P);
@@ -9339,6 +9474,22 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
     range: null
   };
 
+<<<<<<< HEAD
+  populateParticipantNameData_(workingData, null);
+  populateDemoPNameData_(workingData, null);
+  updateBannerColumnData_(workingData, null);
+  combineAddressesData_(workingData, null);
+  handleLanguageData_(workingData, null);
+  splitPhoneNumbersData_(workingData, null);
+  runMasterContactProcessData_(workingData, null);
+  combineNotesSummaryData_(workingData, null);
+
+  populateDemoPUpdateColumns_(workingData, monthParts, rawSheet.getName(), "Created");
+  populateUniversalMetadataColumns_(workingData, monthParts, rawSheet.getName(), "Demo P", "Created");
+
+  if (timing) markFrameworkStep_(timing, "Demo P Data completely processed and metadata mapped in memory");
+
+=======
   populateDemoPUpdateColumns_(workingData, monthParts, rawSheet.getName(), "Created");
   populateUniversalMetadataColumns_(workingData, monthParts, rawSheet.getName(), "Demo P", "Created");
   markRuntimeStep_(timing, "Demo P Working Source - populate Demo P update tracking columns | Rows Processed: " + workingData.values.length + "; Write Mode: in-memory only");
@@ -9346,13 +9497,17 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
   // ==========================================================================
   // OPTIMIZED HYPERSPEED NAKED CANVAS DUMP FOR DEMO P
   // ==========================================================================
+>>>>>>> origin/main
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const template = ss.getSheetByName(sheetDef.templateName);
   if (!template) throw new Error("Template not found: " + sheetDef.templateName);
 
   deleteSheetIfExists_(ss, targetName, rawSheet.getName(), sheetDef.templateName);
 
+<<<<<<< HEAD
+=======
   // 1. Insert blank, unpainted canvas
+>>>>>>> origin/main
   const demoSheet = ss.insertSheet(targetName);
   demoSheet.showSheet();
   ss.setActiveSheet(demoSheet);
@@ -9360,10 +9515,16 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
   const width = Math.max(headers.length, 1);
   const requiredRows = workingData.values.length ? DATA_START_ROW + workingData.values.length - 1 : DATA_START_ROW;
 
+<<<<<<< HEAD
+  resizeSheetGrid_(demoSheet, requiredRows, width);
+  applyGovernedTextAndNumberFormats_(demoSheet, dashboard, headers, DATA_START_ROW, workingData.values.length);
+
+=======
   // 2. Force grid boundaries
   resizeSheetGrid_(demoSheet, requiredRows, width);
 
   // 3. Ultra-fast data dump onto unstyled cells
+>>>>>>> origin/main
   if (workingData.values.length) {
     demoSheet.getRange(DATA_START_ROW, 1, workingData.values.length, width).setValues(workingData.values.map(function(row) {
       const out = (row || []).slice(0, width);
@@ -9371,9 +9532,14 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
       return out;
     }));
   }
+<<<<<<< HEAD
+  if (timing) markFrameworkStep_(timing, "Demo P unified values flushed to spreadsheet canvas");
+
+=======
   markRuntimeStep_(timing, "Demo P Working Source - copy active Raw Data rows to Demo P template | Rows Read: " + rawData.values.length + "; Rows Written: " + workingData.values.length + "; Write Mode: single output write");
 
   // 4. Block copy styles from template over the data canvas
+>>>>>>> origin/main
   try {
     template.getRange(1, 1, DATA_START_ROW - 2, width).copyTo(demoSheet.getRange(1, 1, DATA_START_ROW - 2, width));
     template.getRange(HEADER_ROW, 1, 1, width).copyTo(demoSheet.getRange(HEADER_ROW, 1, 1, width));
@@ -9382,6 +9548,13 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
       template.getRange(DATA_START_ROW, 1, 1, width)
         .copyTo(demoSheet.getRange(DATA_START_ROW, 1, workingData.values.length, width), SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
     }
+<<<<<<< HEAD
+    demoSheet.getRange("A1").setValue(sheetDef.reportTitle || "Demo P");
+  } catch (err) {
+    throw new Error("Demo P style mapping failed: " + err.message);
+  }
+
+=======
 
     demoSheet.getRange("A1").setValue(sheetDef.reportTitle || "Demo P");
   } catch (err) {
@@ -9389,20 +9562,28 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
   }
 
   // 5. Apply environmental rules
+>>>>>>> origin/main
   try {
     demoSheet.setFrozenRows(template.getFrozenRows());
     demoSheet.setFrozenColumns(Math.min(template.getFrozenColumns(), width));
     demoSheet.setTabColor(template.getTabColor());
   } catch (err) {
+<<<<<<< HEAD
+    logBestEffortWarning_("Demo P workspace environmental defaults skipped: " + err.message);
+=======
     logBestEffortWarning_("Demo P environment settings skipped: " + err.message);
+>>>>>>> origin/main
   }
 
   applyUniversalFastCanvasFormatting_(demoSheet, dashboard, headers);
   clearSheetRuntimeCachesForSheet_(demoSheet);
 
+<<<<<<< HEAD
+=======
   // Execute processing rules via memory arrays
   processDemoPAsWorkingSource_(demoSheet, monthParts, timing, rawSheet.getName(), "Created");
 
+>>>>>>> origin/main
   return {
     sheet: demoSheet,
     movedResult: movedResult,
@@ -12752,11 +12933,19 @@ function getMergeRowValue_(row, headerMap, possibleHeaders) {
 // ============================================================================
 
 function createDisenrolledList() {
+<<<<<<< HEAD
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const monthParts = promptForLockedYearReportMonth_("Create Disenrolled List");
+  if (!monthParts) return null;
+
+  return runFrameworkTimed_("Create Disenrolled List", function(timing) {
+=======
   return runFrameworkTimed_("Create Disenrolled List", function(timing) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const monthParts = promptForLockedYearReportMonth_("Create Disenrolled List");
     if (!monthParts) return null;
 
+>>>>>>> origin/main
     let demoSheet = ss.getSheetByName(SHEET_TYPE.DEMO_P);
     if (!demoSheet) {
       demoSheet = getCurrentDemoPSheet_(monthParts);
@@ -12764,6 +12953,21 @@ function createDisenrolledList() {
     if (!demoSheet) {
       throw new Error("Demo P sheet was not found. Please execute Build Demo P before compiling the Disenrolled Exclusion List.");
     }
+<<<<<<< HEAD
+
+    if (timing) markFrameworkStep_(timing, "Locate ongoing Demo P sheet: " + demoSheet.getName());
+
+    const result = moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts);
+    if (timing) markFrameworkStep_(timing, "Copy disenrolled primary records and remove rows: " + result.rowsCopied + " copied, " + result.rowsRemoved + " removed");
+
+    setLastRawDataDisenrolledBuildResult_(result);
+
+    const exclusionSheet = ss.getSheetByName(DISENROLLED_EXCLUSION_SHEET);
+    const oldRowsHidden = hideOldDisenrolledRows_(exclusionSheet);
+    if (timing) markFrameworkStep_(timing, "Hide old Disenrolled Exclusion rows", "Rows hidden: " + oldRowsHidden);
+
+    notify_("Disenrolled Exclusion List structural refresh executed successfully.");
+=======
     markFrameworkStep_(timing, "Locate ongoing Demo P sheet: " + demoSheet.getName());
 
     let exclusionSheet = ss.getSheetByName(DISENROLLED_EXCLUSION_SHEET);
@@ -12778,6 +12982,7 @@ function createDisenrolledList() {
     const oldRowsHidden = hideOldDisenrolledRows_(exclusionSheet);
     markFrameworkStep_(timing, "Hide old Disenrolled Exclusion rows", "Rows hidden: " + oldRowsHidden);
     notify_("Disenrolled Exclusion updated. PMRs identified: " + result.pmrsRemoved + "; primary rows written: " + result.rowsCopied + "; Demo P rows removed: " + result.rowsRemoved + "; old rows hidden: " + oldRowsHidden + ".");
+>>>>>>> origin/main
     return result;
   });
 }
@@ -12915,12 +13120,24 @@ function moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts) {
   const pmrIdx = getPMRIndex_(headerMap);
   const primaryIdx = headerMap["Primary PMR Row"];
   const disenrollEffectiveIdx = findHeaderIndex_(headerMap, ["Disenrollment Effective Date", "Disenrollment Date", "Date of Death"]);
+<<<<<<< HEAD
+  const statusIdx = headerMap["Enrollment Status"];
+=======
+>>>>>>> origin/main
 
   if (pmrIdx === -1 || primaryIdx === undefined || disenrollEffectiveIdx === -1) {
     logBestEffortWarning_("Surgical disenrollment sweep skipped: missing critical schema headers.");
     return result;
   }
 
+<<<<<<< HEAD
+  const existingExclusionData = getDataValues_(exclusionSheet, HEADER_ROW, DATA_START_ROW);
+  const existingPmrSet = new Set();
+  const exclusionPmrIdx = existingExclusionData.headerMap ? getPMRIndex_(existingExclusionData.headerMap) : -1;
+  if (exclusionPmrIdx !== -1) {
+    existingExclusionData.values.forEach(function(row) {
+      const p = normalizePMR_(row[exclusionPmrIdx]);
+=======
   // 1. EXTRACT CURRENT PERSISTENT EXCLUSION REGISTRY
   const existingExclusionData = getDataValues_(exclusionSheet, HEADER_ROW, DATA_START_ROW);
   const existingPmrSet = new Set();
@@ -12928,6 +13145,7 @@ function moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts) {
     const exPmrIdx = getPMRIndex_(existingExclusionData.headerMap);
     existingExclusionData.values.forEach(row => {
       const p = normalizePMR_(row[exPmrIdx]);
+>>>>>>> origin/main
       if (p) existingPmrSet.add(p);
     });
   }
@@ -12935,6 +13153,46 @@ function moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts) {
   const demoDataRange = demoSheet.getRange(DATA_START_ROW, 1, lastRow - DATA_START_ROW + 1, lastCol);
   const values = demoDataRange.getValues();
   const workspaceDisenrolledPMRs = new Set();
+<<<<<<< HEAD
+  const activeReEnrolledPMRs = new Set();
+
+  values.forEach(function(row) {
+    const pmr = normalizePMR_(row[pmrIdx]);
+    if (!pmr) return;
+
+    const hasDisenrollmentDate = normalizeCompareValue_(row[disenrollEffectiveIdx]) !== "";
+    const statusText = statusIdx !== undefined ? String(row[statusIdx] || "").trim().toLowerCase() : "";
+    const isExplicitlyActive = statusText === "active" || statusText === "enrolled";
+
+    if (hasDisenrollmentDate && statusText !== "active") {
+      workspaceDisenrolledPMRs.add(pmr);
+    } else if (existingPmrSet.has(pmr) && (isExplicitlyActive || !hasDisenrollmentDate)) {
+      activeReEnrolledPMRs.add(pmr);
+    }
+  });
+
+  if (activeReEnrolledPMRs.size > 0 && exclusionPmrIdx !== -1) {
+    const exclusionRowsToDelete = [];
+
+    existingExclusionData.values.forEach(function(exRow, exOffset) {
+      const exPmr = normalizePMR_(exRow[exclusionPmrIdx]);
+      if (exPmr && activeReEnrolledPMRs.has(exPmr)) {
+        exclusionRowsToDelete.push(DATA_START_ROW + exOffset);
+      }
+    });
+
+    if (exclusionRowsToDelete.length > 0) {
+      deleteRowNumberBatches_(exclusionSheet, exclusionRowsToDelete);
+      logBestEffortWarning_("Re-Enrollment Engine: Surgically purged " + activeReEnrolledPMRs.size + " re-enrolled PMR records from historical Exclusion sheet.");
+    }
+  }
+
+  if (workspaceDisenrolledPMRs.size === 0) {
+    const remainingActiveRows = Math.max(demoSheet.getLastRow(), DATA_START_ROW + 50);
+    forceSheetRowCount_(demoSheet, Math.max(remainingActiveRows, 500));
+    clearSheetRuntimeCachesForSheet_(demoSheet);
+    clearSheetRuntimeCachesForSheet_(exclusionSheet);
+=======
 
   // 2. RUN CURRENT DEMO P WORKSPACE DISENROLLMENT SWEEP
   values.forEach(function(row) {
@@ -12950,13 +13208,17 @@ function moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts) {
 
   if (workspaceDisenrolledPMRs.size === 0) {
     logBestEffortWarning_("Workspace sweep complete: No new unlinked disenrolled records found on Demo P.");
+>>>>>>> origin/main
     return result;
   }
 
   const rowNumbersToDelete = [];
   const rowsToAppendByPMR = new Map();
 
+<<<<<<< HEAD
+=======
   // 3. COLLECT DISENROLLED PARTICIPANT ROW NUMBERS FOR PHYSICAL DELETION
+>>>>>>> origin/main
   values.forEach(function(row, offset) {
     const pmr = normalizePMR_(row[pmrIdx]);
     if (!pmr || !workspaceDisenrolledPMRs.has(pmr)) return;
@@ -12971,6 +13233,16 @@ function moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts) {
   result.pmrsRemoved = workspaceDisenrolledPMRs.size;
   result.rowsRemoved = rowNumbersToDelete.length;
 
+<<<<<<< HEAD
+  result.rowsCopied = appendDisenrolledDeltasToExclusionSheet_(exclusionSheet, headers, rowsToAppendByPMR, monthParts);
+
+  if (rowNumbersToDelete.length > 0) {
+    deleteRowNumberBatches_(demoSheet, rowNumbersToDelete);
+  }
+
+  const remainingActiveRows = Math.max(demoSheet.getLastRow(), DATA_START_ROW + 50);
+  forceSheetRowCount_(demoSheet, Math.max(remainingActiveRows, 500));
+=======
   // Bulk write new delta rows directly into your database sheet
   result.rowsCopied = appendDisenrolledDeltasToExclusionSheet_(exclusionSheet, headers, rowsToAppendByPMR, monthParts);
 
@@ -12979,6 +13251,7 @@ function moveDisenrolledPMRsFromDemoPToExclusion_(demoSheet, monthParts) {
     deleteRowNumberBatches_(demoSheet, rowNumbersToDelete);
   }
   trimExcessRows_(demoSheet, 500);
+>>>>>>> origin/main
 
   clearSheetRuntimeCachesForSheet_(demoSheet);
   clearSheetRuntimeCachesForSheet_(exclusionSheet);
