@@ -70,6 +70,19 @@ Typically include:
 
 These projects should follow repository standards and any project-specific documentation.
 
+### Google Apps Script Library Projects
+
+Library projects contain reusable code consumed by one or more Host Sheet projects.
+
+Review order:
+
+1. Library Current_Production
+2. Library Reports
+3. Host Current_Production
+4. Host Reports
+5. Integration
+6. Public API compatibility
+7. Deployment configuration
 ---
 
 ## General Scripts
