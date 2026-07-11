@@ -1,30 +1,44 @@
-README.md
-Google Apps Script Development Repository
-Purpose
-This repository serves as the central engineering workspace for Google Apps Script development, architecture review, code cleanup, optimization, testing, and production release preparation.
-The repository is intended for:
-Architecture review
-Code review
-Production script development
-Performance optimization
-Code cleanup
-Bug fixes
-Dependency analysis
-Framework governance
-Documentation
-Release preparation
+# Google Apps Script Engineering Repository
+
+## Purpose
+
+This repository is the primary engineering workspace for Google Apps Script projects.
+
+Its primary purposes are:
+
+- Architecture Review
+- Code Review
+- Production Script Development
+- Code Cleanup
+- Performance Optimization
+- Dependency Analysis
+- Bug Fixes
+- Documentation
+- Release Preparation
+- Production Version Management
+
+This repository is **not** the production deployment environment.
+
 Production scripts are reviewed, optimized, versioned, validated, and documented here before deployment.
 
-Repository Organization
-This repository contains multiple independent projects.
+---
+
+# Repository Organization
+
+This repository contains multiple independent Google Apps Script projects.
+
 Each project maintains its own:
-Current Production
-Specifications
-Audit Summaries
-Reports
-Documentation
-Git branch
-Example
+
+- Current Production
+- Specifications
+- Audit Summaries
+- Reports
+- Documentation
+- Git Branch
+
+Typical structure:
+
+```
 <Project>/
 
 Current_Production/
@@ -33,34 +47,104 @@ spec/
 scripts/
 Reports/
 Archive/
-Projects remain independent unless explicitly approved.
-Business logic from one project shall never be merged into another project.
+```
 
-Repository Root Requirements
+Projects are independent.
+
+Business logic from one project shall never be merged into another project unless explicitly approved.
+
+---
+
+# Current Production
+
+The **Current_Production** folder is the authoritative production source.
+
+Only scripts located within **Current_Production** shall be considered the current production baseline.
+
+Archived scripts are reference material only.
+
+---
+
+# Archive_To_Move
+
+Archive_To_Move is a temporary staging location for files that will be transferred to the ARCHIVE_ONLY repository.
+
+These files are **not** considered part of any active project.
+
+The contents of Archive_To_Move shall **not** be used for:
+
+- Code Review
+- Architecture Review
+- Production Comparisons
+- Dependency Analysis
+- Performance Analysis
+- Regression Review
+- Production Script Generation
+- Release Packaging
+- Version Comparisons
+- Production Baselines
+
+Treat Archive_To_Move as outside the active repository unless explicitly instructed otherwise.
+
+---
+
+# Repository Root Requirements
+
 Required files
-AGENTS.md
+
+```
 README.md
-Required folders
+AGENTS.md
+```
+
+---
+
+# Repository Startup Procedure
+
+Before beginning any work:
+
+1. Read README.md.
+2. Read AGENTS.md.
+3. Identify the active project.
+4. Identify the active Git branch.
+5. Read the active project's documentation.
+6. Read the active project's spec folder.
+7. Identify the Current_Production script.
+8. Review previous Audit Summaries if available.
+9. Ignore excluded folders.
+10. Begin analysis.
+
+No recommendations shall be made without completing the startup review.
+
+---
+
+# Excluded Repository Areas
+
+The following locations are excluded from normal analysis:
+
+```
 Archive_To_Move/
+```
 
-Current Production
-The Current_Production folder contains the current approved production source.
-Only files inside Current_Production shall be treated as the production baseline.
-Archived versions are reference material only.
+Unless explicitly requested, do not:
 
-Archive_To_Move
-Temporary holding location for files waiting to be transferred into the ARCHIVE_ONLY repository.
-These files are not considered part of active production.
-Do not
-review
-build
-compare
-package
-include in release notes
-using files inside this folder.
+- Read files
+- Search files
+- Compare files
+- Build from files
+- Include files in audits
+- Include files in dependency analysis
+- Include files in release notes
+- Generate diffs from files
+- Use files as production references
 
-Binary File Policy
-The following files are excluded from code review unless specifically requested.
+---
+
+# Binary File Policy
+
+Unless explicitly requested, do not modify or include binary files in generated diffs.
+
+```
 *.pdf
 *.xlsx
 *.docx
@@ -70,248 +154,300 @@ The following files are excluded from code review unless specifically requested.
 *.jpeg
 *.gif
 *.zip
+```
 
-Diff Cleanup Policy
-Before generating a Git diff:
-Review only source files.
-Ignore:
-Archive_To_Move/
-Ignore binary files.
-Primary review folders are
+---
+
+# Diff Cleanup Policy
+
+Before generating a diff:
+
+Review only source code.
+
+Primary review folders:
+
+```
 <Project>/Current_Production
 <Project>/Audit_Summary
 <Project>/spec
+```
 
-Branch Policy
-Persistent branches
+Exclude:
+
+```
+Archive_To_Move/
+```
+
+Ignore binary files unless specifically requested.
+
+---
+
+# Branch Policy
+
+Persistent branches:
+
+```
 main
 codex_Master_List
 codex_AideCP_Shade_&_Sync
-Temporary branches may be created for development.
+```
+
+Temporary branches may be created for short-term development.
+
 Temporary branches should be deleted after merge.
 
-Startup Procedure
-Before making recommendations:
-Read README.md
-Read AGENTS.md
-Identify the active project.
-Identify the active branch.
-Review the governing specification.
-Review the current production script.
-Review project documentation.
-Review prior audit summaries.
-Confirm project architecture.
-Begin analysis.
-No recommendations shall be made without completing the startup review.
+---
 
-Standard Code Review Workflow
-Every review shall include
-Architecture Review
-Review
-overall architecture
-execution flow
-module organization
-interfaces
-project structure
-naming consistency
+# Standard Code Review Workflow
 
-Dependency Review
-Identify
-missing helpers
-orphan helpers
-duplicate helpers
-circular dependencies
-missing references
-dead references
+Every review shall include:
 
-Code Cleanup Review
-Identify
-duplicate code
-obsolete code
-dead code
-unreachable code
-unnecessary variables
-unnecessary constants
-unused functions
-redundant processing
-repeated Spreadsheet calls
+## Architecture Review
 
-Runtime Review
-Evaluate
-execution flow
-Spreadsheet API usage
-cache opportunities
-memory usage
-batching opportunities
-runtime bottlenecks
-write minimization
-read minimization
+Review:
 
-Google Apps Script Review
-Review
-triggers
-menus
-libraries
-services
-PropertiesService
-CacheService
-LockService
-Utilities
-SpreadsheetApp usage
-UrlFetchApp usage
-installable triggers
+- Project architecture
+- Execution flow
+- Module organization
+- Interfaces
+- Naming consistency
+- Overall design
 
-Performance Review
-Identify
-slow loops
-repeated getValues()
-repeated setValues()
-repeated getRange()
-unnecessary formatting
-unnecessary sorting
-duplicate filtering
-repeated calculations
-Recommend
-batch operations
-caching
-one-pass processing
-helper consolidation
+---
 
-Production Script Review
-Before generating production code
-Review
-production script
-governing specification
-project documentation
-architecture
-dependencies
-helper functions
-validation logic
-dashboard/configuration references
-menu integration
-triggers
-regression risks
+## Dependency Review
 
-Reference Verification
-Verify
-helper references
-menu references
-trigger references
-dashboard references
-configuration references
-validation references
-timing references
-library references
-external services
-No broken references shall remain.
+Identify:
 
-Framework Health Check
-Every review shall include
-Architecture Health
-Dependency Health
-Helper Health
-Runtime Health
-Performance Health
-Maintainability
-Duplicate Logic
-Dead Code
-Complexity
-Largest Functions
-Longest Execution Paths
-High Risk Functions
-Spreadsheet I/O Review
+- Missing helpers
+- Duplicate helpers
+- Orphan functions
+- Dead code
+- Circular dependencies
+- Broken references
+- Missing configuration
+- Missing libraries
 
-Production Update Rules
-Production updates shall
-replace complete affected functions
-remove obsolete code
-remove duplicate implementations
-preserve approved business logic
-preserve public interfaces unless approved
-include new version number
-include release notes
-include testing recommendations
+---
+
+## Runtime Review
+
+Evaluate:
+
+- Execution flow
+- Spreadsheet API usage
+- Memory usage
+- Cache opportunities
+- Batch processing
+- Runtime bottlenecks
+- Spreadsheet reads
+- Spreadsheet writes
+
+---
+
+## Performance Review
+
+Identify:
+
+- Slow loops
+- Repeated Spreadsheet calls
+- Repeated formatting
+- Repeated sorting
+- Repeated calculations
+- Unnecessary API calls
+
+Recommend:
+
+- Batch operations
+- Cached references
+- Cached headers
+- One-pass processing
+- Array processing
+
+---
+
+## Google Apps Script Review
+
+Review:
+
+- Menus
+- Triggers
+- Libraries
+- Services
+- CacheService
+- LockService
+- PropertiesService
+- HtmlService
+- SpreadsheetApp
+- DriveApp
+- UrlFetchApp
+
+---
+
+## Framework Health Check
+
+Every review shall include:
+
+- Architecture Health
+- Dependency Health
+- Runtime Health
+- Performance Health
+- Maintainability
+- Duplicate Logic
+- Dead Code
+- Complexity Assessment
+- Largest Functions
+- High Risk Functions
+- Spreadsheet I/O Assessment
+
+---
+
+# Production Script Review
+
+Before generating production code:
+
+Review:
+
+- Current Production Script
+- Project Specifications
+- Documentation
+- Architecture
+- Dependencies
+- Helper Functions
+- Validation Logic
+- Configuration References
+- Menu Integration
+- Trigger Integration
+- Regression Risks
+
+---
+
+# Reference Verification
+
+Verify:
+
+- Helper references
+- Menu references
+- Trigger references
+- Dashboard references
+- Configuration references
+- Validation references
+- Timing references
+- Library references
+- External service references
+
+Production releases shall contain no broken references.
+
+---
+
+# Production Update Rules
+
+Production updates shall:
+
+- Preserve approved business logic.
+- Replace complete affected functions whenever practical.
+- Remove obsolete implementations.
+- Remove duplicate code.
+- Remove orphan functions when safe.
+- Maintain backward compatibility unless approved.
+- Update version numbers.
+- Include release notes.
+- Include testing recommendations.
+
 Avoid partial patches whenever practical.
 
-Versioning Standard
+---
+
+# Versioning Standard
+
 Every generated production script receives a new version.
+
+```
 vX
-Production milestone
+```
+
+Production Release
+
+```
 vX.XX
-Major feature release
+```
+
+Major Feature Release
+
+```
 vX.XX.XX
-Minor enhancement
+```
+
+Minor Enhancement
+
 Examples
+
+```
 v1
 v1.01
 v1.01.01
 v1.01.02
 v1.02
-Previous production versions shall never be overwritten.
+```
 
-Script Production Standards
-Generated production scripts should
-preserve business logic
-improve maintainability
-improve readability
-improve performance
-minimize Spreadsheet API calls
-minimize runtime
-use batch processing
-remove duplicate code
-remove obsolete code
-include documentation
-include version updates
-include release notes
+Production versions shall never be overwritten.
 
-Deliverables
-Every production review shall produce
-Executive Summary
-Overall assessment
-Functional Summary
-Summary of all major functionality
-Dependency Audit
-Complete dependency review
-Helper Audit
-Helper utilization
-Orphan Audit
-Unused functions
-Performance Audit
-Performance findings
-Health Check
-Framework health
-Risk Assessment
-High, Medium, Low
-Recommended Improvements
-Prioritized recommendations
-Version Recommendation
-Next version
-Release Notes
-Summary of changes
-Testing Plan
-Recommended validation steps
+---
 
-Git Synchronization
+# Deliverables
+
+Unless instructed otherwise, every production review should include:
+
+- Executive Summary
+- Functional Summary
+- Architecture Review
+- Dependency Audit
+- Helper Audit
+- Orphan Function Audit
+- Performance Review
+- Health Check
+- Risk Assessment
+- Recommended Improvements
+- Version Recommendation
+- Release Notes
+- Testing Recommendations
+
+---
+
+# Git Synchronization
+
 This repository is the authoritative development repository.
+
 Temporary development environments may not synchronize correctly.
-Before ending any work session verify
+
+Before ending any work session verify:
+
+```
 git status
 git branch
 git remote -v
 git log --oneline -5
-Never assume synchronization completed successfully.
+```
+
+Do not assume synchronization completed successfully.
+
 Commit frequently.
-Push after verifying synchronization.
 
-Engineering Principles
-Preserve working business logic.
-Follow the governing specification.
-Remove obsolete code.
-Remove duplicate logic.
-Prefer complete function replacement over patches.
-Optimize for readability and maintainability.
-Minimize Spreadsheet API operations.
-Batch reads and writes whenever practical.
-Produce fully documented production releases.
-Every production script shall receive a new version number.
+Verify before pushing.
 
+---
+
+# Engineering Principles
+
+1. Preserve working business logic.
+2. Follow project specifications.
+3. Improve maintainability.
+4. Improve performance.
+5. Remove obsolete code.
+6. Remove duplicate code.
+7. Remove orphan code when safe.
+8. Minimize Spreadsheet API calls.
+9. Batch reads and writes whenever practical.
+10. Keep public interfaces stable unless approved.
+11. Generate complete production-ready code.
+12. Every production script receives a new version.
