@@ -3,11 +3,63 @@
 These instructions apply to all AI coding agents working within this repository.
 
 ---
-## Repository Synchronization Policy
 
-Before beginning any review, implementation, or analysis that depends on repository files:
+# Purpose
 
-1. Verify the current repository status:
+CodeLab is an engineering repository for reviewing, maintaining, improving, and producing production-quality software.
+
+Repository-wide engineering standards are maintained in the Framework (or root spec folder for legacy repositories).
+
+Project-specific documentation supplements these standards but does not replace them unless explicitly documented.
+
+---
+
+# Startup
+
+Before beginning work:
+
+1. Read `README.md`.
+2. Determine the active project.
+3. Determine the requested task.
+4. Determine the requested review depth.
+5. Review applicable engineering standards from:
+
+```
+Framework/spec/
+```
+
+or
+
+```
+spec/
+```
+
+depending on repository structure.
+
+6. Review project documentation if it exists.
+7. Begin analysis.
+
+Do not require project-specific documentation when none exists.
+
+---
+
+# Repository Synchronization Policy
+
+Repository synchronization should be performed only when repository state may have changed or when the requested work depends on recently uploaded repository files.
+
+Examples include:
+
+- Newly uploaded production scripts
+- Newly uploaded reports
+- Newly uploaded specifications
+- Newly uploaded documentation
+- User explicitly requests synchronization
+- Repository files cannot be located
+- Current workspace may be stale
+
+Before beginning a synchronization-dependent review:
+
+Verify repository status:
 
 ```bash
 git branch --show-current
@@ -15,25 +67,25 @@ git status -sb
 git remote -v
 ```
 
-2. If `origin` is not configured, configure it:
+If `origin` is not configured:
 
 ```bash
 git remote add origin https://github.com/tabs912/CodeLab.git
 ```
 
-If `origin` already exists, update it if necessary:
+If necessary:
 
 ```bash
 git remote set-url origin https://github.com/tabs912/CodeLab.git
 ```
 
-3. Refresh repository references:
+Refresh repository references:
 
 ```bash
 git fetch origin --prune
 ```
 
-4. Run the repository synchronization tool:
+Run the synchronization tool:
 
 ```bash
 ./Framework/tools/sync_workspace.sh
@@ -45,60 +97,70 @@ or
 ./tools/sync_workspace.sh
 ```
 
-depending on the repository layout.
+depending on repository structure.
 
-5. If the user requests review of newly uploaded scripts, reports, or other repository artifacts:
+If requested files still cannot be located:
 
-- Confirm the files are present after synchronization.
-- If the files are still not present, report exactly which paths were searched.
+- Report searched paths.
+- Report active branch.
+- Report repository status.
 - Do not assume files are missing until synchronization has been attempted.
 
-### Branch Awareness
+---
 
-Many CodeLab reviews occur on project or Codex branches (for example `work`, `general`, `codex_Master_List`, or `codex_AideCP_Shade_&_Sync`).
+# Workspace Refresh
 
-When reviewing repository artifacts uploaded to `main`:
-
-- Fetch `origin/main`.
-- Compare the active branch against `origin/main`.
-- Confirm that requested files are visible before beginning analysis.
-
-### Safety
-
-Repository synchronization must never:
-
-- run `git reset --hard`
-- run `git clean`
-- overwrite local work
-- switch branches without user approval
-- force-push changes
-
-If synchronization cannot complete safely, stop and report the reason.
-# Startup
-
-Before beginning work:
-
-1. Read README.md.
-2. Determine the active project.
-3. Determine the requested review level.
-4. Review applicable repository standards from the root spec folder.
-5. Review project documentation if it exists.
-6. Begin analysis.
-
-Do not require project-specific documentation when none exists.
-### Newly Uploaded Repository Files
-
-If the user states that new files, reports, scripts, or documents were uploaded to the repository after the current workspace was created:
+If the user indicates repository files were uploaded after the current workspace was created:
 
 Assume the workspace may be stale.
 
-Before reporting that files cannot be found:
+Before reporting missing files:
 
-1. Verify the Git remote.
-2. Fetch the latest repository state.
-3. Synchronize the workspace.
+1. Verify Git remote.
+2. Fetch repository updates.
+3. Synchronize workspace.
 4. Search again.
-5. Only then report missing files.
+5. Report searched locations.
+
+---
+
+# Branch Awareness
+
+Many CodeLab reviews occur on project branches such as:
+
+- main
+- general
+- work
+- codex_Master_List
+- codex_AideCP_Shade_&_Sync
+
+When reviewing repository artifacts uploaded to `main`:
+
+- Fetch `origin/main`
+- Compare active branch against `origin/main`
+- Confirm requested files are visible before beginning analysis.
+
+Never change branches without user approval.
+
+---
+
+# Safety
+
+Never automatically execute:
+
+- git reset --hard
+- git clean
+- git push --force
+- git push --force-with-lease
+- branch deletion
+- branch switching
+
+Never overwrite local work.
+
+If synchronization cannot complete safely:
+
+Stop and report why.
+
 ---
 
 # Project Discovery
@@ -106,10 +168,63 @@ Before reporting that files cannot be found:
 Determine whether the request is for:
 
 - Production Project
+- Google Apps Script Library
 - General Script
 - Experimental Project
 
-Adjust the review depth accordingly.
+Adjust review depth accordingly.
+
+---
+
+# Project Review Order
+
+Unless instructed otherwise:
+
+Review in the following order:
+
+1. Current_Production
+2. Reports
+3. Audit_Summary
+4. README
+5. Project specifications
+6. Supporting scripts
+7. Remaining project files
+
+Current_Production is the governing implementation source.
+
+Reports validate production behavior.
+
+Audit summaries provide supplemental review information.
+
+Archived material is not governing unless explicitly requested.
+
+---
+
+# Library Projects
+
+For Google Apps Script Library projects:
+
+Review order:
+
+1. Library Current_Production
+2. Host_Sheet Current_Production
+3. Reports
+4. Integration
+5. Public API compatibility
+6. appsscript.json
+7. Deployment compatibility
+
+Treat the Library as the governing business logic source.
+
+Review:
+
+- Public API
+- Library version
+- Host compatibility
+- OAuth scopes
+- Manifest
+- Trigger compatibility
+- Deployment readiness
 
 ---
 
@@ -120,16 +235,16 @@ Adjust the review depth accordingly.
 Use for:
 
 - Standalone scripts
-- General code reviews
-- Error checks
-- Cleanup recommendations
+- General scripts
+- Error checking
+- Cleanup
 - Performance suggestions
 
-Review only the supplied code.
+Review only supplied code.
 
 Apply repository engineering standards.
 
-Do not perform a complete project audit unless requested.
+Do not perform full project audits.
 
 ---
 
@@ -137,11 +252,12 @@ Do not perform a complete project audit unless requested.
 
 Use for:
 
-- Production script reviews
+- Production reviews
 - Project reviews
-- Release readiness reviews
+- Release readiness
+- Report comparisons
 
-Review available materials such as:
+Review:
 
 - Current_Production
 - Reports
@@ -156,9 +272,35 @@ Provide prioritized recommendations.
 
 Use only when explicitly requested.
 
-Follow the repository protocol located in:
+Follow:
 
+```
+Framework/spec/EXHAUSTIVE_CODE_REVIEW_PROTOCOL.md
+```
+
+or
+
+```
 spec/EXHAUSTIVE_CODE_REVIEW_PROTOCOL.md
+```
+
+Deliver:
+
+- Executive Summary
+- Functional Summary
+- Function Inventory
+- Dependency Review
+- Architecture Review
+- Public API Review
+- Performance Review
+- Runtime Review
+- Orphan Code Report
+- Duplicate Code Report
+- Risk Assessment
+- Prioritized Recommendations
+- Testing Recommendations
+
+Do not modify code during an exhaustive review.
 
 ---
 
@@ -170,17 +312,27 @@ Always:
 - Follow repository engineering standards.
 - Remove obsolete code when safe.
 - Remove duplicate code when safe.
-- Consider dependencies before making recommendations.
 - Preserve backward compatibility unless instructed otherwise.
+- Consider dependencies before recommendations.
 - Recommend improvements before major rewrites.
+
+Before recommending removal of any function verify:
+
+- Direct callers
+- Indirect callers
+- Trigger references
+- Menu references
+- HTML references
+- Library exports
+- Dynamic invocation
 
 Never:
 
-- Rewrite a working project from scratch.
+- Rewrite working projects from scratch.
 - Leave placeholder code.
-- Leave TODOs in production code.
-- Rename public interfaces without approval.
-- Remove code without considering dependencies.
+- Leave TODOs in production.
+- Rename public APIs without approval.
+- Remove code without dependency analysis.
 
 ---
 
@@ -190,20 +342,57 @@ Prefer:
 
 - Batch reads
 - Batch writes
-- Cached references
+- Cached sheet references
 - Cached headers
+- Cached configuration
 - Array processing
 - One-pass processing
+- Maps and Sets
+- In-memory transforms
 
 Avoid:
 
-- getValue() inside loops
-- setValue() inside loops
-- getRange() inside loops
+- getValue() in loops
+- setValue() in loops
+- getRange() in loops
 - Cell-by-cell updates
 - Row-by-row deletion
 - Repeated SpreadsheetApp.flush()
-- Unnecessary Spreadsheet service calls
+- Repeated Spreadsheet service calls
+
+---
+
+# Versioning
+
+Production versions follow:
+
+```
+vX
+```
+
+Production release
+
+```
+vX.XX
+```
+
+Major enhancement
+
+```
+vX.XX.XX
+```
+
+Minor enhancement
+
+Correction
+
+Cleanup
+
+Optimization
+
+Every production code generation receives a new version.
+
+Never overwrite an earlier production release.
 
 ---
 
@@ -213,40 +402,44 @@ When generating production code:
 
 - Preserve approved business logic.
 - Replace complete affected functions whenever practical.
-- Update dependent helpers when required.
+- Update dependent helpers.
 - Remove obsolete implementations.
-- Update version numbers.
+- Increment version.
 - Include release notes.
 - Include testing recommendations.
+- Return complete production-ready files.
 
 ---
 
 # Deliverables
 
-When appropriate, provide:
+When appropriate provide:
 
 - Executive Summary
 - Functional Summary
 - Architecture Review
 - Dependency Review
 - Performance Review
+- Runtime Review
 - Risk Assessment
 - Recommended Improvements
 - Version Recommendation
 - Release Notes
 - Testing Recommendations
 
-The depth of the deliverables should match the scope of the request.
+Depth should match request scope.
 
 ---
 
 # Excluded Areas
 
-Unless explicitly requested, ignore:
+Unless explicitly requested ignore:
 
+```
 Archive_To_Move/
+```
 
-Do not use these files for:
+Do not use archived material for:
 
 - Code Review
 - Architecture Decisions
@@ -257,11 +450,45 @@ Do not use these files for:
 
 # Repository Tools
 
-The repository includes optional maintenance utilities located in:
+Repository utilities are located in:
 
+```
+Framework/tools/
+```
+
+or
+
+```
 tools/
+```
 
-These tools may be used when requested but should not be executed automatically.
+depending on repository layout.
+
+Tools are optional.
+
+Do not execute maintenance tools automatically unless:
+
+- User requests it.
+- Repository synchronization is required.
+- A startup verification has been requested.
+
+---
+
+# General Principles
+
+Never assume:
+
+- Missing files
+- Missing reports
+- Missing branches
+- Missing documentation
+- Missing project structure
+
+Verify before reporting.
+
+When uncertain:
+
+State assumptions clearly.
 
 ---
 
@@ -277,8 +504,8 @@ Before completing work verify:
 
 ✓ Recommendations prioritized
 
-✓ Version updated (if code was generated)
+✓ Version updated (if code generated)
 
 ✓ Release notes included (if applicable)
 
-✓ Testing recommendations provided (if applicable)
+✓ Testing recommendations included (if applicable)
