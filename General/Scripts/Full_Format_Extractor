@@ -1,0 +1,84 @@
+function extractFullFormatting() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheetToExtract = ss.getSheetByName("TEMPLATE - SAMPLE"); 
+  
+  if (!sheetToExtract) {
+    SpreadsheetApp.getUi().alert("Could not find the sheet to extract.");
+    return;
+  }
+
+  // Scanning the full 37 rows and 22 columns (A through V)
+  const numRows = 37;
+  const numCols = 22; 
+  const range = sheetToExtract.getRange(1, 1, numRows, numCols);
+
+  // Extract all the formatting arrays
+  const values = range.getValues();
+  const backgrounds = range.getBackgrounds();
+  const fontWeights = range.getFontWeights();
+  const hAligns = range.getHorizontalAlignments();
+  const vAligns = range.getVerticalAlignments();
+  const wraps = range.getWraps();
+
+  // Start building the text for the new script
+  let code = `function buildTemplateFromScratchPerfectly() {\n`;
+  code += `  const ss = SpreadsheetApp.getActiveSpreadsheet();\n`;
+  code += `  \n`;
+  code += `  // Check if TEMPLATE exists and delete it\n`;
+  code += `  const existingSheet = ss.getSheetByName("TEMPLATE");\n`;
+  code += `  if (existingSheet) ss.deleteSheet(existingSheet);\n\n`;
+  code += `  const sheet = ss.insertSheet('TEMPLATE');\n\n`;
+  code += `  const numRows = ${numRows};\n`;
+  code += `  const numCols = ${numCols};\n\n`;
+
+  // Stringify the arrays so they become hardcoded data in the new script
+  code += `  const values = ${JSON.stringify(values)};\n`;
+  code += `  const backgrounds = ${JSON.stringify(backgrounds)};\n`;
+  code += `  const fontWeights = ${JSON.stringify(fontWeights)};\n`;
+  code += `  const hAligns = ${JSON.stringify(hAligns)};\n`;
+  code += `  const vAligns = ${JSON.stringify(vAligns)};\n`;
+  code += `  const wraps = ${JSON.stringify(wraps)};\n\n`;
+
+  // Apply the arrays to the target range
+  code += `  const targetRange = sheet.getRange(1, 1, numRows, numCols);\n`;
+  code += `  targetRange.setValues(values)\n`;
+  code += `             .setBackgrounds(backgrounds)\n`;
+  code += `             .setFontWeights(fontWeights)\n`;
+  code += `             .setHorizontalAlignments(hAligns)\n`;
+  code += `             .setVerticalAlignments(vAligns)\n`;
+  code += `             .setWraps(wraps);\n\n`;
+
+  // Extract and write code for Merged Cells
+  const merges = range.getMergedRanges();
+  code += `  // Apply Merged Cells\n`;
+  merges.forEach(merge => {
+    // Only extract merges that happen within our target area
+    if(merge.getRow() <= numRows && merge.getColumn() <= numCols) {
+      code += `  sheet.getRange('${merge.getA1Notation()}').merge();\n`;
+    }
+  });
+
+  // Extract and write code for Column Widths
+  code += `\n  // Apply Column Widths\n`;
+  for(let c = 1; c <= numCols; c++) {
+    const width = sheetToExtract.getColumnWidth(c);
+    if (width) {
+      code += `  sheet.setColumnWidth(${c}, ${width});\n`;
+    }
+  }
+
+  // Add the grid borders back in
+  code += `\n  // Apply grid borders to the operational area\n`;
+  code += `  targetRange.setBorder(true, true, true, true, true, true, "black", SpreadsheetApp.BorderStyle.SOLID);\n\n`;
+
+  // Close the function
+  code += `  ss.setActiveSheet(sheet);\n`;
+  code += `}\n`;
+
+  // Create a new Google Doc to hold this massive script
+  const doc = DocumentApp.create('Extracted Template Script - Full V Column');
+  doc.getBody().setText(code);
+  
+  // Tell the user it's done
+  SpreadsheetApp.getUi().alert('Success! A new Document named "Extracted Template Script - Full V Column" has been created in your Drive.');
+}

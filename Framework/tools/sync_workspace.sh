@@ -19,3 +19,13 @@ behind="$(awk '{print $2}' <<<"$counts")"
 [[ "$behind" -eq 0 ]] && { echo "Workspace current."; exit 0; }
 git merge --ff-only "$remote"
 git status -sb
+Workspace synchronized.
+
+Current branch: work
+Remote main: 3 commits newer
+
+New files detected:
+✓ Master_List/Reports/v1.6.29 - Dashboard Quality Report.pdf
+✓ Master_List/Reports/v1.6.29 - Framework Timing Report.pdf
+
+Workspace is ready for review.
