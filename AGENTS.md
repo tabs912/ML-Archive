@@ -2,64 +2,54 @@
 
 These instructions apply to all AI coding agents working within this repository.
 
----
+## Purpose
 
-# Purpose
+CodeLab is an engineering repository for reviewing, maintaining, improving, and producing production-quality Google Apps Script and related code.
 
-CodeLab is an engineering repository for reviewing, maintaining, improving, and producing production-quality software.
+Repository-wide standards are maintained in `Framework/spec/` or, for legacy layouts, `spec/`. Project-specific documentation supplements those standards but does not replace them unless explicitly documented.
 
-Repository-wide engineering standards are maintained in the Framework (or root spec folder for legacy repositories).
-
-Project-specific documentation supplements these standards but does not replace them unless explicitly documented.
-
----
-
-# Startup
+## Startup
 
 Before beginning work:
 
 1. Read `README.md`.
-2. Determine the active project.
-3. Determine the requested task.
-4. Determine the requested review depth.
-5. Review applicable engineering standards from:
+2. Determine the active project or script.
+3. Determine the requested task and review depth.
+4. Review applicable standards from `Framework/spec/` or `spec/`.
+5. Review project documentation when it exists.
+6. Identify the governing production source when applicable.
+7. Review current reports when requested.
+8. Ignore excluded repository areas.
+9. Begin analysis.
 
-```
-Framework/spec/
-```
+Do not require project-specific documentation when none exists. Do not force a standalone script into a formal project structure.
 
-or
+## Codex Cloud Command Execution
 
-```
-spec/
-```
+Codex Cloud tasks may execute Git and repository commands when instructed in the task chat. Command output appears in the task Log.
 
-depending on repository structure.
+When synchronization or repository verification is required:
 
-6. Review project documentation if it exists.
-7. Begin analysis.
+1. Run the required commands.
+2. Review the output in the task Log.
+3. Confirm requested files are visible before analysis.
+4. Do not continue using stale repository contents.
+5. Do not state that synchronization succeeded unless the command output proves it.
 
-Do not require project-specific documentation when none exists.
+## Repository Synchronization Policy
 
----
+Synchronize when repository state may have changed or when work depends on recently uploaded files.
 
-# Repository Synchronization Policy
-
-Repository synchronization should be performed only when repository state may have changed or when the requested work depends on recently uploaded repository files.
-
-Examples include:
+Examples:
 
 - Newly uploaded production scripts
 - Newly uploaded reports
-- Newly uploaded specifications
-- Newly uploaded documentation
-- User explicitly requests synchronization
-- Repository files cannot be located
-- Current workspace may be stale
+- Newly uploaded specifications or documentation
+- Requested files cannot be located
+- The workspace may be stale
+- The active task branch may not include recent changes from `main`
 
-Before beginning a synchronization-dependent review:
-
-Verify repository status:
+Before synchronization, verify:
 
 ```bash
 git branch --show-current
@@ -67,445 +57,305 @@ git status -sb
 git remote -v
 ```
 
-If `origin` is not configured:
+If `origin` is missing:
 
 ```bash
 git remote add origin https://github.com/tabs912/CodeLab.git
 ```
 
-If necessary:
+If the URL is wrong:
 
 ```bash
 git remote set-url origin https://github.com/tabs912/CodeLab.git
 ```
 
-Refresh repository references:
+Refresh references:
 
 ```bash
 git fetch origin --prune
 ```
 
-Run the synchronization tool:
+Run:
 
 ```bash
 ./Framework/tools/sync_workspace.sh
 ```
 
-or
+or, for legacy layouts:
 
 ```bash
 ./tools/sync_workspace.sh
 ```
 
-depending on repository structure.
+Do not report a repository file as missing until synchronization has been attempted and the expected paths have been searched again.
 
-If requested files still cannot be located:
+## Newly Uploaded Repository Files
 
-- Report searched paths.
-- Report active branch.
-- Report repository status.
-- Do not assume files are missing until synchronization has been attempted.
-
----
-
-# Workspace Refresh
-
-If the user indicates repository files were uploaded after the current workspace was created:
-
-Assume the workspace may be stale.
+If the user says files were uploaded after the workspace was created, assume the workspace may be stale.
 
 Before reporting missing files:
 
-1. Verify Git remote.
-2. Fetch repository updates.
-3. Synchronize workspace.
-4. Search again.
-5. Report searched locations.
+1. Verify the remote.
+2. Fetch current remote references.
+3. Run the synchronization tool.
+4. Compare the active branch against `origin/main`.
+5. Search the expected project paths again.
+6. Report the exact paths searched.
+7. Only then report that files are unavailable.
 
----
+Never infer or fabricate unseen file contents.
 
-# Branch Awareness
+## Branch Awareness
 
-Many CodeLab reviews occur on project branches such as:
+Common branches include:
 
-- main
-- general
-- work
-- codex_Master_List
-- codex_AideCP_Shade_&_Sync
+```text
+main
+general
+work
+codex_Master_List
+codex_AideCP_Shade_&_Sync
+codex/<task-name>
+```
 
-When reviewing repository artifacts uploaded to `main`:
+When reviewing files uploaded to `main`:
 
-- Fetch `origin/main`
-- Compare active branch against `origin/main`
-- Confirm requested files are visible before beginning analysis.
+- Fetch `origin/main`.
+- Compare the active branch against `origin/main`.
+- Confirm requested files are visible.
+- Do not assume the task branch contains recent `main` changes.
 
-Never change branches without user approval.
+The synchronization tool may fast-forward a branch only when it has no unique local commits.
 
----
+If the active branch has unique commits and is behind `origin/main`, do not automatically merge or rebase. Report the condition and recommend the next safe action.
 
-# Safety
+Never switch branches without user approval.
 
-Never automatically execute:
+## Pull Request Verification
 
-- git reset --hard
-- git clean
-- git push --force
-- git push --force-with-lease
-- branch deletion
-- branch switching
+Do not report that a GitHub pull request was created unless all are verified:
 
-Never overwrite local work.
+- The source branch was pushed to `origin`.
+- The remote source branch exists.
+- A GitHub PR number or URL was returned.
+- The base branch is identified.
+- The compare branch is identified.
 
-If synchronization cannot complete safely:
+A local commit, local `work` branch, task record, proposed PR title, or generated PR summary is not proof that a GitHub PR exists.
 
-Stop and report why.
+Preferred project branches:
 
----
+```text
+codex_Master_List
+codex_AideCP_Shade_&_Sync
+general
+```
 
-# Project Discovery
+Codex may use a temporary local branch, but completed implementation work must be pushed to a descriptive remote branch before a PR is claimed.
 
-Determine whether the request is for:
+## Synchronization Safety
+
+Never automatically run:
+
+```text
+git reset --hard
+git clean
+git push --force
+git push --force-with-lease
+git checkout --force
+git switch --discard-changes
+```
+
+Do not:
+
+- Overwrite local work
+- Discard commits
+- Delete files or branches
+- Switch branches without approval
+- Rebase automatically when unique local commits exist
+- Merge automatically when unique local commits exist
+- Force-push changes
+
+If synchronization cannot complete safely, report:
+
+- Repository root
+- Current branch
+- Remote URL
+- Upstream branch
+- Modified tracked files
+- Staged files
+- Untracked files
+- Ahead/behind status
+- Relevant remote branch
+- Recommended next action
+
+## Project Discovery
+
+Determine whether the request concerns:
 
 - Production Project
 - Google Apps Script Library
+- Host Sheet Project
 - General Script
 - Experimental Project
 
-Adjust review depth accordingly.
+Adjust review depth and deliverables accordingly.
 
----
+## Default Project Review Order
 
-# Project Review Order
+Unless a project README defines another order:
 
-Unless instructed otherwise:
-
-Review in the following order:
-
-1. Current_Production
-2. Reports
-3. Audit_Summary
-4. README
-5. Project specifications
-6. Supporting scripts
+1. `Current_Production/` or `Current Production Script/`
+2. `Reports/`
+3. `Audit_Summary/`
+4. Project `README.md`
+5. Project `spec/`
+6. Supporting `scripts/`
 7. Remaining project files
+8. `Archive/` only when explicitly requested
 
-Current_Production is the governing implementation source.
+The current production source is the governing executable implementation. Reports provide validation, timing, execution, diagnostic, and quality evidence. Archive material is not governing unless explicitly requested.
 
-Reports validate production behavior.
+## Google Apps Script Library Projects
 
-Audit summaries provide supplemental review information.
+Review in this order:
 
-Archived material is not governing unless explicitly requested.
+1. Library Current Production
+2. Host Sheet Current Production
+3. Library Reports
+4. Host Reports
+5. Library-to-Host integration
+6. Public API compatibility
+7. `appsscript.json`
+8. Library version references
+9. Trigger compatibility
+10. Deployment compatibility
 
----
+Treat the Library as the governing business-logic source unless project documentation states otherwise.
 
-# Library Projects
+Review public APIs, signatures, host compatibility, versioning, manifests, OAuth scopes, triggers, global state, concurrency, deployment readiness, and breaking-change risk.
 
-For Google Apps Script Library projects:
+## Review Levels
 
-Review order:
+### Quick Review
 
-1. Library Current_Production
-2. Host_Sheet Current_Production
-3. Reports
-4. Integration
-5. Public API compatibility
-6. appsscript.json
-7. Deployment compatibility
+Use for standalone scripts, general reviews, error checks, cleanup recommendations, and targeted performance suggestions.
 
-Treat the Library as the governing business logic source.
+- Review only supplied or identified code.
+- Apply repository standards.
+- Do not require a formal project structure.
+- Do not require project-specific specifications.
+- Do not run the exhaustive protocol unless requested.
+- Do not modify code unless requested.
 
-Review:
+### Standard Review
 
-- Public API
-- Library version
-- Host compatibility
-- OAuth scopes
-- Manifest
-- Trigger compatibility
-- Deployment readiness
+Use for production reviews, project reviews, report comparisons, and release-readiness reviews.
 
----
+- Review the governing production source.
+- Review current reports.
+- Review available project documentation.
+- Apply repository-wide standards.
+- Review dependencies, helpers, execution paths, destructive operations, triggers, error handling, performance, and maintainability.
+- Provide prioritized recommendations and tests.
 
-# Review Levels
-
-## Quick Review
-
-Use for:
-
-- Standalone scripts
-- General scripts
-- Error checking
-- Cleanup
-- Performance suggestions
-
-Review only supplied code.
-
-Apply repository engineering standards.
-
-Do not perform full project audits.
-
----
-
-## Standard Review
-
-Use for:
-
-- Production reviews
-- Project reviews
-- Release readiness
-- Report comparisons
-
-Review:
-
-- Current_Production
-- Reports
-- Documentation
-- Repository standards
-
-Provide prioritized recommendations.
-
----
-
-## Exhaustive Review
+### Exhaustive Review
 
 Use only when explicitly requested.
 
-Follow:
+Follow `Framework/spec/EXHAUSTIVE_CODE_REVIEW_PROTOCOL.md` or `spec/EXHAUSTIVE_CODE_REVIEW_PROTOCOL.md`.
 
-```
-Framework/spec/EXHAUSTIVE_CODE_REVIEW_PROTOCOL.md
-```
+Do not modify code during the audit.
 
-or
+Expected deliverables include an executive summary, file inventory, function inventory, call graph, dependency review, architecture review, API review, runtime review, performance review, data-integrity review, trigger/concurrency review, orphan and duplicate reports, risk assessment, prioritized recommendations, and a test plan.
 
-```
-spec/EXHAUSTIVE_CODE_REVIEW_PROTOCOL.md
-```
-
-Deliver:
-
-- Executive Summary
-- Functional Summary
-- Function Inventory
-- Dependency Review
-- Architecture Review
-- Public API Review
-- Performance Review
-- Runtime Review
-- Orphan Code Report
-- Duplicate Code Report
-- Risk Assessment
-- Prioritized Recommendations
-- Testing Recommendations
-
-Do not modify code during an exhaustive review.
-
----
-
-# Development Rules
+## Development Rules
 
 Always:
 
 - Preserve approved business logic.
-- Follow repository engineering standards.
-- Remove obsolete code when safe.
-- Remove duplicate code when safe.
+- Follow repository and project standards.
+- Consider dependencies before changes.
 - Preserve backward compatibility unless instructed otherwise.
-- Consider dependencies before recommendations.
 - Recommend improvements before major rewrites.
+- Remove obsolete or duplicate code only when safe.
+- Update all affected callers and helpers.
+- Keep public interfaces stable unless a breaking change is approved.
 
-Before recommending removal of any function verify:
+Before removing any function, constant, configuration key, menu entry, or trigger, verify direct callers, indirect callers, trigger references, menu references, HTML references, `google.script.run`, library exports, function-name strings, dynamic invocation, external consumers, and compatibility wrappers.
 
-- Direct callers
-- Indirect callers
-- Trigger references
-- Menu references
-- HTML references
-- Library exports
-- Dynamic invocation
+Never rewrite a working project from scratch without approval, leave placeholders or TODOs in production code, rename public APIs without approval, remove code merely because it appears unused, modify archived production versions, or use `Archive_To_Move/` as a source unless explicitly requested.
 
-Never:
+## Google Apps Script Standards
 
-- Rewrite working projects from scratch.
-- Leave placeholder code.
-- Leave TODOs in production.
-- Rename public APIs without approval.
-- Remove code without dependency analysis.
+Prefer batch reads and writes, cached spreadsheet/sheet/header/configuration references, in-memory array processing, one-pass processing, Maps and Sets, batch formatting, batch deletion, minimal `SpreadsheetApp.flush()`, and validation before destructive operations.
 
----
+Avoid `getValue()`, `setValue()`, or `getRange()` inside loops; cell-by-cell updates; row-by-row deletion; repeated sheet lookups; repeated full-sheet reads; repeated formatting; repeated parsing; unnecessary sorting; excessive logging; and silent error suppression.
 
-# Google Apps Script Standards
+## Versioning
 
-Prefer:
+- `vX` — production release or milestone
+- `vX.XX` — major change
+- `vX.XX.XX` — minor change, correction, cleanup, or optimization
 
-- Batch reads
-- Batch writes
-- Cached sheet references
-- Cached headers
-- Cached configuration
-- Array processing
-- One-pass processing
-- Maps and Sets
-- In-memory transforms
+Every generated production script receives a new version. Never overwrite an earlier production release.
 
-Avoid:
+## Production Code Generation
 
-- getValue() in loops
-- setValue() in loops
-- getRange() in loops
-- Cell-by-cell updates
-- Row-by-row deletion
-- Repeated SpreadsheetApp.flush()
-- Repeated Spreadsheet service calls
-
----
-
-# Versioning
-
-Production versions follow:
-
-```
-vX
-```
-
-Production release
-
-```
-vX.XX
-```
-
-Major enhancement
-
-```
-vX.XX.XX
-```
-
-Minor enhancement
-
-Correction
-
-Cleanup
-
-Optimization
-
-Every production code generation receives a new version.
-
-Never overwrite an earlier production release.
-
----
-
-# Production Code Generation
-
-When generating production code:
+When implementation is requested:
 
 - Preserve approved business logic.
+- Increment the version.
 - Replace complete affected functions whenever practical.
-- Update dependent helpers.
-- Remove obsolete implementations.
-- Increment version.
-- Include release notes.
-- Include testing recommendations.
+- Update all affected callers and helpers.
+- Remove obsolete implementations only when proven safe.
+- Preserve public compatibility unless a breaking change is approved.
+- Avoid unrelated changes.
 - Return complete production-ready files.
+- Include a functional summary, complete change log, release notes, dependency and performance impacts, test plan, and known issues intentionally left unchanged.
+- Leave no placeholders, TODOs, stubs, or incomplete code.
 
----
+Do not generate implementation code when the user requests recommendations only.
 
-# Deliverables
+## Excluded Areas
 
-When appropriate provide:
+Unless explicitly requested, ignore:
 
-- Executive Summary
-- Functional Summary
-- Architecture Review
-- Dependency Review
-- Performance Review
-- Runtime Review
-- Risk Assessment
-- Recommended Improvements
-- Version Recommendation
-- Release Notes
-- Testing Recommendations
-
-Depth should match request scope.
-
----
-
-# Excluded Areas
-
-Unless explicitly requested ignore:
-
-```
+```text
 Archive_To_Move/
 ```
 
-Do not use archived material for:
+Do not read, search, compare, build from, audit, include in dependency analysis, include in release preparation, or use those files as production references.
 
-- Code Review
-- Architecture Decisions
-- Production Comparisons
-- Release Preparation
+## Repository Tools
 
----
+Tools may be located in `Framework/tools/` or `tools/`.
 
-# Repository Tools
+Use them when synchronization is required, repository health verification is requested, the user explicitly requests a tool, or a task depends on recently uploaded files.
 
-Repository utilities are located in:
+Do not run destructive maintenance commands.
 
-```
-Framework/tools/
-```
+## General Verification Rule
 
-or
+Never assume missing files, reports, branches, remotes, documentation, project structure, successful synchronization, successful push, or successful PR creation.
 
-```
-tools/
-```
+Verify before reporting. State uncertainty and available evidence clearly.
 
-depending on repository layout.
+## Completion Checklist
 
-Tools are optional.
+Before completing work, verify as applicable:
 
-Do not execute maintenance tools automatically unless:
-
-- User requests it.
-- Repository synchronization is required.
-- A startup verification has been requested.
-
----
-
-# General Principles
-
-Never assume:
-
-- Missing files
-- Missing reports
-- Missing branches
-- Missing documentation
-- Missing project structure
-
-Verify before reporting.
-
-When uncertain:
-
-State assumptions clearly.
-
----
-
-# Completion Checklist
-
-Before completing work verify:
-
-✓ Repository standards applied
-
-✓ Business logic preserved
-
-✓ Dependencies considered
-
-✓ Recommendations prioritized
-
-✓ Version updated (if code generated)
-
-✓ Release notes included (if applicable)
-
-✓ Testing recommendations included (if applicable)
+- Repository standards were applied.
+- The correct project was reviewed.
+- The governing production source was used.
+- Current reports were reviewed when requested.
+- Synchronization was attempted when needed.
+- Requested files were confirmed visible.
+- Business logic was preserved.
+- Dependencies and callers were considered.
+- Recommendations were prioritized.
+- Version was incremented when production code was generated.
+- Release notes were included when applicable.
+- Testing recommendations were provided.
+- No placeholder code remains.
+- A PR was not claimed without a verified PR number or URL.
