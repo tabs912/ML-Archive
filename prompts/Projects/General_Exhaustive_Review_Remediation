@@ -1,0 +1,345 @@
+Run the CodeLab startup procedure.
+
+Project:
+
+<PROJECT_NAME>
+
+Exhaustive Review Results:
+
+<PATH_TO_EXHAUSTIVE_REVIEW_RESULTS>
+
+Governing Production Source:
+
+<PATH_TO_CURRENT_PRODUCTION>
+
+Supporting Reports:
+
+<PATH_TO_REPORTS>
+
+Follow:
+
+- README.md
+- AGENTS.md
+- Framework/spec/
+- Available project-specific documentation
+- The completed exhaustive code review and its findings register
+
+Before beginning:
+
+1. Verify the current branch, repository status, and remote.
+2. Synchronize the workspace if repository files may have changed.
+3. Confirm the exhaustive review results, current production source, and current reports are visible.
+4. Treat the current production source as the governing implementation.
+5. Do not use Archive_To_Move.
+6. Do not modify code during the initial findings-validation phase.
+
+PRIMARY OBJECTIVE
+
+Work systematically through the completed exhaustive code review.
+
+Validate every finding against the current production code and current reports, then create a safe, prioritized remediation plan.
+
+Do not assume every finding is still valid.
+
+Some findings may be:
+
+- Confirmed
+- Already corrected
+- Partially corrected
+- Duplicated by another finding
+- Based on outdated code
+- Incorrect
+- Dependent on missing evidence
+- A recommendation rather than a defect
+- Unsafe to implement without further approval
+
+PHASE 1 — REVIEW RESULT INVENTORY
+
+Read the entire exhaustive review and identify:
+
+- Executive summary
+- Findings register
+- Critical findings
+- High findings
+- Medium findings
+- Low findings
+- Dependency findings
+- Performance findings
+- Data-integrity findings
+- Trigger and concurrency findings
+- Public API findings
+- Duplicate and orphan-code findings
+- Testing recommendations
+- Proposed remediation phases
+- Known limitations of the review
+
+Create a complete inventory of findings.
+
+For each finding record:
+
+- Finding ID
+- Original severity
+- Original confidence
+- Category
+- File
+- Function
+- Description
+- Evidence cited by the review
+- Recommended correction
+- Breaking-change risk
+- Required testing
+
+PHASE 2 — CURRENT-STATE VALIDATION
+
+Validate every finding against the current production source.
+
+For each finding, determine whether it is:
+
+- CONFIRMED — defect still exists
+- PARTIALLY CONFIRMED — only part of the finding remains valid
+- ALREADY CORRECTED — current production no longer contains the issue
+- DUPLICATE — covered by another finding
+- OUTDATED — based on an older implementation
+- NOT CONFIRMED — evidence does not support the finding
+- REQUIRES RUNTIME EVIDENCE — static code review is insufficient
+- REQUIRES USER DECISION — business or architecture decision is needed
+- OPTIMIZATION ONLY — not a correctness defect
+- DOCUMENTATION ONLY — code change is not required
+
+For every validated finding, cite the exact current file, function, and relevant code evidence.
+
+Do not rely only on the wording of the exhaustive review.
+
+PHASE 3 — DEPENDENCY AND IMPACT ANALYSIS
+
+For every confirmed or partially confirmed finding:
+
+1. Identify all affected functions.
+2. Identify all callers.
+3. Identify all helpers.
+4. Identify all configuration dependencies.
+5. Identify all trigger and menu dependencies.
+6. Identify all library or host-sheet consumers.
+7. Identify all sheets, ranges, properties, or services affected.
+8. Identify public API compatibility risks.
+9. Identify data-loss or destructive-operation risks.
+10. Identify regression risks.
+11. Identify required report or validation updates.
+12. Identify whether multiple findings should be corrected together.
+
+Do not recommend removing any function until direct, indirect, dynamic, trigger, menu, HTML, library, and external-consumer references have been checked.
+
+PHASE 4 — FINDING CONSOLIDATION
+
+Consolidate findings that share the same root cause.
+
+Examples:
+
+- Multiple undefined-helper findings caused by one missing dependency
+- Multiple performance findings caused by the same row-by-row loop
+- Multiple validation failures caused by one incorrect header map
+- Multiple trigger risks caused by one shared entry point
+- Multiple duplicate-code findings caused by obsolete compatibility logic
+
+For each consolidated remediation item, list all original finding IDs it resolves.
+
+Do not create separate code changes when one coordinated correction is safer.
+
+PHASE 5 — PRIORITIZATION
+
+Prioritize validated work in this order:
+
+1. Data loss or corruption
+2. Security or authorization
+3. Incorrect production results
+4. Complete workflow failures
+5. Missing dependencies and runtime failures
+6. Trigger and concurrency risks
+7. Public API or host compatibility risks
+8. Severe performance bottlenecks
+9. Validation and diagnostic weaknesses
+10. Maintainability and cleanup
+11. Documentation improvements
+
+Reassess severity using current evidence.
+
+Clearly distinguish:
+
+- Must fix before production
+- Should fix in the next release
+- Safe to defer
+- Requires user approval
+- No action required
+
+PHASE 6 — REMEDIATION WAVES
+
+Build an implementation plan divided into safe remediation waves.
+
+Recommended structure:
+
+Wave 1 — Critical correctness and data safety
+
+Wave 2 — Runtime stability and missing dependencies
+
+Wave 3 — Trigger, concurrency, and public API safety
+
+Wave 4 — Performance improvements
+
+Wave 5 — Duplicate, dead, and orphan-code cleanup
+
+Wave 6 — Maintainability, diagnostics, and documentation
+
+For each wave include:
+
+- Objective
+- Finding IDs resolved
+- Files affected
+- Functions affected
+- Dependencies affected
+- Exact proposed changes
+- Business-logic impact
+- Breaking-change risk
+- Data-integrity risk
+- Required tests
+- Recommended version increment
+- Whether the wave can be implemented independently
+- Required user decisions
+
+PHASE 7 — IMPLEMENTATION READINESS
+
+Before proposing implementation, confirm:
+
+- The current production source is complete.
+- Required reports are visible.
+- Required project documentation is visible.
+- Every critical and high finding has current evidence.
+- Findings based on outdated code have been removed.
+- Duplicate findings have been consolidated.
+- Dependencies and callers have been traced.
+- Public API compatibility has been evaluated.
+- Destructive operations have been reviewed.
+- Required tests have been identified.
+- No proposed correction unintentionally changes approved business logic.
+
+If essential artifacts are missing, stop and report exactly what is missing.
+
+REQUIRED DELIVERABLES
+
+Produce:
+
+1. Executive Remediation Summary
+
+Include:
+
+- Number of findings reviewed
+- Number confirmed
+- Number partially confirmed
+- Number already corrected
+- Number outdated
+- Number not confirmed
+- Number requiring runtime evidence
+- Number requiring user decisions
+- Highest-priority risks
+- Recommended first remediation wave
+- Recommended next production version
+
+2. Validated Findings Register
+
+Use a table containing:
+
+- Finding ID
+- Original severity
+- Validated status
+- Current severity
+- Confidence
+- File
+- Function
+- Current evidence
+- Impact
+- Recommended action
+- Remediation wave
+- Breaking-change risk
+- Required tests
+
+3. Findings Rejected or Closed
+
+List findings that are:
+
+- Already corrected
+- Outdated
+- Duplicated
+- Not confirmed
+- Documentation-only
+- No longer applicable
+
+Explain why each finding should be closed.
+
+4. Consolidated Root-Cause Register
+
+For each root cause include:
+
+- Root-cause ID
+- Related finding IDs
+- Root cause
+- Affected workflows
+- Proposed correction
+- Risk
+- Test requirements
+
+5. Prioritized Remediation Plan
+
+Organize work into remediation waves.
+
+6. User Decision Register
+
+List all decisions requiring approval, including:
+
+- Architecture changes
+- Public API changes
+- Breaking changes
+- Business-rule changes
+- Removal of compatibility functions
+- Trigger changes
+- Destructive workflow changes
+- Deferred risks
+
+7. Test Plan
+
+Include:
+
+- Unit-like tests
+- Spreadsheet integration tests
+- Regression tests
+- Destructive-operation tests
+- Trigger tests
+- Library/host compatibility tests
+- Performance tests
+- Report-validation tests
+
+8. Implementation Recommendation
+
+End with one of these conclusions:
+
+- Ready to implement Wave 1
+- Ready to implement all approved waves
+- Implementation blocked by missing artifacts
+- Implementation blocked by required user decisions
+- No code changes required
+
+CHANGE CONTROL
+
+During this task:
+
+- Do not modify production code.
+- Do not generate replacement code.
+- Do not rename functions.
+- Do not remove functions.
+- Do not change public APIs.
+- Do not create a new architecture.
+- Do not merge findings without preserving traceability to their original IDs.
+- Do not claim a finding is corrected without current-code evidence.
+- Do not create or claim a pull request.
+
+This task is for review validation, consolidation, prioritization, and remediation planning only.
+
+After completing the plan, wait for approval before implementing any remediation wave.
