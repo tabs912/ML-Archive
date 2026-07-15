@@ -1,59 +1,45 @@
-// ==========================================
-// =        🚀 PUBLIC QUICK START           =
-// ==========================================
-
 /**
- * Main automated workspace macro chain.
- * Removed trailing underscore to make this public and accessible to Host Sheets.
+ * HOST SHEET WRAPPER
+ * Connects the local spreadsheet to the Centralized AideCP Shade & Sync Library.
+ *
+ * Apps Script menus and installable triggers require host-project global
+ * callback functions. To keep the library API small, menu callbacks route
+ * through the library's single controlled dispatcher instead of exposing every
+ * library implementation as a public library function.
  */
-function quickStartSequence() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  ss.toast("Initializing Automated Sequence...", "🚀 Quick Start", 3);
-  
-  removeCopyOfPrefixAllSheets(true);
-  runStandardizeDatesAndFormat_(true);
-  sortSheetsByB4DateDescending_();
-  validateMappingsAllSheets_(true); 
-  applyGrayShadingAllSheets_(true);
-  
-  ss.toast("Quick Start Setup complete! System optimized.", "🚀 Quick Start", 5);
+
+function onOpen(e) { AideCPShadeSync.onOpen(e); }
+function installedOnEdit(e) { AideCPShadeSync.installedOnEdit(e); }
+
+function runAideCpAction_(actionName) {
+  return AideCPShadeSync.runPublicAction(actionName);
 }
 
-// ==========================================
-// =          INTERFACE TRIGGERS            =
-// ==========================================
+// --- Sync Functions ---
+function syncCurrentSheetToHomeCareServices() { runAideCpAction_('syncCurrentSheetToHomeCareServices'); }
+function pullUpdatesToCurrentSheet() { runAideCpAction_('pullUpdatesToCurrentSheet'); }
+function createNewSheetFromMaster() { runAideCpAction_('createNewSheetFromMaster'); }
 
-function onOpen() {
-  const ui = SpreadsheetApp.getUi();
-  
-  const syncMenu = ui.createMenu('🔄Sync')
-    .addItem('Push Sync to Service Log (Current Sheet)', 'syncCurrentSheetToHomeCareServices')
-    .addItem('Pull Updates to Current Sheet', 'pullUpdatesToCurrentSheet')
-    .addItem('Create New Sheet from Master', 'createNewSheetFromMaster');
+// --- Maintenance Functions ---
+function sortSheetsByB4DateDescending() { runAideCpAction_('sortSheetsByB4DateDescending'); }
+function sortSheetsByB4DateDescending_() { sortSheetsByB4DateDescending(); }
+function removeCopyOfPrefixAllSheets() { runAideCpAction_('removeCopyOfPrefixAllSheets'); }
+function validateMappingsCurrentSheet() { runAideCpAction_('validateMappingsCurrentSheet'); }
+function validateMappingsCurrentSheet_() { validateMappingsCurrentSheet(); }
+function validateMappingsAllSheets() { runAideCpAction_('validateMappingsAllSheets'); }
+function validateMappingsAllSheets_() { validateMappingsAllSheets(); }
+function createOnEditTrigger() { runAideCpAction_('createOnEditTrigger'); }
+function createOnEditTrigger_() { createOnEditTrigger(); }
 
-  const maintMenu = ui.createMenu('🛠️ Maintenance')
-    .addItem('Organize Tabs by Date', 'sortSheetsByB4DateDescending_')
-    .addItem('Remove "Copy of" (all sheets)', 'removeCopyOfPrefixAllSheets')
-    .addItem('Validate Configuration (Current Tab)', 'validateMappingsCurrentSheet_')
-    .addItem('Validate Configuration (All Tabs)', 'validateMappingsAllSheets_')
-    .addItem('Create onEdit trigger', 'createOnEditTrigger_')
-    .addItem('Validate Current Sheet', 'validateMappingsCurrentSheet_');
+// --- Setup Functions ---
+function quickStartSequence() { runAideCpAction_('quickStartSequence'); }
+function quickStartSequence_() { quickStartSequence(); }
+function runStandardizeDatesAndFormat() { runAideCpAction_('runStandardizeDatesAndFormat'); }
+function runStandardizeDatesAndFormat_() { runStandardizeDatesAndFormat(); }
+function applyGrayShadingAllSheets() { runAideCpAction_('applyGrayShadingAllSheets'); }
+function applyGrayShadingAllSheets_() { applyGrayShadingAllSheets(); }
 
-  const setupMenu = ui.createMenu('🏗️Setup')
-    .addItem('Validate All Sheets', 'validateMappingsAllSheets_')
-    .addItem('sheets Remove "Copy of"', 'removeCopyOfPrefixAllSheets')
-    .addItem('Standardize Dates use mm/dd/yy', 'runStandardizeDatesAndFormat_')
-    .addItem('Organize Tabs by date', 'sortSheetsByB4DateDescending_')
-    .addItem('Apply Shade (all sheets)', 'applyGrayShadingAllSheets_');
-
-  ui.createMenu('🏥 AideCP Shade & Sync')
-    .addItem('😎 Apply (current sheet)', 'applyGrayShadingCurrentSheet_')
-    .addItem('Rename Drive File (B5 + Date)', 'renameDriveFileFromB5AndTab')
-    .addSubMenu(syncMenu)
-    .addSubMenu(maintMenu)
-    .addItem('🚀 Quick Start -  includes all of the Set Up functions in order', 'quickStartSequence_') // Points to Host wrapper
-    .addSubMenu(setupMenu)
-    .addToUi();
-
-  try { runStandardizeDatesAndFormat_(true); } catch(e) { console.error("Startup alignment bypassed: " + e.message); }
-}
+// --- Root Menu Functions ---
+function applyGrayShadingCurrentSheet() { runAideCpAction_('applyGrayShadingCurrentSheet'); }
+function applyGrayShadingCurrentSheet_() { applyGrayShadingCurrentSheet(); }
+function renameDriveFileFromB5AndTab() { runAideCpAction_('renameDriveFileFromB5AndTab'); }
