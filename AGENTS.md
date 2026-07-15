@@ -47,6 +47,7 @@ When repository state affects the requested work:
 - Verify requested repository files are visible before analysis.
 - Do not assume repository state matches GitHub until synchronization has completed.
 - Do not continue using stale repository contents.
+
 ## Repository Synchronization Policy
 
 Synchronize when repository state may have changed or when work depends on recently uploaded files.
@@ -488,7 +489,7 @@ Before completing work verify:
 
 ✓ Pull request not claimed without a verified GitHub PR number and URL
 
-- ## Pull Request Preparation
+## Pull Request Preparation
 
 Before creating any commit or pull request:
 
