@@ -234,6 +234,17 @@ git log --oneline -5
 
 Commit frequently.
 
+## Pull Request Preparation
+
+Implementation pull requests should contain source and text-based changes only unless binary changes are explicitly requested.
+
+Binary reports may be used as review evidence, but they should not normally be included in implementation commits or pull requests.
+
+Before committing or creating a pull request, run:
+
+```bash
+./Framework/tools/prepare_pr.sh
+
 Verify repository status before pushing.
 
 Do not assume synchronization completed successfully.
