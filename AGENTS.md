@@ -189,6 +189,27 @@ If synchronization cannot complete safely, report:
 - Relevant remote branch
 - Recommended next action
 
+- ## Binary File Policy
+
+Unless explicitly instructed by the user:
+
+Do not stage, commit, or include binary files in implementation branches or pull requests.
+
+This includes:
+
+- *.pdf
+- *.xlsx
+- *.xlsm
+- *.docx
+- *.pptx
+- *.png
+- *.jpg
+- *.jpeg
+- *.gif
+- *.zip
+
+These files may be reviewed as inputs but should not be modified or included in generated diffs unless the user explicitly requests it.
+
 ## Project Discovery
 
 Determine whether the request concerns:
