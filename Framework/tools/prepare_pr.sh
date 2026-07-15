@@ -16,3 +16,8 @@ git restore --staged '*.zip' 2>/dev/null || true
 echo
 echo "Remaining staged files:"
 git diff --cached --name-only
+if git diff --cached --name-only | grep -E '\.(pdf|xlsx|xlsm|docx|pptx|png|jpg|jpeg|gif|zip)$' >/dev/null; then
+    echo "ERROR: Binary files are staged."
+    echo "Remove them before creating a PR."
+    exit 1
+fi
