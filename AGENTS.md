@@ -531,3 +531,19 @@ If the preparation tool reports problems:
 - Do not create the pull request.
 
 A pull request must represent only the intended implementation work.
+
+## Large Production Script Policy
+
+When updating a production script:
+
+- Modify the latest production script already present on the active branch.
+- Do not generate an entirely new production script from scratch.
+- Produce a minimal unified diff against the current production version.
+- Keep the implementation diff as small as practical.
+- Avoid introducing unrelated formatting changes.
+- Prefer incremental edits over wholesale rewrites.
+
+If the resulting diff becomes excessively large:
+
+- Split the implementation into multiple commits or waves.
+- Do not rely on bundle or patch artifact recovery.
