@@ -23,11 +23,16 @@ function onOpen() {
     .addToUi();
 }
 
+function createArchiveWorkbookIndexSheet() {
 function createArchiveWorkbookIndexSheet(suppressToast) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const indexSheet = getOrCreateArchiveIndexSheet_(ss);
   const groups = buildArchiveWorkbookSheetGroups_(ss);
   writeArchiveWorkbookIndex_(indexSheet, groups);
+  SpreadsheetApp.getActive().toast("Archive Index refreshed. Month groups: " + groups.length + ".", "Archive Workbook", 5);
+  return indexSheet;
+}
+
   if (!suppressToast) {
     SpreadsheetApp.getActive().toast("Archive Index refreshed. Month groups: " + groups.length + ".", "Archive Workbook", 5);
   }
@@ -260,6 +265,7 @@ function promptForArchiveMonthOnly_(title) {
   const ui = SpreadsheetApp.getUi();
   const response = ui.prompt(
     title || "Archive Month",
+    "Enter the month to keep visible. Examples: 05.26, 5/2026, May 2026. Sheets before the entered month will be hidden.",
     "Enter the month to keep visible. Examples: 5, 05, 05.26, 5/2026, May 2026. Month-only entries use the current year. Sheets before the entered month will be hidden.",
     ui.ButtonSet.OK_CANCEL
   );
@@ -267,6 +273,7 @@ function promptForArchiveMonthOnly_(title) {
 
   const parsed = parseArchiveMonthPrompt_(response.getResponseText());
   if (!parsed) {
+    ui.alert("Enter a valid archive month such as 05.26, 5/2026, or May 2026.");
     ui.alert("Enter a valid archive month such as 5, 05, 05.26, 5/2026, or May 2026.");
     return null;
   }
@@ -277,6 +284,7 @@ function parseArchiveMonthPrompt_(value) {
   const text = String(value || "").trim();
   if (!text) return null;
 
+  let match = text.match(/^(\d{1,2})(?:[.\/\-])(\d{2}|\d{4})$/);
   let match = text.match(/^(\d{1,2})$/);
   if (match) {
     return buildArchiveMonthPromptParts_(new Date().getFullYear(), Number(match[1]));

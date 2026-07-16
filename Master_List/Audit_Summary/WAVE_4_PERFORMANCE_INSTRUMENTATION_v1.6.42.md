@@ -91,3 +91,36 @@ This audit note preserves Wave 4 timing evidence and optimization observations t
 - Retest Create Disenrolled List after any change to append positioning, payload write strategy, or row-height locking.
 - Retest Create Master List after any sheet insertion or naked canvas optimization.
 - Keep this note updated with new timing captures so Wave 4 optimization decisions remain evidence-based.
+
+## Runtime Correction — Create Monthly Update
+
+- Observed runtime error: `ReferenceError: step is not defined` in `writeDemoPMonthlySyncBody_` during `runMonthlyUpdate`.
+- Correction captured in `v1.6.61`: the Demo P monthly-sync body writer now accepts an optional timing step callback and defaults to a no-op when called by workflows that do not provide a timing callback.
+- Validation focus: rerun `Create Monthly Update` and confirm the Demo P update phase reaches the post-write reactivation sweep and final Index/sort refresh without throwing the missing `step` reference.
+
+## Runtime Correction — Create Monthly Update v1.6.62
+
+Latest `Create Monthly Update 05.01.26` timing completed functionally at 488.364 seconds. The run confirms all four chained phases completed, but highlights three major follow-up areas:
+
+| Workflow | Step | Delta Seconds | Status |
+|---|---:|---:|---|
+| Create Monthly Update 05.01.26 | Monthly Change datasets compiled in-memory | 15.272 | SLOW |
+| Create Monthly Update 05.01.26 | Monthly Change report sheet created from template | 17.731 | SLOW |
+| Create Monthly Update 05.01.26 | Monthly Change section rows populated | 12.147 | SLOW |
+| Create Monthly Update 05.01.26 | Update Demo P - Demo P monthly PMR replacement complete | 12.520 | SLOW |
+| Create Monthly Update 05.01.26 | Disenrolled append payload values written, 8 rows × 66 columns | 54.422 | BOTTLENECK |
+| Create Monthly Update 05.01.26 | Create/Update Disenrolled - old rows hidden, 682 rows | 34.091 | BOTTLENECK |
+| Create Monthly Update 05.01.26 | Master List complete: Master List 05.26 | 199.246 | CRITICAL |
+| Create Monthly Update 05.01.26 | Index refreshed and tabs organized | 83.770 | CRITICAL |
+
+Corrections captured in `v1.6.62`:
+
+1. `Clear Timing & Quality Logs` now preserves Dashboard Quality Report section definitions and clears only Framework Timing Report diagnostic rows.
+2. New output sheets are inserted before the `Framework Timing Report` boundary when it exists, so routine outputs should not be added after the stable system/template block.
+3. `Create Monthly Update` now uses an active-operational-sheet sort that does not show hidden system or template sheets, reducing the risk that hidden sheets remain visible after monthly update sorting.
+
+Validation focus:
+
+- Rerun `Clear Timing & Quality Logs`, then confirm Dashboard Quality sections remain in place without requiring Dashboard Quality Startup to rebuild them.
+- Rerun `Create Monthly Update`, then confirm hidden system/template sheets stay hidden after final active-tab organization.
+- Confirm newly created Monthly Change and Master List sheets appear before `Framework Timing Report`, not after `Format Dashboard` or after the system/template block.
