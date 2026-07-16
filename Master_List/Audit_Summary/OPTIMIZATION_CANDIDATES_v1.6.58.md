@@ -279,3 +279,145 @@ Assessment: Create Monthly Update is not cleared until this error is fixed and r
 - Create Master List: functionally cleared from supplied timing, but performance watch remains for canvas creation and primary-row copy.
 - Create Disenrolled List: not fully cleared for Wave 4 performance signoff until the Disenrolled Exclusion append bottleneck is improved or accepted as a known issue.
 - Create Monthly Update: not cleared until the `push` error is fixed and the full chain is re-tested.
+
+## v1.6.68 Carry-Forward Optimization Candidates — Wave 4 Closure
+
+### Evidence Reviewed
+
+- `Master_List/Reports/v1.6.68 - Framework Timing Report.pdf`
+- `Master_List/Audit_Summary/WAVE_4_PERFORMANCE_INSTRUMENTATION_v1.6.42.md`
+- `Master_List/Current Production Script/v.1.6.68_Current_Production_Script`
+
+### Wave 4 Closure Context
+
+The v1.6.68 timing evidence resolves the original Wave 4 critical blockers:
+
+- Disenrolled Exclusion append values write improved from the baseline `91.574` second `CRITICAL` write to `4.912` seconds with `OK` severity.
+- Create Disenrolled final `Complete` improved from an unassigned `78.634` second `CRITICAL` interval to `0.000` seconds with final sort, hide, Index, and notification work separately timed.
+- Create Monthly Update now completes through the shared Monthly Change, Update Demo P, Create Disenrolled, and Create Master List helpers rather than the removed legacy Update Master List workflow.
+
+The remaining items below are carry-forward optimization candidates. They are not Wave 4 critical blockers unless future runs show timeouts, failed workflow completion, incorrect sheet state, or unacceptable user-facing latency.
+
+### Priority 1 — Create Monthly Update Demo P Archive Cost
+
+#### Observed v1.6.68 timing
+
+- `Create Monthly Update - Update Demo P - Archive - Demo P primary rows saved before monthly replacement | Rows: 74`: `26.387` seconds, `SLOW`.
+
+#### Current implementation area
+
+- Demo P monthly sync archives replaced primary rows before writing the replacement Demo P body.
+- This is a data-safety step and should not be removed without an approved archive-policy change.
+
+#### Optimization candidates
+
+1. Add granular timing inside `appendDemoPArchiveRows_()` for archive sheet lookup/create, row insertion, value write, formatting, and row-height work.
+2. Test value-only archive writes if archive formatting is not required for this safety log.
+3. Batch archive metadata stamping with archive row values where possible.
+4. Confirm the archive append writes only required columns and rows.
+5. Keep the archive step mandatory unless a separate approved data-retention policy replaces it.
+
+### Priority 2 — Create Monthly Update Index Refresh / Active Tab Organization
+
+#### Observed v1.6.68 timing
+
+- `Create Monthly Update - Index refreshed and active tabs organized without showing hidden system/template sheets | Moves: 8`: `14.734` seconds, `SLOW`.
+
+#### Current implementation area
+
+- The final Create Monthly Update organization step refreshes the Index and applies governed operational tab ordering after Monthly Change, Demo P, Disenrolled, and Master List outputs complete.
+
+#### Optimization candidates
+
+1. Split final organization timing into Index rebuild, operational sort order, visibility enforcement, and active-sheet restoration.
+2. Skip Index rewrite when the sheet signature and archive/index inputs are unchanged.
+3. Avoid repeated tab moves when sheets are already in the governed order.
+4. Preserve the current rule that hidden system/template sheets must not be shown during organization.
+
+### Priority 3 — Monthly Change Dataset Compilation and Template Sheet Creation
+
+#### Observed v1.6.68 timing
+
+- `Monthly Change datasets compiled in-memory`: `17.598` seconds, `SLOW`.
+- `Monthly Change report sheet created from template`: `13.679` seconds, `SLOW`.
+
+#### Current implementation area
+
+- Monthly Change compares current and previous Raw Data sources, compiles section datasets, creates a report sheet from the governed template, lays out sections, writes rows, and formats the report.
+
+#### Optimization candidates
+
+1. Add row-count and PMR-count timing details to dataset comparison phases.
+2. Review comparison loops for repeated header normalization or repeated date/string coercion.
+3. Cache current/previous header maps and repeated column indexes before section comparison.
+4. Test whether a naked-canvas report build is faster than copying the full template for Monthly Change.
+5. Preserve section order, headers, and report formatting before accepting any template-copy change.
+
+### Priority 4 — Master List Naked Canvas Creation Inside Monthly Update
+
+#### Observed v1.6.68 timing
+
+- Standalone Create Master List total: `30.857` seconds, `PASS`.
+- Create Monthly Update substep `Create Monthly Update - Create Master List - Create naked canvas - Master List output sheet`: `19.510` seconds, `SLOW`.
+
+#### Current implementation area
+
+- Create Monthly Update calls the same shared `createMasterListForMonth_()` helper used by standalone Create Master List.
+- The slow substep is sheet/canvas creation, not the legacy Update Master List workflow.
+
+#### Optimization candidates
+
+1. Keep the shared helper path; do not reintroduce copy-forward Update Master List behavior.
+2. Add detail inside `createMasterListSheetFromTemplate_()` for sheet insertion, grid resize, title/header copy, data-row format copy, column width application, governed number formats, and freeze/tab setup.
+3. Test whether reducing initial template row capacity lowers canvas creation time.
+4. Avoid redundant template hiding when Create Monthly Update already performs final organization.
+
+### Priority 5 — Build Demo P Canvas Write and Contact Compression
+
+#### Observed v1.6.68 timing
+
+- `Demo P unified values flushed to spreadsheet canvas`: `13.125` seconds, `SLOW`.
+- `Demo P in-memory flat-record contact compression complete | Rows retained: 1060`: `13.937` seconds, `SLOW`.
+- Build Demo P total: `36.639` seconds, `PASS`.
+
+#### Current implementation area
+
+- Build Demo P remains functionally acceptable, but canvas write and contact compression remain recurring slow steps across timing captures.
+
+#### Optimization candidates
+
+1. Keep granular timing around Demo P write, post-formatting, contact compression, and Index refresh.
+2. Review contact compression for repeated normalization, repeated header lookups, or avoidable nested scans.
+3. Cache repeated contact/header indexes before compression loops.
+4. Preserve PMR grouping, Primary PMR Row assignment, contact flattening, metadata, and banner sync behavior.
+
+### Priority 6 — Disenrolled Exclusion Sheet Readiness
+
+#### Observed v1.6.68 timing
+
+- `Disenrolled move - exclusion sheet ready: Disenrolled Exclusion`: `14.108` seconds, `SLOW`.
+- Create Disenrolled List total: `42.445` seconds, `SLOW`.
+
+#### Current implementation area
+
+- The original Disenrolled append write and final Complete blockers are resolved. The remaining slow point is sheet readiness, likely involving template/sheet lookup, date updates, and/or first-run sheet preparation.
+
+#### Optimization candidates
+
+1. Split timing inside Disenrolled Exclusion readiness into sheet lookup, template creation/copy, date update, schema/header validation, and positioning.
+2. Compare first-run sheet creation against existing-sheet runs before optimizing.
+3. Avoid template copy work when the persistent Disenrolled Exclusion sheet already exists and schema is valid.
+4. Preserve governed headers, title dates, tab position, and historical exclusion data.
+
+### Updated Future Optimization Order
+
+1. Create Monthly Update Demo P archive cost.
+2. Create Monthly Update final Index refresh / active tab organization.
+3. Monthly Change dataset compilation and report sheet creation.
+4. Master List naked canvas creation inside Monthly Update.
+5. Build Demo P canvas write and contact compression.
+6. Disenrolled Exclusion sheet readiness.
+
+### Updated Release Recommendation
+
+The v1.6.68 timing supports closing Wave 4 as critical remediation complete. The items in this section should be carried forward as future optimization candidates rather than treated as Wave 4 blockers.
