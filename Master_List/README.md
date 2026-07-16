@@ -18,6 +18,12 @@ Current reviewed cleanup candidate:
 Master_List/Current Production Script/v.1.6.72_Current_Production_Script
 ```
 
+Current Wave 6 documentation-closure candidate:
+
+```text
+Master_List/Current Production Script/v.1.6.74_Current_Production_Script
+```
+
 Earlier production snapshots are retained for comparison and rollback. Do not overwrite prior production versions; create a new versioned script for each production or testing release.
 
 ## Reports
@@ -62,4 +68,6 @@ Current owner decision for the active workbook:
 - Preserve approved business logic.
 - Keep menu callbacks and public workflow entry points stable unless a compatibility plan is approved.
 - Use the public API boundary and governance registry before renaming or removing functions.
-- Defer performance optimization work until Wave 5 cleanup is closed.
+- Wave 5 cleanup is closed with v1.6.72.
+- Wave 6 is closed without persistent CSV companion export sheets unless future automated diffing is explicitly approved.
+- Defer performance optimization work until Wave 6 documentation closure is complete.

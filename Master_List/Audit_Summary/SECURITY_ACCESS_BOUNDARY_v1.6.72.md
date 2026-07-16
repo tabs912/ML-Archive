@@ -12,8 +12,9 @@ The owner confirmed the intended operating model:
 
 1. The source Google Sheet is shared with three total people.
 2. The owner is the only person with script access.
-3. Performance optimization will occur after Wave 5 is complete.
-4. Script-level allowlist guards are not required at this time.
+3. Wave 5 is closed with the validated v1.6.72 cleanup candidate.
+4. Performance optimization will occur after Wave 6 is complete.
+5. Script-level allowlist guards are not required at this time.
 
 ## Required Security Controls
 
@@ -56,4 +57,4 @@ Script-level user allowlist guards are deferred by owner decision. Reconsider th
 
 ## Recommendation
 
-Close Wave 5 with v1.6.72 as the cleanup candidate, keep the above access controls in place, and handle performance optimization in a later wave.
+Keep v1.6.72 as the closed Wave 5 cleanup candidate, keep the above access controls in place, close Wave 6 after v1.6.74 no-extra-sheet validation, and handle performance optimization in a later wave.
