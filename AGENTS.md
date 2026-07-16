@@ -150,6 +150,28 @@ depending on repository layout.
 
 Do not create or claim a pull request until the preparation tool confirms that only intended implementation files remain staged.
 
+## Implementation Diff Policy
+
+Implementation diffs must contain only source-code and text-based implementation artifacts.
+
+Before creating a commit or pull request:
+
+- Run `prepare_pr.sh`.
+- Review the generated diff.
+- Remove unrelated changes.
+- Remove binary files unless explicitly requested.
+- Remove documentation changes unrelated to the requested implementation.
+- Remove report changes unless explicitly requested.
+- Remove formatting-only changes unless requested.
+
+If unrelated files appear in the implementation diff:
+
+- Restore those files.
+- Remove them from the commit.
+- Regenerate the implementation diff.
+
+The final implementation diff should contain only files directly related to the requested task.
+
 ## Newly Uploaded Repository Files
 
 If the user says files were uploaded after the workspace was created, assume the workspace may be stale.
