@@ -91,3 +91,9 @@ This audit note preserves Wave 4 timing evidence and optimization observations t
 - Retest Create Disenrolled List after any change to append positioning, payload write strategy, or row-height locking.
 - Retest Create Master List after any sheet insertion or naked canvas optimization.
 - Keep this note updated with new timing captures so Wave 4 optimization decisions remain evidence-based.
+
+## Runtime Correction — Create Monthly Update
+
+- Observed runtime error: `ReferenceError: step is not defined` in `writeDemoPMonthlySyncBody_` during `runMonthlyUpdate`.
+- Correction captured in `v1.6.61`: the Demo P monthly-sync body writer now accepts an optional timing step callback and defaults to a no-op when called by workflows that do not provide a timing callback.
+- Validation focus: rerun `Create Monthly Update` and confirm the Demo P update phase reaches the post-write reactivation sweep and final Index/sort refresh without throwing the missing `step` reference.
