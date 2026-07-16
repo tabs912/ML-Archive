@@ -1,0 +1,730 @@
+function,line,category,public_like,trailing_underscore,menu_callback,trigger_callback,static_call_count,string_reference_count,recommendation
+h_,223,internal_helper,FALSE,TRUE,FALSE,FALSE,320,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultColumnDefinitionRows_,230,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getAllUniqueHeaders_,344,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getColumnStandards_,363,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+c_,463,internal_helper,FALSE,TRUE,FALSE,FALSE,95,0,Keep private-style name; no action unless consolidation is approved.
+writeDashboardTitle_,477,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+writeDashboardSection_,491,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+styleDashboard_,526,internal_helper,FALSE,TRUE,FALSE,FALSE,1,1,Keep private-style name; no action unless consolidation is approved.
+setupReportFormattingDashboard,558,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,2,Do not make private until external/manual consumers are checked; add wrapper before rename.
+appendDashboardSectionRows_,562,internal_helper,FALSE,TRUE,FALSE,FALSE,7,0,Keep private-style name; no action unless consolidation is approved.
+getResolvedDefaultColumnDefinitionRows_,571,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeDashboardDefaultsFast_,605,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+rebuildFormatDashboardDefaults,680,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,2,3,Keep public; menu callback strings require stable top-level function name.
+setupReportFormattingDashboardFromScriptDefaults_,684,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+normalizeDashboardSheetTypeKey_,699,internal_helper,FALSE,TRUE,FALSE,FALSE,20,0,Keep private-style name; no action unless consolidation is approved.
+getSheetDefinitionByTypeOrNull_,717,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getSheetDefinitionByType_,724,internal_helper,FALSE,TRUE,FALSE,FALSE,24,0,Keep private-style name; no action unless consolidation is approved.
+sortSheetDefinitionsByProductionOrder_,730,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+notify_,744,internal_helper,FALSE,TRUE,FALSE,FALSE,44,0,Keep private-style name; no action unless consolidation is approved.
+trimExcessRows_,752,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+hideOldDisenrolledRows_,764,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+showQuickStartToast_,794,internal_helper,FALSE,TRUE,FALSE,FALSE,9,0,Keep private-style name; no action unless consolidation is approved.
+quickSystemSetup,799,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,2,Keep public; menu callback strings require stable top-level function name.
+quickBuildAllTemplates,813,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,2,Keep public; menu callback strings require stable top-level function name.
+notifyErrorWithTiming_,821,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+isBlankCell_,826,internal_helper,FALSE,TRUE,FALSE,FALSE,7,0,Keep private-style name; no action unless consolidation is approved.
+coerceToValidDate_,831,internal_helper,FALSE,TRUE,FALSE,FALSE,32,0,Keep private-style name; no action unless consolidation is approved.
+spreadsheetSerialDateToLocalDate_,881,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+isReasonableReportDate_,901,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+createLocalDateOnly_,906,internal_helper,FALSE,TRUE,FALSE,FALSE,12,0,Keep private-style name; no action unless consolidation is approved.
+getTodayLocalDate_,910,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getMonthDateParts_,915,internal_helper,FALSE,TRUE,FALSE,FALSE,8,0,Keep private-style name; no action unless consolidation is approved.
+formatDateForSheetName_,940,internal_helper,FALSE,TRUE,FALSE,FALSE,12,0,Keep private-style name; no action unless consolidation is approved.
+formatDateDisplay_,944,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+dateKey_,949,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+isSameDate_,954,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+isSameMonth_,958,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+buildMonthlySheetName_,963,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+buildStandardMonthlySheetName_,968,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getNewestFormattedMonthlySheetByPrefix_,974,internal_helper,FALSE,TRUE,FALSE,FALSE,11,0,Keep private-style name; no action unless consolidation is approved.
+getMonthlySheetByPrefixAndDate_,1005,internal_helper,FALSE,TRUE,FALSE,FALSE,13,0,Keep private-style name; no action unless consolidation is approved.
+setUniqueSheetName_,1039,internal_helper,FALSE,TRUE,FALSE,FALSE,8,0,Keep private-style name; no action unless consolidation is approved.
+getHeaders_,1072,internal_helper,FALSE,TRUE,FALSE,FALSE,24,0,Keep private-style name; no action unless consolidation is approved.
+getHeaderMap_,1092,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildHeaderIndexMap_,1107,internal_helper,FALSE,TRUE,FALSE,FALSE,27,0,Keep private-style name; no action unless consolidation is approved.
+findHeaderIndex_,1116,internal_helper,FALSE,TRUE,FALSE,FALSE,8,0,Keep private-style name; no action unless consolidation is approved.
+normalizeHeader_,1123,internal_helper,FALSE,TRUE,FALSE,FALSE,12,1,Keep private-style name; no action unless consolidation is approved.
+normalizePMR_,1131,internal_helper,FALSE,TRUE,FALSE,FALSE,45,0,Keep private-style name; no action unless consolidation is approved.
+getPMRIndex_,1138,internal_helper,FALSE,TRUE,FALSE,FALSE,39,0,Keep private-style name; no action unless consolidation is approved.
+validateRawDataPreflightForDemoP_,1142,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,5,0,Classify as supported diagnostic API or test-only entry point before renaming.
+getDOBIndex_,1174,internal_helper,FALSE,TRUE,FALSE,FALSE,7,0,Keep private-style name; no action unless consolidation is approved.
+normalizeKeyPart_,1178,internal_helper,FALSE,TRUE,FALSE,FALSE,14,0,Keep private-style name; no action unless consolidation is approved.
+getDataValues_,1197,internal_helper,FALSE,TRUE,FALSE,FALSE,28,0,Keep private-style name; no action unless consolidation is approved.
+getRawDataSourceDataForOutput_,1237,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+rawDataSourceHeaderRow_,1271,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+ensurePrimaryPMRRowColumn_,1286,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+assignPrimaryRowForBlock_,1303,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+deleteRowNumberBatches_,1341,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+buildMasterListHeadersBeforeDataCopy_,1375,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+ensureHeaders_,1385,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+ensureBannerSummaryOutputHeaders_,1412,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+ensureContactOutputHeaders_,1416,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+trimOutputSheetToDataSize_,1430,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+copyChangedPMRsFromDemoPToMasterList_,1440,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+applyFinalRowHeightLock_,1475,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+normalizeCompareValue_,1481,internal_helper,FALSE,TRUE,FALSE,FALSE,33,0,Keep private-style name; no action unless consolidation is approved.
+valuesAreEqual_,1511,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+normalizeText_,1515,internal_helper,FALSE,TRUE,FALSE,FALSE,4,1,Keep private-style name; no action unless consolidation is approved.
+normalizeKey_,1519,internal_helper,FALSE,TRUE,FALSE,FALSE,6,1,Keep private-style name; no action unless consolidation is approved.
+numberOrDefault_,1523,internal_helper,FALSE,TRUE,FALSE,FALSE,48,0,Keep private-style name; no action unless consolidation is approved.
+parseBoolean_,1528,internal_helper,FALSE,TRUE,FALSE,FALSE,11,0,Keep private-style name; no action unless consolidation is approved.
+clearHeaderCacheForSheet_,1538,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+clearSheetRuntimeCachesForSheet_,1553,internal_helper,FALSE,TRUE,FALSE,FALSE,42,0,Keep private-style name; no action unless consolidation is approved.
+getHeaderCacheKey_,1558,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+clearMonthlySheetLookupCache_,1565,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+getGovernedNewSheetInsertIndex_,1571,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+insertGovernedOutputSheet_,1601,internal_helper,FALSE,TRUE,FALSE,FALSE,8,0,Keep private-style name; no action unless consolidation is approved.
+getOperationalNewSheetInsertIndex_,1607,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getMonthlySheetLookupCacheKey_,1629,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getSheetDimensionCacheKey_,1636,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+clearSheetDimensionCacheForSheet_,1640,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getSheetDimensions_,1646,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+dateOnlyLocalClone_,1666,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+monthKey_,1672,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+parseStandardMonthlySheetDateFromName_,1677,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildRowsByPMR_,1697,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+safeSheetName_,1732,internal_helper,FALSE,TRUE,FALSE,FALSE,1,1,Keep private-style name; no action unless consolidation is approved.
+compareValues_,1739,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+toBool_,1743,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+truthy_,1747,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+toNumber_,1751,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+resizeSheetMinimum_,1755,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getThemeColorsFromBase_,1771,internal_helper,FALSE,TRUE,FALSE,FALSE,14,0,Keep private-style name; no action unless consolidation is approved.
+getGlobalBorderStyle_,1782,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+normalizeHex_,1787,internal_helper,FALSE,TRUE,FALSE,FALSE,6,1,Keep private-style name; no action unless consolidation is approved.
+hexWithHslLightness_,1798,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+hexToRgb_,1805,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+rgbToHex_,1814,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+rgbToHsl_,1822,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+hslToRgb_,1844,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+startRuntimeTiming_,1867,internal_helper,FALSE,TRUE,FALSE,FALSE,7,0,Keep private-style name; no action unless consolidation is approved.
+markRuntimeStep_,1880,internal_helper,FALSE,TRUE,FALSE,FALSE,78,0,Keep private-style name; no action unless consolidation is approved.
+addRuntimeCounter_,1912,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+logRuntimeInfo_,1917,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+logRuntimeWarning_,1922,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+logRuntimeError_,1927,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+logBestEffortWarning_,1932,internal_helper,FALSE,TRUE,FALSE,FALSE,106,0,Keep private-style name; no action unless consolidation is approved.
+logRuntimeTiming_,1936,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getRuntimeTimingSeverity_,1953,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getRuntimeTimingReportName_,1961,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+writeRuntimeTimingReport_,1965,internal_helper,FALSE,TRUE,FALSE,FALSE,16,0,Keep private-style name; no action unless consolidation is approved.
+writeRuntimeTimingReportBestEffort_,1969,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeConsolidatedTimingSummaryReport_,1981,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeCombinedFrameworkTimingReport_,1985,internal_helper,FALSE,TRUE,FALSE,FALSE,9,0,Keep private-style name; no action unless consolidation is approved.
+getFrameworkTimingRetentionLimit_,2003,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getFrameworkTimingReportSheetName_,2007,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getFrameworkTimingSectionRegistry_,2011,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+findFrameworkTimingSectionRow_,2036,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+findNextFrameworkTimingSectionRow_,2049,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+collectExistingFrameworkTimingSectionBlocks_,2062,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildDefaultFrameworkTimingSectionBlock_,2081,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeFrameworkTimingSectionBlock_,2093,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+rebuildFrameworkTimingReportShellCompact_,2123,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+hasFrameworkTimingReportShell_,2165,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+initializeFrameworkTimingSheet_,2191,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+ensureFrameworkTimingReport_,2210,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+trimSheetToColumnCount_,2214,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+styleFrameworkTimingReport_,2228,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getFrameworkTimingSectionForId_,2331,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+replaceFrameworkTimingSectionRows_,2339,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getFrameworkTimingBenchmarkForProcess_,2384,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getFrameworkTimingThresholdForSeverity_,2402,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+ensureFrameworkTimingReportShell_,2410,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getFrameworkTimingDetailStartRow_,2419,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getFrameworkTimingDetailRows_,2426,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getLatestFrameworkTimingRowsByProcess_,2450,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getFrameworkTimingBenchmarkSeverity_,2471,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getFrameworkTimingModeForStep_,2481,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+mergeFrameworkTimingModes_,2490,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildFrameworkTimingProcessSummaryRows_,2495,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+formatTimingTimestampForSummary_,2573,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildFrameworkTimingIssueRows_,2583,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildFrameworkTimingRecommendationRows_,2613,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeFrameworkPerformanceRecommendationsSheet_,2630,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getPerformanceRecommendationForTimingStep_,2634,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+worseTimingSeverity_,2674,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+appendRuntimeTimingToFrameworkTimingReport_,2681,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+formatSeconds_,2707,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+refreshFrameworkTimingReport,2716,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+writeFrameworkTimingPerformanceRecommendations,2720,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+onOpen,2777,supported_public_simple_trigger,TRUE,FALSE,FALSE,TRUE,0,0,Keep public; Apps Script simple trigger entry point.
+isFrameworkTimingEnabled_,2855,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+toggleFrameworkTiming,2864,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+hideTemplates_,2872,supported_public_menu_callback,FALSE,TRUE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+showTemplates_,2876,supported_public_menu_callback,FALSE,TRUE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+hideSystemSheets_,2880,supported_public_menu_callback,FALSE,TRUE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+showSystemSheets_,2884,supported_public_menu_callback,FALSE,TRUE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+formatDashboard,2888,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,1,Do not make private until external/manual consumers are checked; add wrapper before rename.
+saveActiveLayoutToDashboardSettings,2892,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+saveFormatDashboardConfigChanges_,2931,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+resolveSheetDefinitionForLayoutSnapshot_,2944,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+captureActiveSheetLayoutSnapshot_,2963,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getHiddenColumnFlags_,3016,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+isDateNumberFormat_,3024,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultLayoutSnapshotBorderConfig_,3029,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+upsertDashboardSheetDefinitionBaseColor_,3042,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+upsertDashboardColumnDefinitionRows_,3066,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardSectionBounds_,3103,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+ensureDashboardSectionDataCapacity_,3131,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeDashboardLayoutSnapshotSection_,3147,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyLayoutSnapshotBorder_,3188,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+clearDiagnosticsAndTimingLogs,3202,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+clearDashboardConfigCache_,3313,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardConfigCacheKey_,3318,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getFormatDashboardSectionNames_,3335,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getRequiredFrameworkSheetTypes_,3347,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultGlobalSettingsRows_,3361,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultTitleRowRows_,3426,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultSheetDefinitionRows_,3435,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultSheetDefinitionRowsWithColumnCounts_,3448,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultBehaviorRows_,3463,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultSystemSurfaceRows_,3476,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultSheetHeaderRows_,3487,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultHeaderSets_,3502,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+createOrRefreshAllReportTemplates,3840,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,1,4,Keep public; menu callback strings require stable top-level function name.
+ensureGoldenMasterTemplate_,3889,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+moveTemplateBeforeBaseTemplate_,3928,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+organizeTemplateTabsBeforeBaseTemplate_,3947,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+summarizeTemplateRefreshModes_,3958,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+hideReportTemplates,3969,public_like_review_required,TRUE,FALSE,FALSE,FALSE,2,2,Do not make private until external/manual consumers are checked; add wrapper before rename.
+showReportTemplates,3976,public_like_review_required,TRUE,FALSE,FALSE,FALSE,1,2,Do not make private until external/manual consumers are checked; add wrapper before rename.
+setReportTemplateVisibility_,3983,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+validateReportTemplates,4018,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,1,Classify as supported diagnostic API or test-only entry point before renaming.
+validateReportTemplatesCore_,4026,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,2,0,Classify as supported diagnostic API or test-only entry point before renaming.
+loadDashboardConfig_,4036,internal_helper,FALSE,TRUE,FALSE,FALSE,48,1,Keep private-style name; no action unless consolidation is approved.
+buildDashboardSectionIndex_,4081,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+loadGlobalSettings_,4103,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+loadTitleRows_,4148,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+parseTitleRowConfigRow_,4183,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+normalizeTitleTargetCell_,4209,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getTitleRowConfigForSheet_,4215,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+getThemeFillForTitleRow_,4223,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+toWrapStrategy_,4231,internal_helper,FALSE,TRUE,FALSE,FALSE,5,1,Keep private-style name; no action unless consolidation is approved.
+loadSheetDefinitions_,4238,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+loadSheetHeaders_,4266,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+loadColumnDefinitions_,4300,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+loadSheetBehaviors_,4327,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeDashboardSectionTitle_,4351,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+readDashboardSectionRows_,4359,internal_helper,FALSE,TRUE,FALSE,FALSE,12,0,Keep private-style name; no action unless consolidation is approved.
+getBehaviorForSheetType_,4404,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+createOrRefreshTemplateFromDashboard_,4410,internal_helper,FALSE,TRUE,FALSE,FALSE,3,1,Keep private-style name; no action unless consolidation is approved.
+shouldUseStagedTemplateBuild_,4483,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+shouldRefreshTemplateMetadataOnly_,4490,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildTemplateRefreshDecisionMessage_,4501,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+refreshTemplateMetadataOnly_,4519,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildTemplateFromDashboardSafely_,4532,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getTemplateBuildSheetName_,4561,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+promoteStagedTemplateBuild_,4565,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+validateBuiltTemplateMinimumStructure_,4578,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,1,0,Classify as supported diagnostic API or test-only entry point before renaming.
+buildTemplateFromDashboard_,4596,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+shouldSkipTemplateResize_,4650,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+ensureSheetMinimumColumns_,4655,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+clearTemplateForFullBuild_,4664,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyTemplateRowHeights_,4689,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyFinalRowHeightLockForSheetType_,4695,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+lockFinalOutputRowHeights_,4699,internal_helper,FALSE,TRUE,FALSE,FALSE,9,0,Keep private-style name; no action unless consolidation is approved.
+shouldLockExpandedDataRowHeights_,4727,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyGlobalDefaultRowHeightsToSheet_,4736,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+safeSetRowHeights_,4747,internal_helper,FALSE,TRUE,FALSE,FALSE,14,0,Keep private-style name; no action unless consolidation is approved.
+applyRowHeightRuns_,4780,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+hideTemplateIfNeeded_,4787,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+resolveTemplateRowCount_,4802,internal_helper,FALSE,TRUE,FALSE,FALSE,7,0,Keep private-style name; no action unless consolidation is approved.
+applyTemplateBaseFormatting_,4826,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+ensureTitleRowConfig_,4875,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+applyTitleRows_,4888,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+rowColToA1_,4941,internal_helper,FALSE,TRUE,FALSE,FALSE,9,0,Keep private-style name; no action unless consolidation is approved.
+applyHeaderRow_,4952,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+applyColumnWidths_,4993,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+applyColumnWidthsInRuns_,5004,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyDateAndNumberFormats_,5040,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+enforceTemplateDateAndNumberFormats_,5044,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+enforceDateAndNumberFormatsForHeaders_,5049,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getExpectedNumberFormat_,5106,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getGoogleSheetsNumberFormat_,5113,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+isDateFormatText_,5132,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyHiddenColumnSettings_,5137,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+applyHiddenColumnSettingsInRuns_,5147,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyDataRows_,5183,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyAlternatingColorRules_,5209,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyMonthlyChangeSpacerRow3Format_,5236,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+formatMonthlyChangeSubsectionBlock_,5266,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeTemplateMetadata_,5312,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildTemplateFormatSignature_,5330,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+compactTemplateFormatSignature_,5363,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeTemplateFormatSignature_,5377,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getTemplateFormatSignatureKey_,5386,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getStoredTemplateFormatSignature_,5392,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getStoredTemplateFormatSignatureFromSheet_,5401,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+storeTemplateFormatSignature_,5421,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+ensureTemplateFilter_,5429,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyTemplateFreezeAndTabColor_,5478,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+resizeSheet_,5516,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+resizeSheetGrid_,5541,internal_helper,FALSE,TRUE,FALSE,FALSE,15,0,Keep private-style name; no action unless consolidation is approved.
+resizeSheetRows_,5574,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+resizeSheetColumns_,5579,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getHeadersForSheetType_,5583,internal_helper,FALSE,TRUE,FALSE,FALSE,25,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultBehavior_,5591,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+showSheetIfNeeded_,5601,internal_helper,FALSE,TRUE,FALSE,FALSE,7,0,Keep private-style name; no action unless consolidation is approved.
+hideSheetIfNeeded_,5613,internal_helper,FALSE,TRUE,FALSE,FALSE,12,0,Keep private-style name; no action unless consolidation is approved.
+formatMonthlySheets,5627,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+findMonthlyImportSheetForRoute_,5671,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getMonthlyImportSheetCandidatesForRoute_,5697,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+isMonthlyImportSheetCandidate_,5707,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getMonthlyImportCandidateRank_,5718,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+sheetNameMatchesPromptedMonth_,5726,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeMonthlyImportSheetName_,5751,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+buildPromptedMonthContext_,5759,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+formatMonthlyBannerSheet_,5768,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+formatMonthlyDashboardSheetFromSource_,5790,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+formatMonthlyRawDataSheetFromSource_,5824,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+formatBannerReport,5830,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+validateActiveBannerFormatterOutput,5899,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,1,Classify as supported diagnostic API or test-only entry point before renaming.
+archiveActiveRawDataSheet,5921,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,1,Do not make private until external/manual consumers are checked; add wrapper before rename.
+parseReportMonthInput_,5939,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+promptForLockedYearReportMonth_,5972,internal_helper,FALSE,TRUE,FALSE,FALSE,18,0,Keep private-style name; no action unless consolidation is approved.
+boolText_,6016,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+isPrimaryPMRRowValue_,6020,internal_helper,FALSE,TRUE,FALSE,FALSE,8,0,Keep private-style name; no action unless consolidation is approved.
+assignPrimaryPMRRows_,6025,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getCurrentBannersSheet_,6053,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getCurrentUnlockedCarePlanSheet_,6065,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getCurrentCarePlanDueSheet_,6074,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getPreviousMasterListSheet_,6086,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getCurrentMasterListSheet_,6092,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+applyStandardFormatting_,6098,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+applyStandardFormattingAfterHeadersAndData_,6141,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+forceStandardTitleCellAlignment_,6151,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+captureHiddenSheetNames_,6160,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+restorePreviouslyHiddenSheets_,6169,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+finalizeWorkflowAfterCreateOrUpdate_,6186,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+refreshIndexAfterSheetWorkflow_,6190,internal_helper,FALSE,TRUE,FALSE,FALSE,8,0,Keep private-style name; no action unless consolidation is approved.
+hidePreviousMonthSheets_,6198,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+autoHidePreviousMonthSheetsAfterWorkflow_,6202,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyIndexSheetRowFills_,6217,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+applyCurrentVsOlderTabColors_,6238,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+organizeSheetTabs_,6261,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+formatDateColumnsByHeader_,6265,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+rowObjectFromHeaders_,6284,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getLiveDashboardAuditStatus_,6294,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getLiveTemplateValidationStatus_,6298,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getLiveFrameworkHealthStatus_,6302,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getLiveSheetStatus_,6306,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+setMonthlySheetNameFast_,6312,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+writePMRContactsToParticipantRows_,6318,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildParticipantContactKey_,6474,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+isExpiredContactPhoneDate_,6483,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+capitalizeContactPart_,6490,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+formatRankedContact_,6497,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getMostRecentDateFromRowsByHeader_,6513,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+isDateInStrictLocalRangeInclusive_,6525,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+isDateDisplayInReportWindow_,6536,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+isParticipantEnrollmentStatusDisenrolled_,6540,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getSheetTypeForOrganization_,6550,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+collectFrameworkHealthCheckRows_,6565,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+collectWorkflowSyncVerificationRows_,6577,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+runFrameworkSmokeValidation,6585,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,1,3,Keep public; menu callback strings require stable top-level function name.
+collectFrameworkSmokeValidationRows_,6601,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+appendFrameworkSmokeValidationRow_,6644,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+functionSourceContainsAll_,6648,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+runDashboardQualityMasterListHealthCheck_,6655,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+buildCombinedFrameworkTestDashboardRows_,6664,internal_helper,FALSE,TRUE,FALSE,FALSE,1,1,Keep private-style name; no action unless consolidation is approved.
+applyDashboardTemplateFormattingToActiveReportSheet_,6675,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+applyDashboardSortOrderAlternatingColors_,6686,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+ensureStandardTitleRows_,6728,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+isDateLikeHeader_,6746,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildMonthlySheetNameNoDashAfterPrefix_,6755,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+formatReportDateLabel_,6759,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+buildBannerReportOutputName_,6766,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+renameSheetSafely_,6771,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+deleteSheetIfExists_,6785,internal_helper,FALSE,TRUE,FALSE,FALSE,11,0,Keep private-style name; no action unless consolidation is approved.
+writeBannerReportDates_,6809,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+copyRawBannerDataToOutput_,6818,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+ensureSheetHasAtLeastRows_,6869,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+validateBannerFormatterOutput_,6876,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,1,0,Classify as supported diagnostic API or test-only entry point before renaming.
+archiveRawSourceAndDeleteLocal_,6904,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+archiveRawDataSheet_,6926,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+hideMonthlyImportSheets,6943,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,2,Keep public; menu callback strings require stable top-level function name.
+hideMonthlyActiveSheets,6955,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,2,Keep public; menu callback strings require stable top-level function name.
+hideMonthlySheetsBySpecs_,6967,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+archiveMonthlyImportSheets,6992,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+archiveMonthlyActiveSheets,7009,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+archiveMonthlySheetsBySpecs_,7027,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+findArchiveMonthlyCandidateSheets_,7066,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+copySheetToArchiveAndDeleteLocal_,7090,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+notifyArchiveMonthlySheetsResult_,7110,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+deleteArchiveSheetIfExists_,7119,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+formatMonthlyChangeSubheaderRow,7136,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+formatMonthlyChangeSubsectionBlock,7140,public_like_review_required,TRUE,FALSE,FALSE,FALSE,1,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+getMonthlyChangeSubsectionLabels,7152,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+normalizeNumberFormatForCompare_,7157,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+numberFormatsMatch_,7177,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+validateTemplateFromDashboard_,7183,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,1,1,Classify as supported diagnostic API or test-only entry point before renaming.
+writeTemplateValidationReport_,7329,internal_helper,FALSE,TRUE,FALSE,FALSE,1,1,Keep private-style name; no action unless consolidation is approved.
+testRawDataFormatFullFastCanvasPath,7335,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+testRawDataFormatMinimalOutputPath,7357,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+testRawDataFormatInPlacePath,7378,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+runRawDataFormattingTestPath_,7395,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+buildRawDataFormattingTestContext_,7412,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeRawDataInPlaceTitleRowsAndAddedColumnsForTesting_,7436,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeRawDataMinimalCanvasForTesting_,7505,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildRawDataTestOutputName_,7536,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+assertRawDataInPlaceTestSheetAllowed_,7542,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+formatRawData,7548,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+formatRawDataInPlaceSheet_,7579,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildRawDataInPlaceFormattingContext_,7636,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeRawDataInPlaceTitleRowsAndAddedColumns_,7650,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+ensureRawDataHeaderRows_,7747,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+rowLooksLikeParticipantHeader_,7765,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getRawDataCurrentHeadersOrDefaults_,7775,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+enforceDemoPStrictDashboardSchema_,7782,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildRawDataSourceArchiveName_,7826,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+mapRowsToHeaders_,7838,internal_helper,FALSE,TRUE,FALSE,FALSE,7,0,Keep private-style name; no action unless consolidation is approved.
+applyUniversalFastCanvasFormatting_,7850,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+applyGovernedTextAndNumberFormats_,7868,internal_helper,FALSE,TRUE,FALSE,FALSE,8,0,Keep private-style name; no action unless consolidation is approved.
+applyOutputVisibilityPolicy_,7900,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+createOutputSheetFromDashboardTemplate_,7912,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+createRawDataOutputSheetFromTemplateFast_,8003,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+ensureOutputSheetHasFormattedRows_,8084,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+syncRawDataBannerColumns_,8117,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+buildSourceMapByCompositeKeyForDemoPBanner_,8205,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+formatCarePlanDueReport,8247,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,4,Keep public; menu callback strings require stable top-level function name.
+formatUnlockedCarePlanReport,8256,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,4,Keep public; menu callback strings require stable top-level function name.
+formatCarePlanDueOrUnlockedFromDashboard_,8265,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildRawArchiveNameForSheetType_,8363,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+collectMovedTitleInfoCells_,8390,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+collectAndClearMovedTitleInfoCells_,8408,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+prepareCarePlanSourceSheetForDashboardFormat_,8412,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+prepareRawDataSourceSheetForDashboardFormat_,8419,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildRawDataHeadersForFormatting_,8433,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getRawDataApprovedAddedColumns_,8444,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+processRawDataApprovedSyncColumns_,8450,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+writeChangedColumnsOnly_,8478,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getRawDataDemoPSourceHeaders_,8521,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getRawDataDisallowedWorkingColumns_,8580,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+isOngoingOutputSheetType_,8631,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildDashboardOutputSheetName_,8639,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+syncMasterListMonthlySourcesIntoData_,8674,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+syncBannerSourceIntoData_,8680,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+syncUnlockedCarePlanSourceIntoData_,8709,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+syncCarePlanDueSourceIntoData_,8744,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+syncRowsFromSourceMapData_,8778,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+buildSourceMapBySingleKeyForPart5_,8818,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+buildSourceMapByCompositeKeyForPart5_,8856,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+shouldProcessRowByPMR_,8898,internal_helper,FALSE,TRUE,FALSE,FALSE,10,0,Keep private-style name; no action unless consolidation is approved.
+normalizeSyncFieldPairs_,8923,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+syncMasterListFromBanners_,8931,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+syncMasterListFromUnlockedCarePlan_,8961,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+syncMasterListFromCarePlanDue_,8997,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+syncRowsFromSourceMap_,9031,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultDemoPMetadataHeaderRows_v155_,9194,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildDemoPFromScratch,9212,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+getValidatedRawDataSheetForDemoPBuild_,9237,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+isStrictRawDataSheetCandidateForDemoP_,9261,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+updateDemoPMonthlySync,9271,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+buildDemoPMonthlySyncRetainedRows_,9290,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+validateDemoPMonthlySyncReplacementCoverage_,9319,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,1,0,Classify as supported diagnostic API or test-only entry point before renaming.
+appendDemoPArchiveRows_,9340,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+setArchiveValue_,9381,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+getOrCreateDemoPArchiveSheet_,9385,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDemoPArchiveHeaders_,9408,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeDemoPMonthlySyncBody_,9417,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeRowsToWidth_,9436,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+normalizeRowToWidth_,9442,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+enforceDemoPPostFlattenFormatting_,9448,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+sortSheetAlphabeticallyByParticipantName_,9467,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getDemoPMonthlySyncChangedPMRs_,9489,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+isPMRHeaderValue_,9521,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+removeActiveDemoPPMRsFromDisenrolledExclusion_,9531,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+processDemoPDataWithFillBlankMask_,9591,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildDemoPFreshRowsForPMRs_,9627,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+processDemoPFreshRowsInMemory_,9650,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+flattenDemoPContactRowsInMemory_,9661,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+flattenDemoPContactsToPrimaryRows_,9715,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildDemoPContactSummaryForFlatRecord_,9776,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+sortDemoPFlatRows_,9795,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+processDemoP,9809,public_like_review_required,TRUE,FALSE,FALSE,FALSE,1,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+processDemoPAsWorkingSource_,9889,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+markPrimaryPMRRowsForSequentialData_,9937,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+assignPrimaryPMRRowsInData_,9967,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+formatDemoPStructure,9988,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+buildRawDataSheetName_,9992,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getOrCreateDemoPProcessingSheet_,9996,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+deleteSheetIfExistsForDemoPProcess_,10071,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getLastRawDataDisenrolledBuildResult_,10085,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+setLastRawDataDisenrolledBuildResult_,10093,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+updateExistingDemoPFromRawData_,10100,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+createActiveDemoPFromRawData_,10154,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+populateDemoPUpdateColumns_,10248,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+populateUniversalMetadataColumns_,10266,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+buildSourceHashByPMR_,10309,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildSourceHashForRows_,10327,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildSourceHashForRow_,10350,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildColumnsUpdatedText_,10354,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeHashValue_,10370,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+computeStableHash_,10378,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+verifyPrimaryPMRColumnFromRawData_,10386,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+createOrRefreshDemoPTemplate_,10395,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getOrCreateDemoPTemplate_,10403,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+initializeDemoPTemplateTitleRows_,10410,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+applyDemoPTemplateFormatting_,10426,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+applyDemoPTemplateToSheet_,10448,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyDemoPDateFormattingByHeader_,10484,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildMonthlyChangeReport,10538,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,5,Keep public; menu callback strings require stable top-level function name.
+buildMonthlyChangeReportForMonth_,10556,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getOrBuildMonthlyChangeReport_,10666,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+compareRawDemoPForSectionReport_,10723,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+rowsWithDOBOnlyForSection_,10916,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getChangedColumnsForSectionRows_,10922,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+buildColumnSignaturesForSection_,10938,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+compareRawDemoPForChanges_,10951,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getRawDemoPDataForCompare_,11114,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+compareSingleFieldAndAdd_,11182,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+addMCRRow_,11231,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+buildContactCompareMap_,11274,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getFieldValueFromRow_,11293,internal_helper,FALSE,TRUE,FALSE,FALSE,20,0,Keep private-style name; no action unless consolidation is approved.
+buildParticipantName_,11299,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+displayValueForReport_,11316,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildMonthlyChangeReportSectionLayout_,11324,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+padRowToWidth_,11348,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+stripMonthlyChangeNativeBandings_,11354,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getMonthlyChangeSectionSpecs_,11364,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildMonthlyChangeSectionRows_,11411,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+appendMonthlyChangeCompiledRow_,11458,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+appendMonthlyChangeSectionBlock_,11466,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+populateMonthlyChangeReportSections_,11496,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+findMonthlyChangeSectionTitleRow_,11549,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+findNextMonthlyChangeSectionTitleRow_,11565,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getChangedPMRsFromMonthlyChangeReport_,11586,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+writeDiagnosticReport_,11680,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+runMonthlyUpdate,11720,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,2,Keep public; menu callback strings require stable top-level function name.
+updateDemoPMonthlySyncForMonth_,11756,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+createDisenrolledListForMonth_,11813,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+createMasterList,11854,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+createMasterListForMonth_,11860,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+copyPrimaryDemoPRowsToMasterListByHeader_,11945,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getMasterListTemplateHeaders_,12012,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+createOrRefreshMasterListTemplate_,12019,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getOrCreateMasterListTemplate_,12027,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+createMasterListSheetFromTemplate_,12034,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+writeMasterListTitleDateBlock_,12091,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+initializeMasterListTitleRows_,12098,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+copyDemoPHeaderRowsToMasterList_,12107,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+copyQualifyingDemoPRowsToMasterList_,12125,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+formatMasterListSheet_,12152,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getMonthPartsFromTitleRows_,12160,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+updateCopiedMasterListHeader_,12172,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getIndexSheetNamesInSortOrder_,12180,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getIndexSheetNamesInMonthSortOrder_,12188,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+compareSheetNamesByGlobalOrder_,12196,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+compareSheetNamesByMonthThenGlobalOrder_,12204,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+isImportOrUnformattedSheetRank_,12212,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getSheetMonthSortKey_,12216,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getUnformattedImportSheetNamesForIndex_,12229,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+isUnformattedImportSheetNameForIndex_,12236,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+createIndexSheet,12243,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,8,3,Keep public; menu callback strings require stable top-level function name.
+generateArchiveFileIndex_,12415,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+setupIndexRefreshOnSheetAddedTrigger_,12419,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+handleSpreadsheetChangeForIndex,12432,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,1,Do not make private until external/manual consumers are checked; add wrapper before rename.
+getIndexTriggerRelevantSheetSignature_,12436,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+isIndexTriggerRelevantSheetName_,12444,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getGlobalSheetSortRankByName_,12461,internal_helper,FALSE,TRUE,FALSE,FALSE,9,0,Keep private-style name; no action unless consolidation is approved.
+isOperationalSheetForSort_,12493,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+enforceOperationalSheetSortOrder_,12509,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+enforceGlobalSheetSortOrder_,12552,supported_public_menu_callback,FALSE,TRUE,TRUE,FALSE,3,3,Keep public; menu callback strings require stable top-level function name.
+positionSheetInGlobalSortOrder_,12632,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+extractFirstDateFromSheetName_,12654,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+parseIndexMonthDate_,12673,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+forceBaseTemplateHidden_,12699,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+hideSystemAndTestingSheets_,12708,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getSystemAndTestingSheetNames_,12727,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+isSystemOrTestingSheet_,12743,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+assignSortOrderAndHideExtraRows,12762,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+applySortOrderDisplayForMasterList_,12769,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildParticipantBlocksForSortOrder_,12775,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+showAllMasterListRows,12802,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+groupMasterListRowsByPMR_,12810,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+hideRowsWithBlankDOB_,12815,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+sortMasterListByParticipantNameAndPMR_,12819,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getPrimaryRowScore_,12879,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+hideNonPrimaryPMRRows_,12898,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+hideRowNumberBatches_,12923,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+clearAllRowGroupsIfPossible_,12941,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+prepareMasterListSortOrderBeforeFormatting_,12953,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+applyFinalMasterListColorAndDisplay_,12960,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyMasterListDisplaySettings_,12966,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+processMasterListFull_,12970,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+processMasterListDataOnly_,12978,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+processMasterListSingleDataPass_,12982,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+populateParticipantNameData_,13017,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+populateDemoPNameData_,13036,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+updateBannerColumnData_,13053,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+combineAddressesData_,13078,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+handleLanguageData_,13092,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+splitPhoneNumbersData_,13114,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+runMasterContactProcessData_,13141,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+combineNotesSummaryData_,13146,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+getPMRsForMonthlyChangeSections_,13173,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+deletePMRBlocksFromMasterListBySet_,13184,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+updatePrimaryRowsFromDemoPForPMRs_,13199,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+mergeSecondaryRowsFromDemoPForPMRs_,13247,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildMappedMasterRowFromDemoRow_,13319,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+mutateMasterRowColumnsFromDemoRow_,13329,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+hideSystemSheetsNow,13339,public_like_review_required,TRUE,FALSE,FALSE,FALSE,1,1,Do not make private until external/manual consumers are checked; add wrapper before rename.
+showSystemSheetsNow,13347,public_like_review_required,TRUE,FALSE,FALSE,FALSE,1,1,Do not make private until external/manual consumers are checked; add wrapper before rename.
+getPrimaryMergeRowItem_,13384,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getPrimaryRowChangedColumnDetails_,13403,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+formatMergeAuditValueForDisplay_,13473,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getMergeAuditParticipantName_,13483,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getMergeAuditParticipantNameFromRows_,13489,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildMergeAuditContactSummary_,13510,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getMergeAuditChangedFields_,13534,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildMergeRowsByPMRFromData_,13567,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+buildSecondaryMergeKeyMapForRows_,13591,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+buildMergeKeyMapForRows_,13621,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildContactMergeRowKey_,13651,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getMergeRowValue_,13675,internal_helper,FALSE,TRUE,FALSE,FALSE,11,0,Keep private-style name; no action unless consolidation is approved.
+createDisenrolledList,13690,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,0,3,Keep public; menu callback strings require stable top-level function name.
+processBlankContactSummariesOnDemoP_,13705,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+splitRawDataRowsIntoActiveAndDisenrolled_,13726,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildDisenrolledPMRSetFromDemoPValues_,13778,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+loadDisenrolledPMRSetForMonth_,13796,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+appendDisenrolledRowsFromRawDataToExclusion_,13814,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+moveDisenrolledPMRsFromDemoPToExclusion_,13819,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+collectPrimaryRowsFromPMRMap_,13945,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+writeDemoPDisenrollmentRetainedBody_,13957,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+updateDisenrolledExclusionReportDates_,13977,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+appendDisenrolledDeltasToExclusionSheet_,13988,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+writeDisenrolledAppendPayloadValues_,14067,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+appendDisenrolledPMRBlocksToExclusion_,14120,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+createDisenrolledExclusionSheetFromDashboardTemplate_,14132,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+loadDisenrolledExclusionPMRsForPart3_,14163,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+removeDisenrolledPMRBlocksFromMasterUsingDemoP_,14183,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+applyDisenrolledExclusionCreateFormattingOnly_,14223,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getCurrentRawDataSheet_,14336,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getPreviousRawDataSheet_,14341,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getCurrentDemoPSheet_,14346,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+getPreviousDemoPSheet_,14354,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getMonthlyChangeReportHeaders_,14360,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+getMonthlyChangeReportDateIndexes_,14372,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+convertMonthlyChangeReportDateValues_,14378,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildMonthlyChangeReportRow_,14408,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+formatMonthlyChangeReportSectionSheet_,14429,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+runDashboardQualityStartUp,14449,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,2,3,Keep public; menu callback strings require stable top-level function name.
+runDashboardQualityDashboardVerificationSections_,14456,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,1,0,Classify as supported diagnostic API or test-only entry point before renaming.
+getDashboardVerificationPassRow_,14510,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+appendDashboardVerificationPassIfNoIssues_,14520,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardSectionHeaderWidth_,14525,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+collectBlankDashboardCells_,14531,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+collectFormatDashboardGlobalInputVerificationRows_,14541,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+collectFormatDashboardTitleRowsVerificationRows_,14573,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+collectFormatDashboardSheetDefinitionVerificationRows_,14610,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+collectFormatDashboardSheetHeaderVerificationRows_,14639,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+collectFormatDashboardColumnDefinitionVerificationRows_,14676,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+collectFormatDashboardSheetBehaviorVerificationRows_,14706,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardQualitySectionLastRunMillis_,14735,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+dashboardQualitySectionRanWithinLastHour_,14745,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+runDashboardQualitySectionIfDue_,14750,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,7,0,Classify as supported diagnostic API or test-only entry point before renaming.
+runDashboardQualityQuick,14758,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,1,1,Classify as supported diagnostic API or test-only entry point before renaming.
+runDashboardQualityValidateTemplates,14762,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,1,3,Keep public; menu callback strings require stable top-level function name.
+runDashboardQualityTemplateAndFormatSections_,14770,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,1,0,Classify as supported diagnostic API or test-only entry point before renaming.
+getDashboardQualitySectionRegistry_,14802,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+collectDashboardQualityPerformanceSummaryRows_,14814,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+runDashboardQualityPerformanceSummary_,14864,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+runDashboardQualityCarePlanSyncDiagnostics_,14871,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+runDashboardQualityFull,14892,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,1,5,Keep public; menu callback strings require stable top-level function name.
+runAllFrameworkTestsAndBuildDashboard,14945,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,1,Do not make private until external/manual consumers are checked; add wrapper before rename.
+repairAllTemplateDateFormats,14954,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+normalizeSectionRowForWidth_,15027,internal_helper,FALSE,TRUE,FALSE,FALSE,43,0,Keep private-style name; no action unless consolidation is approved.
+rowHasAnyValue_,15033,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+trimTrailingBlankRows_,15039,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+getDefaultDashboardQualityDetailHeader_,15045,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+collectExistingDashboardQualitySectionBlocks_,15067,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardQualityNotRunMessage_,15085,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildDefaultDashboardQualitySectionBlock_,15093,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeDashboardQualitySectionBlock_,15109,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+rebuildDashboardQualityReportShellCompact_,15149,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardQualitySectionTitleForKey_,15192,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardQualitySectionKeyForTitle_,15200,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+hasDashboardQualityTemplateShell_,15208,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+initializeDashboardQualitySheet_,15225,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+initializeSystemSheets_,15244,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+deleteLegacyOperationalAndDiagnosticSheets_,15262,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+ensureDashboardQualityReportSheet_,15266,internal_helper,FALSE,TRUE,FALSE,FALSE,9,0,Keep private-style name; no action unless consolidation is approved.
+ensureDashboardQualityTemplateShell_,15270,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+ensureDashboardQualitySectionShells_,15279,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getDashboardQualityFixedSectionStartRow_,15284,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+applyDashboardQualityReportColumnSettings_,15290,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+styleDashboardQualityReport_,15338,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+normalizeDashboardQualityHeaderLabels_,15349,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+isDashboardQualityNotesLabel_,15353,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeDashboardQualityOutputRow_,15358,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardQualitySectionLetter_,15389,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeDashboardQualityIssueValue_,15394,internal_helper,FALSE,TRUE,FALSE,FALSE,5,0,Keep private-style name; no action unless consolidation is approved.
+normalizeDashboardQualityRowsForSection_,15400,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+normalizeDashboardQualityDataRows_,15433,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+buildTimestampedDashboardQualitySectionRows_,15441,internal_helper,FALSE,TRUE,FALSE,FALSE,8,0,Keep private-style name; no action unless consolidation is approved.
+getStatusFromDashboardQualityRows_,15464,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getMostRecentTimingDurationForSectionKey_,15483,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getTimingProcessNameForDashboardQualitySection_,15505,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+dashboardQualityRowsEqualValues_,15525,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+saveDashboardQualitySectionRows_,15533,internal_helper,FALSE,TRUE,FALSE,FALSE,14,0,Keep private-style name; no action unless consolidation is approved.
+getDashboardQualitySectionRows_,15563,internal_helper,FALSE,TRUE,FALSE,FALSE,13,0,Keep private-style name; no action unless consolidation is approved.
+deleteLegacyQualityReportSheet_,15575,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+deleteLegacyStandaloneQualityReports_,15586,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+saveDashboardQualityRowsForTemplateValidation_,15593,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+saveDashboardQualityRowsForHealthCheck_,15601,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getStoredDashboardQualityOverallStatus_,15614,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getStoredDashboardQualityFailureNotes_,15623,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+buildDatedDisenrolledOutputName_,15635,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+forceSheetRowCount_,15641,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+buildCombinedFrameworkTestDashboard,15652,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,1,Do not make private until external/manual consumers are checked; add wrapper before rename.
+updateDashboardQualitySummaryTimingAndSignoffSections_,15686,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+updateDashboardQualitySignoffSection_,15692,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+updateDashboardQualitySummarySection_,15704,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+updateDashboardQualityTimingSummarySection_,15715,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getDashboardQualitySectionBoundsMap_,15719,internal_helper,FALSE,TRUE,FALSE,FALSE,4,0,Keep private-style name; no action unless consolidation is approved.
+replaceDashboardQualitySectionsRows_,15748,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+tryDashboardQualityAnchoredColumnWrite_,15809,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+replaceDashboardQualitySectionRows_,15826,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+findDashboardQualitySectionRow_,15900,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+findNextDashboardQualitySectionRow_,15915,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+dashboardQualitySectionContentMatches_,15926,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+mergeDashboardQualityStyleRanges_,15946,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+styleDashboardQualityUpdatedSections_,15964,internal_helper,FALSE,TRUE,FALSE,FALSE,9,0,Keep private-style name; no action unless consolidation is approved.
+appendCombinedDashboardSignOffRows_,16054,internal_helper,FALSE,TRUE,FALSE,FALSE,2,1,Keep private-style name; no action unless consolidation is approved.
+buildFrameworkSummaryRows_,16074,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+getStoredSectionStatusAndNotes_,16105,internal_helper,FALSE,TRUE,FALSE,FALSE,16,0,Keep private-style name; no action unless consolidation is approved.
+getReportOverallStatus_,16125,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getReportFailureNotes_,16141,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+runFrameworkHealthCheck,16161,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+getFrameworkHealthCheckIssueRows_,16188,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+formatFrameworkHealthCheckIssuesForTiming_,16194,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+appendRequiredFunctionChecks_,16206,internal_helper,FALSE,TRUE,FALSE,FALSE,6,0,Keep private-style name; no action unless consolidation is approved.
+existsFunctionByName_,16213,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+writeFrameworkHealthCheckReport_,16221,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+normalizeFrameworkHealthCheckRows_,16226,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+getRequiredHelperFunctionNames_,16238,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getRequiredMenuFunctionNames_,16254,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getRequiredDashboardFunctionNames_,16296,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getRequiredTemplateFunctionNames_,16306,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getRequiredValidationFunctionNames_,16315,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getRequiredTimingFunctionNames_,16323,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+getRequiredFrameworkDashboardFunctionNames_,16332,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+runWorkflowSyncVerification,16345,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
+runDashboardQualityWorkflowSyncVerification_,16349,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,1,0,Classify as supported diagnostic API or test-only entry point before renaming.
+setupSystemSheets,16357,supported_public_menu_callback,TRUE,FALSE,TRUE,FALSE,1,3,Keep public; menu callback strings require stable top-level function name.
+verifyFrameworkConfiguration,16367,diagnostic_or_validation_entry_point_review,TRUE,FALSE,FALSE,FALSE,0,0,Classify as supported diagnostic API or test-only entry point before renaming.
+runFrameworkTimed_,16423,diagnostic_or_validation_entry_point_review,FALSE,TRUE,FALSE,FALSE,26,1,Classify as supported diagnostic API or test-only entry point before renaming.
+runWithWorkflowBusyFlag_,16445,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+markWorkflowBusy_,16456,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+clearWorkflowBusy_,16462,internal_helper,FALSE,TRUE,FALSE,FALSE,2,0,Keep private-style name; no action unless consolidation is approved.
+isWorkflowBusy_,16468,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+runDeferredIndexRefreshIfNeeded_,16480,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+startFrameworkTiming_,16488,internal_helper,FALSE,TRUE,FALSE,FALSE,1,0,Keep private-style name; no action unless consolidation is approved.
+markFrameworkStep_,16499,internal_helper,FALSE,TRUE,FALSE,FALSE,143,1,Keep private-style name; no action unless consolidation is approved.
+writeFrameworkTimingReport_,16524,internal_helper,FALSE,TRUE,FALSE,FALSE,1,1,Keep private-style name; no action unless consolidation is approved.
+writeFrameworkTimingReportBestEffort_,16528,internal_helper,FALSE,TRUE,FALSE,FALSE,3,0,Keep private-style name; no action unless consolidation is approved.
+writeTimingReport_,16540,internal_helper,FALSE,TRUE,FALSE,FALSE,0,1,Keep private-style name; no action unless consolidation is approved.
+trimTimingReportRows_,16544,internal_no_static_path_review,FALSE,TRUE,FALSE,FALSE,0,0,Review for dynamic/manual/library use before removal or rename.
+rebuildProductionMonthlyChangeTemplate,16561,public_like_review_required,TRUE,FALSE,FALSE,FALSE,0,0,Do not make private until external/manual consumers are checked; add wrapper before rename.
