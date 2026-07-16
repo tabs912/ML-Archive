@@ -210,3 +210,83 @@ These items are not release blockers unless they begin causing Apps Script timeo
 ## Current Release Recommendation
 
 The supplied v1.6.58 timing supports proceeding with validation. The remaining items should be tracked as future optimization candidates rather than treated as immediate correctness defects.
+
+## Follow-up Timing Evidence — Demo P, Disenrolled, Master List, and Monthly Update
+
+Additional live timings were reviewed after the initial optimization candidate list.
+
+### Build Demo P
+
+- `Demo P unified values flushed to spreadsheet canvas`: about 15.9 seconds.
+- `Demo P in-memory flat-record contact compression complete`: about 15.1 seconds.
+- Total observed Build Demo P initialization time: about 40.3 seconds.
+
+Assessment: Build Demo P is functionally completing, but the canvas write and contact-compression/post-build section remain optimization candidates. This workflow can be considered smoke-tested, but it should remain on the Wave 4 performance watch list.
+
+### Create Disenrolled List
+
+- `Disenrolled move - exclusion sheet ready`: about 17.3 seconds.
+- `Disenrolled move - exclusion append - append payload values written`: about 42.3 seconds for 719 rows x 66 columns.
+- `Complete`: about 43.7 seconds after the detailed movement steps.
+- Total observed Create Disenrolled List time: about 123.9 seconds.
+
+Assessment: Create Disenrolled List is not fully cleared for Wave 4 performance signoff. It completes, but the Disenrolled Exclusion append write is a bottleneck and should be optimized or re-tested after changes. The top-insert behavior is correct for newest-first ordering, but the values write after inserting 719 rows is currently the highest-cost step in this workflow.
+
+Optimization candidates:
+
+1. Add granular timing around Disenrolled Exclusion sheet creation/template copy, row insertion, values write, formatting copy, row-height lock, old-row hiding, and final completion.
+2. Test whether appending to a staging area and sorting/filtering visible rows is faster than inserting hundreds of rows at row 5.
+3. Evaluate writing fewer columns when trailing columns are blank, while preserving the governed 66-column schema.
+4. Defer row-height locking and old-row hiding until after the primary values write is complete.
+5. Compare first-run performance with existing-sheet performance because template copy/sheet readiness may be a one-time cost.
+
+### Create Master List
+
+- `Create naked canvas - Master List output sheet`: about 11.6 seconds.
+- `Build Master List headers`: about 6.2 seconds.
+- `Copy Primary PMR rows from processed Demo P to Master List`: about 14.7 seconds.
+- Total observed timing through template hiding: about 49.9 seconds.
+
+Assessment: Create Master List is functionally completing and is closer to acceptable than Create Disenrolled List. It should remain a performance candidate for sheet creation and primary-row copy, but the supplied timing does not show a release-blocking failure by itself.
+
+Optimization candidates:
+
+1. Add detail around Master List canvas creation, header build, primary row extraction, and write phases.
+2. Confirm primary-row extraction is fully in memory and does not perform repeated range reads.
+3. Avoid redundant template hiding if this workflow already preserves template visibility.
+4. Confirm final Master List placement and Index refresh after workflow completion.
+
+### Create Monthly Update Error
+
+Observed error:
+
+- `TypeError: Cannot read properties of undefined (reading 'push')`.
+
+Assessment: Create Monthly Update is not cleared until this error is fixed and re-tested. The likely issue is a runtime-timing helper being called with a framework-timing object during the chained monthly workflow. A future script version should make timing writes tolerant of either runtime or framework timing objects, then re-run Create Monthly Update end to end.
+
+### Sheet Organization Corrections to Track
+
+- Archive Monthly Import Sheets should not perform a global sort that temporarily shows hidden sheets.
+- Archive copies should remain visible in the archive workbook unless a separate archive visibility policy is explicitly requested.
+- Disenrolled Exclusion should be positioned with current operational sheets, not after Format Dashboard.
+- Imported Data and Unformatted Sheets should be grouped by month first, then by sheet type.
+
+## Updated Wave 4 Readiness Assessment
+
+- Format Monthly Sheets: cleared for functional Wave 4 validation, with known fast-canvas and archive-copy optimization candidates.
+- Individual formatters: cleared for functional Wave 4 validation, with known fast-canvas optimization candidates.
+- Build Demo P: functionally cleared, but performance watch remains for canvas write/contact compression.
+- Create Master List: functionally cleared from supplied timing, but performance watch remains for canvas creation and primary-row copy.
+- Create Disenrolled List: not fully cleared for Wave 4 performance signoff until the Disenrolled Exclusion append bottleneck is improved or accepted as a known issue.
+- Create Monthly Update: not cleared until the `push` error is fixed and the full chain is re-tested.
+
+## Follow-up Correction — Archived CP Due and Unlocked CP Raw Rows
+
+A live archive review found that rows 2 and 3 from CP Due / Unlocked CP raw import sheets were missing in archived raw-data copies. The root cause was the formatter reading title/date cells for dashboard output and then clearing those source cells before the raw sheet was copied to the archive workbook.
+
+Required correction:
+
+- Preserve raw import rows 2 and 3 before archiving.
+- Read title/date cells for output title info without clearing the source import sheet.
+- Keep the existing output title-info stamping behavior.
+- Re-test both monthly and individual CP Due / Unlocked CP formatting and confirm archived raw copies retain rows 2 and 3.
