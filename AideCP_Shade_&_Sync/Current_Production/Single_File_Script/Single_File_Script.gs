@@ -1,4 +1,12 @@
 /**
+ * AideCP Shade & Sync — Single File Current Production Script
+ *
+ * Non-library deployment build for testing in a container-bound Apps Script
+ * project. This file intentionally contains the library core plus local menu
+ * callback wrappers, so it does not require an Apps Script Library dependency.
+ */
+
+/**
  * AideCP Shade & Sync — Centralized Library Core
  * Master engine for Architectural Verification, Shading, and Master Log Synchronization
  * 
@@ -824,3 +832,22 @@ function createOnEditTrigger_() {
     SpreadsheetApp.getUi().alert('Trigger Installation Failed: stand-alone permissions required.');
   }
 }
+
+
+// ==========================================
+// =       SINGLE-FILE MENU CALLBACKS        =
+// ==========================================
+
+function syncCurrentSheetToHomeCareServices() { runPublicAction('syncCurrentSheetToHomeCareServices'); }
+function pullUpdatesToCurrentSheet() { runPublicAction('pullUpdatesToCurrentSheet'); }
+function createNewSheetFromMaster() { runPublicAction('createNewSheetFromMaster'); }
+function sortSheetsByB4DateDescending() { runPublicAction('sortSheetsByB4DateDescending'); }
+function removeCopyOfPrefixAllSheets() { runPublicAction('removeCopyOfPrefixAllSheets'); }
+function validateMappingsCurrentSheet() { runPublicAction('validateMappingsCurrentSheet'); }
+function validateMappingsAllSheets() { runPublicAction('validateMappingsAllSheets'); }
+function createOnEditTrigger() { runPublicAction('createOnEditTrigger'); }
+function runStandardizeDatesAndFormat() { runPublicAction('runStandardizeDatesAndFormat'); }
+function applyGrayShadingAllSheets() { runPublicAction('applyGrayShadingAllSheets'); }
+function applyGrayShadingCurrentSheet() { runPublicAction('applyGrayShadingCurrentSheet'); }
+function renameDriveFileFromB5AndTab() { runPublicAction('renameDriveFileFromB5AndTab'); }
+function quickStartSequence() { runPublicAction('quickStartSequence'); }

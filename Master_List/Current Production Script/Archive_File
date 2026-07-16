@@ -11,23 +11,78 @@
 const ARCHIVE_INDEX_SHEET_NAME = "Index";
 const ARCHIVE_INDEX_HEADER_ROW = 4;
 const ARCHIVE_INDEX_FIRST_DATA_ROW = 5;
+const ARCHIVE_INDEX_TRIGGER_HANDLER = "handleArchiveSpreadsheetChangeForIndex";
 
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("📦 Archive Workbook")
     .addItem("📇 Build Archive Index", "createArchiveWorkbookIndexSheet")
+    .addItem("🔁 Set Up Archive Index Auto-Refresh", "setupArchiveIndexAutoRefresh")
     .addItem("🙈 Hide Historical Archive Sheets", "hideHistoricalArchiveSheetsByPrompt")
     .addItem("🙈 Hide Selected Index Row Sheet", "hideArchiveSheetFromActiveIndexRow")
     .addToUi();
 }
 
 function createArchiveWorkbookIndexSheet() {
+function createArchiveWorkbookIndexSheet(suppressToast) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const indexSheet = getOrCreateArchiveIndexSheet_(ss);
   const groups = buildArchiveWorkbookSheetGroups_(ss);
   writeArchiveWorkbookIndex_(indexSheet, groups);
   SpreadsheetApp.getActive().toast("Archive Index refreshed. Month groups: " + groups.length + ".", "Archive Workbook", 5);
   return indexSheet;
+}
+
+  if (!suppressToast) {
+    SpreadsheetApp.getActive().toast("Archive Index refreshed. Month groups: " + groups.length + ".", "Archive Workbook", 5);
+  }
+  return indexSheet;
+}
+
+function setupArchiveIndexAutoRefresh() {
+  const created = setupArchiveIndexRefreshOnSheetAddedTrigger_();
+  createArchiveWorkbookIndexSheet();
+  SpreadsheetApp.getActive().toast(
+    created ? "Archive Index auto-refresh trigger installed." : "Archive Index auto-refresh trigger already exists.",
+    "Archive Workbook",
+    5
+  );
+  return created;
+}
+
+function setupArchiveIndexRefreshOnSheetAddedTrigger_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hasTrigger = ScriptApp.getProjectTriggers().some(function(trigger) {
+    return trigger.getHandlerFunction &&
+      trigger.getHandlerFunction() === ARCHIVE_INDEX_TRIGGER_HANDLER &&
+      trigger.getEventType &&
+      trigger.getEventType() === ScriptApp.EventType.ON_CHANGE;
+  });
+
+  if (hasTrigger) return false;
+
+  ScriptApp.newTrigger(ARCHIVE_INDEX_TRIGGER_HANDLER)
+    .forSpreadsheet(ss)
+    .onChange()
+    .create();
+
+  return true;
+}
+
+function handleArchiveSpreadsheetChangeForIndex(e) {
+  const changeType = String((e && e.changeType) || "");
+  if (changeType && changeType !== "INSERT_GRID" && changeType !== "REMOVE_GRID" && changeType !== "OTHER") return;
+
+  const lock = LockService.getDocumentLock();
+  if (!lock.tryLock(1000)) return;
+
+  try {
+    createArchiveWorkbookIndexSheet(true);
+  } catch (err) {
+    console.warn("Archive Index auto-refresh skipped: " + err.message);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function hideHistoricalArchiveSheetsByPrompt() {
@@ -211,6 +266,7 @@ function promptForArchiveMonthOnly_(title) {
   const response = ui.prompt(
     title || "Archive Month",
     "Enter the month to keep visible. Examples: 05.26, 5/2026, May 2026. Sheets before the entered month will be hidden.",
+    "Enter the month to keep visible. Examples: 5, 05, 05.26, 5/2026, May 2026. Month-only entries use the current year. Sheets before the entered month will be hidden.",
     ui.ButtonSet.OK_CANCEL
   );
   if (response.getSelectedButton() !== ui.Button.OK) return null;
@@ -218,6 +274,7 @@ function promptForArchiveMonthOnly_(title) {
   const parsed = parseArchiveMonthPrompt_(response.getResponseText());
   if (!parsed) {
     ui.alert("Enter a valid archive month such as 05.26, 5/2026, or May 2026.");
+    ui.alert("Enter a valid archive month such as 5, 05, 05.26, 5/2026, or May 2026.");
     return null;
   }
   return parsed;
@@ -228,6 +285,12 @@ function parseArchiveMonthPrompt_(value) {
   if (!text) return null;
 
   let match = text.match(/^(\d{1,2})(?:[.\/\-])(\d{2}|\d{4})$/);
+  let match = text.match(/^(\d{1,2})$/);
+  if (match) {
+    return buildArchiveMonthPromptParts_(new Date().getFullYear(), Number(match[1]));
+  }
+
+  match = text.match(/^(\d{1,2})(?:[.\/\-])(\d{2}|\d{4})$/);
   if (match) {
     let year = Number(match[2]);
     if (year < 100) year += 2000;

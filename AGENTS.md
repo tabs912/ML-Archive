@@ -36,6 +36,18 @@ When synchronization or repository verification is required:
 4. Do not continue using stale repository contents.
 5. Do not state that synchronization succeeded unless the command output proves it.
 
+## Codex Cloud Task Policy
+
+Each Codex Cloud task executes within its own isolated workspace.
+
+When repository state affects the requested work:
+
+- Execute the required Git and repository synchronization commands.
+- Review command output in the task log.
+- Verify requested repository files are visible before analysis.
+- Do not assume repository state matches GitHub until synchronization has completed.
+- Do not continue using stale repository contents.
+
 ## Repository Synchronization Policy
 
 Synchronize when repository state may have changed or when work depends on recently uploaded files.
@@ -88,6 +100,77 @@ or, for legacy layouts:
 ```
 
 Do not report a repository file as missing until synchronization has been attempted and the expected paths have been searched again.
+
+## Binary File Policy
+
+Binary files are review inputs but are not implementation artifacts.
+
+Examples include:
+
+```text
+*.pdf
+*.xlsx
+*.xlsm
+*.docx
+*.pptx
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.zip
+```
+
+Reports, execution logs, screenshots, exported documents, and other binary artifacts may be reviewed and referenced during analysis but should not be included in implementation commits or pull requests unless explicitly requested.
+
+When performing implementation work:
+
+- Review binary files when relevant.
+- Reference binary files when appropriate.
+- Do not modify binary files unless explicitly requested.
+- Do not stage binary files.
+- Do not commit binary files.
+- Do not include binary files in generated diffs.
+- Do not include binary files in pull requests.
+
+Before every commit or pull request:
+
+Run:
+
+```bash
+./Framework/tools/prepare_pr.sh
+```
+
+or
+
+```bash
+./tools/prepare_pr.sh
+```
+
+depending on repository layout.
+
+Do not create or claim a pull request until the preparation tool confirms that only intended implementation files remain staged.
+
+## Implementation Diff Policy
+
+Implementation diffs must contain only source-code and text-based implementation artifacts.
+
+Before creating a commit or pull request:
+
+- Run `prepare_pr.sh`.
+- Review the generated diff.
+- Remove unrelated changes.
+- Remove binary files unless explicitly requested.
+- Remove documentation changes unrelated to the requested implementation.
+- Remove report changes unless explicitly requested.
+- Remove formatting-only changes unless requested.
+
+If unrelated files appear in the implementation diff:
+
+- Restore those files.
+- Remove them from the commit.
+- Regenerate the implementation diff.
+
+The final implementation diff should contain only files directly related to the requested task.
 
 ## Newly Uploaded Repository Files
 
@@ -188,6 +271,8 @@ If synchronization cannot complete safely, report:
 - Ahead/behind status
 - Relevant remote branch
 - Recommended next action
+
+
 
 ## Project Discovery
 
@@ -317,6 +402,14 @@ When implementation is requested:
 
 Do not generate implementation code when the user requests recommendations only.
 
+Before creating any commit or pull request:
+
+- Run the repository preparation tool.
+- Verify only intended implementation files remain staged.
+- Verify binary files are excluded unless explicitly requested.
+- Verify generated diffs contain only intended implementation changes.
+- Only then create the commit and pull request.
+
 ## Excluded Areas
 
 Unless explicitly requested, ignore:
@@ -329,33 +422,112 @@ Do not read, search, compare, build from, audit, include in dependency analysis,
 
 ## Repository Tools
 
-Tools may be located in `Framework/tools/` or `tools/`.
+Repository utilities may be located in:
 
-Use them when synchronization is required, repository health verification is requested, the user explicitly requests a tool, or a task depends on recently uploaded files.
+```text
+Framework/tools/
+```
 
-Do not run destructive maintenance commands.
+or
 
-## General Verification Rule
+```text
+tools/
+```
 
-Never assume missing files, reports, branches, remotes, documentation, project structure, successful synchronization, successful push, or successful PR creation.
+depending on repository layout.
 
-Verify before reporting. State uncertainty and available evidence clearly.
+Standard workflow:
+
+```text
+startup_check.sh
+        ↓
+sync_workspace.sh
+        ↓
+(work)
+        ↓
+prepare_pr.sh
+        ↓
+commit
+        ↓
+push
+        ↓
+pull request
+```
+
+Standard tools:
+
+- startup_check.sh
+- maintenance_check.sh
+- repo_status.sh
+- sync_workspace.sh
+- prepare_pr.sh
+- verify_repository.sh
+- update_remote.sh
+
+Use repository tools when:
+
+- Synchronization is required.
+- Repository verification is requested.
+- The user explicitly requests a tool.
+- A task depends on recently uploaded files.
+
+Do not execute destructive maintenance commands automatically.
 
 ## Completion Checklist
 
-Before completing work, verify as applicable:
+Before completing work verify:
 
-- Repository standards were applied.
-- The correct project was reviewed.
-- The governing production source was used.
-- Current reports were reviewed when requested.
-- Synchronization was attempted when needed.
-- Requested files were confirmed visible.
-- Business logic was preserved.
-- Dependencies and callers were considered.
-- Recommendations were prioritized.
-- Version was incremented when production code was generated.
-- Release notes were included when applicable.
-- Testing recommendations were provided.
-- No placeholder code remains.
-- A PR was not claimed without a verified PR number or URL.
+✓ Repository standards applied
+
+✓ Correct project reviewed
+
+✓ Governing production source used
+
+✓ Current reports reviewed (when requested)
+
+✓ Repository synchronized (when required)
+
+✓ Requested files confirmed visible
+
+✓ Business logic preserved
+
+✓ Dependencies considered
+
+✓ Recommendations prioritized
+
+✓ Version updated (if production code generated)
+
+✓ Release notes included (if applicable)
+
+✓ Testing recommendations included
+
+✓ Repository prepared using `prepare_pr.sh`
+
+✓ No binary files staged unless explicitly requested
+
+✓ Generated diff reviewed
+
+✓ Pull request limited to intended implementation files
+
+✓ Pull request not claimed without a verified GitHub PR number and URL
+
+## Pull Request Preparation
+
+Before creating any commit or pull request:
+
+1. Run the repository preparation tool.
+2. Verify only intended implementation files remain staged.
+3. Verify no binary files are staged.
+4. Verify generated diffs contain only intended implementation changes.
+5. Verify unrelated repository files are excluded.
+6. Verify archived material is excluded.
+7. Verify generated reports are excluded unless explicitly requested.
+
+If the preparation tool reports problems:
+
+- Stop.
+- Report the issues.
+- Do not create the commit.
+- Do not create the pull request.
+
+A pull request must represent only the intended implementation work.
