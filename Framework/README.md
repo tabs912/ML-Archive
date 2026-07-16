@@ -51,3 +51,15 @@ v1.0.0
 4. Read project-specific documentation when it exists.
 5. Use the appropriate prompt from `prompts/`.
 6. Use `tools/sync_workspace.sh` when recently added repository files are not visible.
+
+
+## Pull Request Preparation
+
+Implementation pull requests should contain source and text-based changes only unless binary changes are explicitly requested.
+
+Binary reports may be used as review evidence, but they should not normally be included in implementation commits or pull requests.
+
+Before committing or creating a pull request, run:
+
+```bash
+./Framework/tools/prepare_pr.sh
