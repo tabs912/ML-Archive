@@ -1,0 +1,337 @@
+/**
+ * Archive Workbook Index and Historical Hide Utilities
+ *
+ * Standalone Google Apps Script for the Archive workbook.
+ * Builds an Index sheet grouped by archive month, newest to oldest, with
+ * sheets ordered inside each month as:
+ * Master List, Monthly Change, Raw Data, Banner, CP Due Date, Unlocked CP,
+ * Raw Data - Banners, Raw Data - CP Due Date, Raw Data - Unlocked CP.
+ */
+
+const ARCHIVE_INDEX_SHEET_NAME = "Index";
+const ARCHIVE_INDEX_HEADER_ROW = 4;
+const ARCHIVE_INDEX_FIRST_DATA_ROW = 5;
+
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu("📦 Archive Workbook")
+    .addItem("📇 Build Archive Index", "createArchiveWorkbookIndexSheet")
+    .addItem("🙈 Hide Historical Archive Sheets", "hideHistoricalArchiveSheetsByPrompt")
+    .addItem("🙈 Hide Selected Index Row Sheet", "hideArchiveSheetFromActiveIndexRow")
+    .addToUi();
+}
+
+function createArchiveWorkbookIndexSheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const indexSheet = getOrCreateArchiveIndexSheet_(ss);
+  const groups = buildArchiveWorkbookSheetGroups_(ss);
+  writeArchiveWorkbookIndex_(indexSheet, groups);
+  SpreadsheetApp.getActive().toast("Archive Index refreshed. Month groups: " + groups.length + ".", "Archive Workbook", 5);
+  return indexSheet;
+}
+
+function hideHistoricalArchiveSheetsByPrompt() {
+  const monthParts = promptForArchiveMonthOnly_("Hide Historical Archive Sheets");
+  if (!monthParts) return null;
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let hidden = 0;
+  let skipped = 0;
+
+  ss.getSheets().forEach(function(sheet) {
+    const name = sheet.getName();
+    if (name === ARCHIVE_INDEX_SHEET_NAME) return;
+
+    const info = getArchiveSheetInfo_(sheet);
+    if (!info.monthKey) {
+      skipped++;
+      return;
+    }
+
+    if (info.monthKey < monthParts.monthKey) {
+      try {
+        if (!sheet.isSheetHidden()) {
+          sheet.hideSheet();
+          hidden++;
+        } else {
+          skipped++;
+        }
+      } catch (err) {
+        skipped++;
+        console.warn("Archive historical hide skipped for " + name + ": " + err.message);
+      }
+    } else {
+      skipped++;
+    }
+  });
+
+  createArchiveWorkbookIndexSheet();
+  SpreadsheetApp.getUi().alert(
+    "Historical archive hide complete.\n\n" +
+    "Cutoff month: " + monthParts.monthLabel + "\n" +
+    "Hidden: " + hidden + "\n" +
+    "Skipped: " + skipped
+  );
+  return { hidden: hidden, skipped: skipped, cutoffMonth: monthParts.monthLabel };
+}
+
+function hideArchiveSheetFromActiveIndexRow() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const indexSheet = ss.getSheetByName(ARCHIVE_INDEX_SHEET_NAME);
+  const activeRange = ss.getActiveRange();
+
+  if (!indexSheet || !activeRange || activeRange.getSheet().getSheetId() !== indexSheet.getSheetId()) {
+    SpreadsheetApp.getUi().alert("Select a sheet row on the Archive Index before running Hide Selected Index Row Sheet.");
+    return null;
+  }
+
+  const row = activeRange.getRow();
+  if (row < ARCHIVE_INDEX_FIRST_DATA_ROW) {
+    SpreadsheetApp.getUi().alert("Select a data row on the Archive Index, not a header row.");
+    return null;
+  }
+
+  const sheetName = String(indexSheet.getRange(row, 3).getValue() || "").trim();
+  if (!sheetName || sheetName === ARCHIVE_INDEX_SHEET_NAME) {
+    SpreadsheetApp.getUi().alert("Selected Archive Index row does not contain a hideable sheet name.");
+    return null;
+  }
+
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    SpreadsheetApp.getUi().alert("Archive sheet not found: " + sheetName);
+    return null;
+  }
+
+  sheet.hideSheet();
+  createArchiveWorkbookIndexSheet();
+  SpreadsheetApp.getActive().toast("Archive sheet hidden: " + sheetName, "Archive Workbook", 5);
+  return sheetName;
+}
+
+function getOrCreateArchiveIndexSheet_(ss) {
+  let sheet = ss.getSheetByName(ARCHIVE_INDEX_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(ARCHIVE_INDEX_SHEET_NAME, 0);
+  } else {
+    sheet.showSheet();
+    sheet.clear();
+    sheet.clearConditionalFormatRules();
+  }
+  return sheet;
+}
+
+function buildArchiveWorkbookSheetGroups_(ss) {
+  const monthMap = new Map();
+
+  ss.getSheets().forEach(function(sheet) {
+    const info = getArchiveSheetInfo_(sheet);
+    if (!info.monthKey || info.sheetName === ARCHIVE_INDEX_SHEET_NAME) return;
+
+    if (!monthMap.has(info.monthKey)) {
+      monthMap.set(info.monthKey, {
+        monthKey: info.monthKey,
+        monthLabel: info.monthLabel,
+        sheets: []
+      });
+    }
+    monthMap.get(info.monthKey).sheets.push(info);
+  });
+
+  return Array.from(monthMap.values())
+    .sort(function(a, b) { return b.monthKey - a.monthKey; })
+    .map(function(group) {
+      group.sheets.sort(function(a, b) {
+        if (a.typeOrder !== b.typeOrder) return a.typeOrder - b.typeOrder;
+        return a.sheetName.localeCompare(b.sheetName);
+      });
+      return group;
+    });
+}
+
+function getArchiveSheetInfo_(sheet) {
+  const sheetName = sheet.getName();
+  const month = parseArchiveMonthFromSheetName_(sheetName);
+  const typeInfo = classifyArchiveSheetType_(sheetName);
+
+  return {
+    sheetName: sheetName,
+    sheetId: sheet.getSheetId(),
+    hidden: sheet.isSheetHidden(),
+    monthKey: month ? month.monthKey : 0,
+    monthLabel: month ? month.monthLabel : "No Month",
+    typeLabel: typeInfo.label,
+    typeOrder: typeInfo.order
+  };
+}
+
+function classifyArchiveSheetType_(sheetName) {
+  const name = String(sheetName || "").trim();
+
+  if (/^Master List\b/i.test(name)) return { label: "Master List", order: 10 };
+  if (/^Monthly Change\b/i.test(name)) return { label: "Monthly Change", order: 20 };
+  if (/^Raw Data\s/i.test(name) && !/^Raw Data\s+-/i.test(name)) return { label: "Raw Data", order: 30 };
+  if (/^(Banners?|Banner Report)\b/i.test(name)) return { label: "Banner", order: 40 };
+  if (/^(CP Due|Care Plan Due|CP Due Date)\b/i.test(name)) return { label: "CP Due Date", order: 50 };
+  if (/^(Unlock CP|Unlocked CP|Unlocked Care Plan)\b/i.test(name)) return { label: "Unlocked CP", order: 60 };
+  if (/^Raw Data\s+-\s+Banners?\b/i.test(name)) return { label: "Raw Data - Banners", order: 70 };
+  if (/^Raw Data\s+-\s+(CP Due|Care Plan Due|CP Due Date)\b/i.test(name)) return { label: "Raw Data - CP Due Date", order: 80 };
+  if (/^Raw Data\s+-\s+(Unlock CP|Unlocked CP|Unlocked Care Plan)\b/i.test(name)) return { label: "Raw Data - Unlocked CP", order: 90 };
+
+  return { label: "Other", order: 999 };
+}
+
+function parseArchiveMonthFromSheetName_(sheetName) {
+  const text = String(sheetName || "").trim();
+
+  let match = text.match(/(?:^|[^0-9])(\d{1,2})\.(\d{2})(?:[^0-9]|$)/);
+  if (match) return buildArchiveMonthInfo_(Number(match[2]) + 2000, Number(match[1]));
+
+  match = text.match(/(?:^|[^0-9])(\d{1,2})[\/-](\d{2}|\d{4})(?:[^0-9]|$)/);
+  if (match) {
+    let year = Number(match[2]);
+    if (year < 100) year += 2000;
+    return buildArchiveMonthInfo_(year, Number(match[1]));
+  }
+
+  match = text.match(/\b(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\b[^0-9]*(\d{2}|\d{4})?/i);
+  if (match) {
+    const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const month = monthNames.indexOf(match[1].slice(0, 3).toLowerCase()) + 1;
+    let year = match[2] ? Number(match[2]) : new Date().getFullYear();
+    if (year < 100) year += 2000;
+    return buildArchiveMonthInfo_(year, month);
+  }
+
+  return null;
+}
+
+function promptForArchiveMonthOnly_(title) {
+  const ui = SpreadsheetApp.getUi();
+  const response = ui.prompt(
+    title || "Archive Month",
+    "Enter the month to keep visible. Examples: 05.26, 5/2026, May 2026. Sheets before the entered month will be hidden.",
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (response.getSelectedButton() !== ui.Button.OK) return null;
+
+  const parsed = parseArchiveMonthPrompt_(response.getResponseText());
+  if (!parsed) {
+    ui.alert("Enter a valid archive month such as 05.26, 5/2026, or May 2026.");
+    return null;
+  }
+  return parsed;
+}
+
+function parseArchiveMonthPrompt_(value) {
+  const text = String(value || "").trim();
+  if (!text) return null;
+
+  let match = text.match(/^(\d{1,2})(?:[.\/\-])(\d{2}|\d{4})$/);
+  if (match) {
+    let year = Number(match[2]);
+    if (year < 100) year += 2000;
+    return buildArchiveMonthPromptParts_(year, Number(match[1]));
+  }
+
+  match = text.match(/^(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sep|sept|oct|nov|dec)\s+(\d{2}|\d{4})$/i);
+  if (match) {
+    const monthNames = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"];
+    const month = monthNames.indexOf(match[1].slice(0, 3).toLowerCase()) + 1;
+    let year = Number(match[2]);
+    if (year < 100) year += 2000;
+    return buildArchiveMonthPromptParts_(year, month);
+  }
+
+  const parsedFromName = parseArchiveMonthFromSheetName_(text);
+  if (!parsedFromName) return null;
+  return buildArchiveMonthPromptParts_(Math.floor(parsedFromName.monthKey / 100), parsedFromName.monthKey % 100);
+}
+
+function buildArchiveMonthPromptParts_(year, month) {
+  const info = buildArchiveMonthInfo_(year, month);
+  if (!info) return null;
+
+  return {
+    firstDay: new Date(year, month - 1, 1, 12, 0, 0, 0),
+    lastDay: new Date(year, month, 0, 12, 0, 0, 0),
+    monthLabel: info.monthLabel,
+    monthKey: info.monthKey
+  };
+}
+
+function buildArchiveMonthInfo_(year, month) {
+  const fullYear = Number(year || 0);
+  const monthNumber = Number(month || 0);
+  if (!fullYear || monthNumber < 1 || monthNumber > 12) return null;
+
+  return {
+    monthKey: fullYear * 100 + monthNumber,
+    monthLabel: String(monthNumber).padStart(2, "0") + "." + String(fullYear).slice(-2)
+  };
+}
+
+function writeArchiveWorkbookIndex_(sheet, groups) {
+  const headers = ["Month", "Archive Type", "Sheet Name", "Open Link", "Visibility", "Hide Link"];
+  const rows = [
+    ["Archive Sheet Index", "", "", "", "", ""],
+    ["Generated", new Date(), "", "", "", ""],
+    ["", "", "", "", "", ""],
+    headers
+  ];
+
+  groups.forEach(function(group) {
+    rows.push([group.monthLabel, "", "", "", "", ""]);
+    group.sheets.forEach(function(info) {
+      rows.push([
+        "",
+        info.typeLabel,
+        info.sheetName,
+        '=HYPERLINK("#gid=' + info.sheetId + '","Open")',
+        info.hidden ? "Hidden" : "Visible",
+        '=HYPERLINK("#gid=' + info.sheetId + '","Hide")'
+      ]);
+    });
+  });
+
+  ensureSheetSize_(sheet, Math.max(rows.length, 25), headers.length);
+  sheet.getRange(1, 1, rows.length, headers.length).setValues(rows);
+  sheet.getRange(1, 1, 1, headers.length).merge()
+    .setFontWeight("bold")
+    .setFontSize(12)
+    .setBackground("#79b5d2")
+    .setFontColor("#ffffff");
+  sheet.getRange(2, 1, 1, headers.length).setBackground("#f2f7f9");
+  sheet.getRange(ARCHIVE_INDEX_HEADER_ROW, 1, 1, headers.length).setFontWeight("bold").setBackground("#9fcadf");
+
+  const sectionRanges = [];
+  for (let row = ARCHIVE_INDEX_FIRST_DATA_ROW; row <= rows.length; row++) {
+    const values = rows[row - 1];
+    if (values[0] && !values[1] && !values[2]) {
+      sectionRanges.push("A" + row + ":F" + row);
+    }
+  }
+  if (sectionRanges.length) sheet.getRangeList(sectionRanges).setFontWeight("bold").setBackground("#d9eef7");
+
+  sheet.setFrozenRows(ARCHIVE_INDEX_HEADER_ROW);
+  [150, 170, 280, 120, 110, 130].forEach(function(width, index) {
+    sheet.setColumnWidth(index + 1, width);
+  });
+  sheet.getRange(1, 1, Math.max(rows.length, 1), headers.length).setVerticalAlignment("middle");
+
+  const hideNoteRows = Math.max(rows.length - ARCHIVE_INDEX_HEADER_ROW, 1);
+  const hideNotes = Array.from({ length: hideNoteRows }, function() {
+    return ["Hyperlinks cannot execute Apps Script directly. Select this row, then use Archive Workbook > Hide Selected Index Row Sheet."];
+  });
+  sheet.getRange(ARCHIVE_INDEX_FIRST_DATA_ROW, 6, hideNoteRows, 1).setNotes(hideNotes);
+}
+
+function ensureSheetSize_(sheet, targetRows, targetColumns) {
+  const currentRows = sheet.getMaxRows();
+  const currentColumns = sheet.getMaxColumns();
+
+  if (currentRows < targetRows) sheet.insertRowsAfter(currentRows, targetRows - currentRows);
+  if (currentRows > targetRows) sheet.deleteRows(targetRows + 1, currentRows - targetRows);
+  if (currentColumns < targetColumns) sheet.insertColumnsAfter(currentColumns, targetColumns - currentColumns);
+  if (currentColumns > targetColumns) sheet.deleteColumns(targetColumns + 1, currentColumns - targetColumns);
+}
