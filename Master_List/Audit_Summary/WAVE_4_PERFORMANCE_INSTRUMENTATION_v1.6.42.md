@@ -97,3 +97,64 @@ This audit note preserves Wave 4 timing evidence and optimization observations t
 - Observed runtime error: `ReferenceError: step is not defined` in `writeDemoPMonthlySyncBody_` during `runMonthlyUpdate`.
 - Correction captured in `v1.6.61`: the Demo P monthly-sync body writer now accepts an optional timing step callback and defaults to a no-op when called by workflows that do not provide a timing callback.
 - Validation focus: rerun `Create Monthly Update` and confirm the Demo P update phase reaches the post-write reactivation sweep and final Index/sort refresh without throwing the missing `step` reference.
+
+## v1.6.68 Wave 4 Closure Update — 2026-07-16
+
+### Evidence Reviewed
+
+- `Master_List/Reports/v1.6.68 - Framework Timing Report.pdf`
+- `Master_List/Current Production Script/v.1.6.68_Current_Production_Script`
+
+### Updated Timing Summary
+
+| Workflow | Runtime Seconds | Status | Wave 4 Interpretation |
+|---|---:|---|---|
+| Build Demo P (Initialization) | 36.639 | PASS | Functionally clear; retain canvas/contact-compression watch items. |
+| Create Disenrolled List | 42.445 | SLOW | Critical append and final-complete blockers remediated; sheet readiness remains slow. |
+| Create Master List | 30.857 | PASS | Functionally clear; standalone workflow is acceptable. |
+| Create Monthly Update 05.01.26 | 172.334 | SLOW | End-to-end chain is now completing with shared workflow helpers; residual slow items remain. |
+
+### Resolved Original Wave 4 Blockers
+
+1. **Disenrolled Exclusion append values write is no longer critical.**
+   - Baseline Wave 4 evidence: `719 rows x 66 columns` took `91.574` seconds and was `CRITICAL`.
+   - v1.6.68 evidence: `719 rows`, `52` columns written, `4` column runs, `14` blank columns skipped, and the values write took `4.912` seconds with `OK` severity.
+   - Decision: the original Disenrolled append payload write blocker is remediated.
+
+2. **Create Disenrolled final Complete gap is no longer hidden/critical.**
+   - Baseline Wave 4 evidence: final `Complete` interval took `78.634` seconds and was `CRITICAL`.
+   - v1.6.68 evidence: final post-move work is decomposed into governed sort positioning, old-row hiding, Index refresh, and notification; `Complete` is `0.000` seconds and `OK`.
+   - Decision: the original unassigned final-completion blocker is remediated.
+
+3. **Create Monthly Update is no longer using the legacy Update Master List workflow.**
+   - v1.6.68 routes the chain through the shared menu-equivalent helpers: Monthly Change, Update Demo P, Create Disenrolled, and Create Master List.
+   - The report shows detailed `Create Monthly Update - Create Master List - ...` steps rather than the legacy `Update Master List` copy-forward workflow.
+   - Decision: the Create Monthly Update workflow-routing concern is remediated.
+
+### Remaining v1.6.68 Slow Items to Carry Forward
+
+These are not the original Wave 4 critical blockers, but they should remain visible in the optimization backlog:
+
+1. **Build Demo P canvas/contact steps**
+   - `Demo P unified values flushed to spreadsheet canvas`: `13.125` seconds, `SLOW`.
+   - `Demo P in-memory flat-record contact compression complete | Rows retained: 1060`: `13.937` seconds, `SLOW`.
+
+2. **Create Disenrolled sheet readiness**
+   - `Disenrolled move - exclusion sheet ready: Disenrolled Exclusion`: `14.108` seconds, `SLOW`.
+
+3. **Create Monthly Update slow steps**
+   - `Monthly Change datasets compiled in-memory`: `17.598` seconds, `SLOW`.
+   - `Monthly Change report sheet created from template`: `13.679` seconds, `SLOW`.
+   - `Create Monthly Update - Update Demo P - Archive - Demo P primary rows saved before monthly replacement | Rows: 74`: `26.387` seconds, `SLOW`.
+   - `Create Monthly Update - Create Master List - Create naked canvas - Master List output sheet`: `19.510` seconds, `SLOW`.
+   - `Create Monthly Update - Index refreshed and active tabs organized without showing hidden system/template sheets | Moves: 8`: `14.734` seconds, `SLOW`.
+
+### Updated Wave 4 Decision
+
+**Wave 4 critical remediation is complete.**
+
+The original critical Wave 4 performance blockers have been remediated and validated in the v1.6.68 timing report. Wave 4 may be closed as **critical remediation complete**, provided the remaining `SLOW` items above are carried forward to the optimization backlog rather than treated as release-blocking Wave 4 defects.
+
+### Carry-Forward Recommendation
+
+Move the remaining slow items to `Master_List/Audit_Summary/OPTIMIZATION_CANDIDATES_v1.6.58.md` under a v1.6.68 carry-forward section. Prioritize them as future tuning candidates, not Wave 4 blockers, unless they begin causing timeouts, incorrect sheet state, failed archive behavior, or user-facing workflow failures.
