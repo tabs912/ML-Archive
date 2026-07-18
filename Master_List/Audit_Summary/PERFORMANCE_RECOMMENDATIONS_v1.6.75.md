@@ -281,6 +281,9 @@ Use this target order when creating or organizing sheets:
 | 26 | `RFF_BASE_TEMPLATE` |
 
 Positions 15 through 26 are the protected final tail block. No operational output sheet, unlisted template, imported sheet, archive helper, or miscellaneous user sheet should be placed after `Framework Timing Report`. If a sheet is not listed in the governed order above, it should be inserted before `Framework Timing Report`, leaving only the listed system/dashboard/template/base-template sheets in the protected tail block.
+| 27 | Any other sheets not listed |
+
+No operational output sheet should be placed after `Framework Timing Report`. Only the listed system/dashboard/template/base-template group and then unlisted miscellaneous sheets should appear after `Framework Timing Report`.
 
 ### Specific Actions
 
