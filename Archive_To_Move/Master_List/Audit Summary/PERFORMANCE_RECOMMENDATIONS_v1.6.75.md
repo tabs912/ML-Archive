@@ -279,6 +279,8 @@ Use this target order when creating or organizing sheets:
 | 24 | `Template - Master List` |
 | 25 | `Template - Monthly Change` |
 | 26 | `RFF_BASE_TEMPLATE` |
+
+Positions 15 through 26 are the protected final tail block. No operational output sheet, unlisted template, imported sheet, archive helper, or miscellaneous user sheet should be placed after `Framework Timing Report`. If a sheet is not listed in the governed order above, it should be inserted before `Framework Timing Report`, leaving only the listed system/dashboard/template/base-template sheets in the protected tail block.
 | 27 | Any other sheets not listed |
 
 No operational output sheet should be placed after `Framework Timing Report`. Only the listed system/dashboard/template/base-template group and then unlisted miscellaneous sheets should appear after `Framework Timing Report`.
@@ -296,11 +298,11 @@ No operational output sheet should be placed after `Framework Timing Report`. On
 ### Acceptance Criteria
 
 - New sheets are created in the governed final order shown above.
-- No active/operational sheet is placed after `Framework Timing Report`.
+- No active/operational, unlisted template, imported, archive helper, miscellaneous, or user-created sheet is placed after `Framework Timing Report`.
 - Create Monthly Update final organization remains below 10 seconds.
 - Standalone Create Disenrolled Index refresh no longer reaches bottleneck range.
 - Index content remains accurate.
-- System sheets and templates do not require repeated resorting after they have been placed correctly.
+- Positions 15 through 26 remain the final protected block and do not require repeated resorting after they have been placed correctly.
 
 ## Priority 6 — Build Demo P
 
