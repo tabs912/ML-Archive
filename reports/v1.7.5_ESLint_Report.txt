@@ -1,0 +1,135 @@
+[0m
+[4m/workspaces/CodeLab/Master_List/Current Production Script/v1.7.5_Test_Script.js[24m
+      [2m7:7[22m   [33mwarning[39m  'MASTER_LIST_MERGE_REBUILD_SECTION' is assigned a value but never used. Allowed unused vars must match /^_/u          [2mno-unused-vars[22m
+      [2m9:7[22m   [33mwarning[39m  'MASTER_LIST_MERGE_BASELINE_VERSION' is assigned a value but never used. Allowed unused vars must match /^_/u         [2mno-unused-vars[22m
+     [2m40:7[22m   [33mwarning[39m  'RFF_COMBINED_DASHBOARD_MAX_SOURCE_ROWS' is assigned a value but never used. Allowed unused vars must match /^_/u     [2mno-unused-vars[22m
+     [2m56:7[22m   [33mwarning[39m  'RFF_TEMPLATE_RESIZE_EXEMPT_TEMPLATE_NAMES' is assigned a value but never used. Allowed unused vars must match /^_/u  [2mno-unused-vars[22m
+     [2m63:7[22m   [33mwarning[39m  'RFF_FORMATTER_DATE_PROMPT' is assigned a value but never used. Allowed unused vars must match /^_/u                  [2mno-unused-vars[22m
+     [2m75:10[22m  [33mwarning[39m  'configureArchiveSpreadsheetId' is defined but never used. Allowed unused vars must match /^_/u                       [2mno-unused-vars[22m
+    [2m104:7[22m   [33mwarning[39m  'ML_WORKFLOW_BUSY_TTL_MS' is assigned a value but never used. Allowed unused vars must match /^_/u                    [2mno-unused-vars[22m
+    [2m106:7[22m   [33mwarning[39m  'RFF_TEMPLATE_FIRST_BUILD_SHRINK_TO_TARGET' is assigned a value but never used. Allowed unused vars must match /^_/u  [2mno-unused-vars[22m
+    [2m128:7[22m   [33mwarning[39m  'FORMAT_ALLOWED_EMPTY_COLUMNS' is assigned a value but never used. Allowed unused vars must match /^_/u               [2mno-unused-vars[22m
+    [2m130:7[22m   [33mwarning[39m  'FORMAT_DELETE_BLANK_ROWS_AFTER' is assigned a value but never used. Allowed unused vars must match /^_/u             [2mno-unused-vars[22m
+    [2m184:7[22m   [33mwarning[39m  'SHEET_TAB_ORDER' is assigned a value but never used. Allowed unused vars must match /^_/u                            [2mno-unused-vars[22m
+    [2m196:7[22m   [33mwarning[39m  'INDEX_HEADERS' is assigned a value but never used. Allowed unused vars must match /^_/u                              [2mno-unused-vars[22m
+    [2m209:7[22m   [33mwarning[39m  'INDEX_TOTAL_COLUMNS' is assigned a value but never used. Allowed unused vars must match /^_/u                        [2mno-unused-vars[22m
+    [2m213:7[22m   [33mwarning[39m  'MASTER_LIST_TEMPLATE_SHEET' is assigned a value but never used. Allowed unused vars must match /^_/u                 [2mno-unused-vars[22m
+    [2m369:10[22m  [33mwarning[39m  'c_' is defined but never used. Allowed unused vars must match /^_/u                                                  [2mno-unused-vars[22m
+    [2m383:10[22m  [33mwarning[39m  'writeDashboardTitle_' is defined but never used. Allowed unused vars must match /^_/u                                [2mno-unused-vars[22m
+    [2m397:10[22m  [33mwarning[39m  'writeDashboardSection_' is defined but never used. Allowed unused vars must match /^_/u                              [2mno-unused-vars[22m
+    [2m464:10[22m  [33mwarning[39m  'setupReportFormattingDashboard' is defined but never used. Allowed unused vars must match /^_/u                      [2mno-unused-vars[22m
+    [2m708:10[22m  [33mwarning[39m  'quickSystemSetup' is defined but never used. Allowed unused vars must match /^_/u                                    [2mno-unused-vars[22m
+    [2m727:10[22m  [33mwarning[39m  'quickBuildAllTemplates' is defined but never used. Allowed unused vars must match /^_/u                              [2mno-unused-vars[22m
+    [2m872:10[22m  [33mwarning[39m  'isSameMonth_' is defined but never used. Allowed unused vars must match /^_/u                                        [2mno-unused-vars[22m
+   [2m1443:10[22m  [33mwarning[39m  'getGovernedNewSheetInsertIndex_' is defined but never used. Allowed unused vars must match /^_/u                     [2mno-unused-vars[22m
+   [2m1500:10[22m  [33mwarning[39m  'getOperationalNewSheetInsertIndex_' is defined but never used. Allowed unused vars must match /^_/u                  [2mno-unused-vars[22m
+   [2m1566:10[22m  [33mwarning[39m  'buildRowsByPMR_' is defined but never used. Allowed unused vars must match /^_/u                                     [2mno-unused-vars[22m
+   [2m1608:10[22m  [33mwarning[39m  'compareValues_' is defined but never used. Allowed unused vars must match /^_/u                                      [2mno-unused-vars[22m
+   [2m1612:10[22m  [33mwarning[39m  'toBool_' is defined but never used. Allowed unused vars must match /^_/u                                             [2mno-unused-vars[22m
+   [2m1616:10[22m  [33mwarning[39m  'truthy_' is defined but never used. Allowed unused vars must match /^_/u                                             [2mno-unused-vars[22m
+   [2m1620:10[22m  [33mwarning[39m  'toNumber_' is defined but never used. Allowed unused vars must match /^_/u                                           [2mno-unused-vars[22m
+   [2m2538:10[22m  [33mwarning[39m  'refreshFrameworkTimingReport' is defined but never used. Allowed unused vars must match /^_/u                        [2mno-unused-vars[22m
+   [2m2542:10[22m  [33mwarning[39m  'writeFrameworkTimingPerformanceRecommendations' is defined but never used. Allowed unused vars must match /^_/u      [2mno-unused-vars[22m
+   [2m2628:10[22m  [33mwarning[39m  'onEdit' is defined but never used. Allowed unused vars must match /^_/u                                              [2mno-unused-vars[22m
+   [2m2722:10[22m  [33mwarning[39m  'toggleFrameworkTiming' is defined but never used. Allowed unused vars must match /^_/u                               [2mno-unused-vars[22m
+   [2m2738:10[22m  [33mwarning[39m  'hideSystemSheets_' is defined but never used. Allowed unused vars must match /^_/u                                   [2mno-unused-vars[22m
+   [2m2742:10[22m  [33mwarning[39m  'showSystemSheets_' is defined but never used. Allowed unused vars must match /^_/u                                   [2mno-unused-vars[22m
+   [2m2746:10[22m  [33mwarning[39m  'formatDashboard' is defined but never used. Allowed unused vars must match /^_/u                                     [2mno-unused-vars[22m
+   [2m2750:10[22m  [33mwarning[39m  'saveActiveLayoutToDashboardSettings' is defined but never used. Allowed unused vars must match /^_/u                 [2mno-unused-vars[22m
+   [2m3060:10[22m  [33mwarning[39m  'clearDiagnosticsAndTimingLogs' is defined but never used. Allowed unused vars must match /^_/u                       [2mno-unused-vars[22m
+   [2m3095:7[22m   [33mwarning[39m  'RFF_TIMING_SUMMARY_SHEET' is assigned a value but never used. Allowed unused vars must match /^_/u                   [2mno-unused-vars[22m
+   [2m3861:10[22m  [33mwarning[39m  'validateReportTemplates' is defined but never used. Allowed unused vars must match /^_/u                             [2mno-unused-vars[22m
+   [2m5412:10[22m  [33mwarning[39m  'formatMonthlySheets' is defined but never used. Allowed unused vars must match /^_/u                                 [2mno-unused-vars[22m
+   [2m5616:10[22m  [33mwarning[39m  'formatBannerReport' is defined but never used. Allowed unused vars must match /^_/u                                  [2mno-unused-vars[22m
+   [2m5632:11[22m  [33mwarning[39m  'dateLabel' is assigned a value but never used. Allowed unused vars must match /^_/u                                  [2mno-unused-vars[22m
+   [2m5686:10[22m  [33mwarning[39m  'validateActiveBannerFormatterOutput' is defined but never used. Allowed unused vars must match /^_/u                 [2mno-unused-vars[22m
+   [2m5708:10[22m  [33mwarning[39m  'archiveActiveRawDataSheet' is defined but never used. Allowed unused vars must match /^_/u                           [2mno-unused-vars[22m
+   [2m5919:10[22m  [33mwarning[39m  'applyStandardFormattingAfterHeadersAndData_' is defined but never used. Allowed unused vars must match /^_/u         [2mno-unused-vars[22m
+   [2m5946:10[22m  [33mwarning[39m  'autoHidePreviousMonthSheetsAfterWorkflow_' is defined but never used. Allowed unused vars must match /^_/u           [2mno-unused-vars[22m
+   [2m6313:10[22m  [33mwarning[39m  'runDashboardQualityMasterListHealthCheck_' is defined but never used. Allowed unused vars must match /^_/u           [2mno-unused-vars[22m
+   [2m6678:10[22m  [33mwarning[39m  'hideMonthlyImportSheets' is defined but never used. Allowed unused vars must match /^_/u                             [2mno-unused-vars[22m
+   [2m6690:10[22m  [33mwarning[39m  'hideMonthlyActiveSheets' is defined but never used. Allowed unused vars must match /^_/u                             [2mno-unused-vars[22m
+   [2m6727:10[22m  [33mwarning[39m  'archiveMonthlyImportSheets' is defined but never used. Allowed unused vars must match /^_/u                          [2mno-unused-vars[22m
+   [2m6744:10[22m  [33mwarning[39m  'archiveMonthlyActiveSheets' is defined but never used. Allowed unused vars must match /^_/u                          [2mno-unused-vars[22m
+   [2m6870:10[22m  [33mwarning[39m  'formatMonthlyChangeSubheaderRow' is defined but never used. Allowed unused vars must match /^_/u                     [2mno-unused-vars[22m
+   [2m6886:10[22m  [33mwarning[39m  'getMonthlyChangeSubsectionLabels' is defined but never used. Allowed unused vars must match /^_/u                    [2mno-unused-vars[22m
+   [2m7069:10[22m  [33mwarning[39m  'formatRawData' is defined but never used. Allowed unused vars must match /^_/u                                       [2mno-unused-vars[22m
+   [2m7451:10[22m  [33mwarning[39m  'createRawDataOutputSheetFromTemplateFast_' is defined but never used. Allowed unused vars must match /^_/u           [2mno-unused-vars[22m
+   [2m7520:3[22m   [31merror[39m    'markCanvasStep' is not defined                                                                                       [2mno-undef[22m
+   [2m7687:10[22m  [33mwarning[39m  'formatCarePlanDueReport' is defined but never used. Allowed unused vars must match /^_/u                             [2mno-unused-vars[22m
+   [2m7696:10[22m  [33mwarning[39m  'formatUnlockedCarePlanReport' is defined but never used. Allowed unused vars must match /^_/u                        [2mno-unused-vars[22m
+   [2m7932:10[22m  [33mwarning[39m  'getRawDataDemoPSourceHeaders_' is defined but never used. Allowed unused vars must match /^_/u                       [2mno-unused-vars[22m
+   [2m8291:10[22m  [33mwarning[39m  'syncMasterListFromUnlockedCarePlan_' is defined but never used. Allowed unused vars must match /^_/u                 [2mno-unused-vars[22m
+   [2m8292:9[22m   [33mwarning[39m  'ss' is assigned a value but never used. Allowed unused vars must match /^_/u                                         [2mno-unused-vars[22m
+   [2m8327:10[22m  [33mwarning[39m  'syncMasterListFromCarePlanDue_' is defined but never used. Allowed unused vars must match /^_/u                      [2mno-unused-vars[22m
+   [2m8368:9[22m   [33mwarning[39m  'headers' is assigned a value but never used. Allowed unused vars must match /^_/u                                    [2mno-unused-vars[22m
+   [2m8510:7[22m   [33mwarning[39m  'DEMO_P_FORMAT_HEADERS' is assigned a value but never used. Allowed unused vars must match /^_/u                      [2mno-unused-vars[22m
+   [2m8514:7[22m   [33mwarning[39m  'DEMO_P_BANNER_SYNC_HEADERS' is assigned a value but never used. Allowed unused vars must match /^_/u                 [2mno-unused-vars[22m
+   [2m8526:10[22m  [33mwarning[39m  'buildDemoPFromScratch' is defined but never used. Allowed unused vars must match /^_/u                               [2mno-unused-vars[22m
+   [2m8585:10[22m  [33mwarning[39m  'updateDemoPMonthlySync' is defined but never used. Allowed unused vars must match /^_/u                              [2mno-unused-vars[22m
+   [2m9218:10[22m  [33mwarning[39m  'formatDemoPStructure' is defined but never used. Allowed unused vars must match /^_/u                                [2mno-unused-vars[22m
+   [2m9602:10[22m  [33mwarning[39m  'verifyPrimaryPMRColumnFromRawData_' is defined but never used. Allowed unused vars must match /^_/u                  [2mno-unused-vars[22m
+   [2m9611:10[22m  [33mwarning[39m  'createOrRefreshDemoPTemplate_' is defined but never used. Allowed unused vars must match /^_/u                       [2mno-unused-vars[22m
+   [2m9689:7[22m   [33mwarning[39m  'UNLOCKED_SYNC_FIELDS' is assigned a value but never used. Allowed unused vars must match /^_/u                       [2mno-unused-vars[22m
+   [2m9695:7[22m   [33mwarning[39m  'CARE_PLAN_DUE_SYNC_FIELDS' is assigned a value but never used. Allowed unused vars must match /^_/u                  [2mno-unused-vars[22m
+  [2m10161:10[22m  [33mwarning[39m  'compareSingleFieldAndAdd_' is defined but never used. Allowed unused vars must match /^_/u                           [2mno-unused-vars[22m
+  [2m10531:10[22m  [33mwarning[39m  'findMonthlyChangeSectionTitleRow_' is defined but never used. Allowed unused vars must match /^_/u                   [2mno-unused-vars[22m
+  [2m10547:10[22m  [33mwarning[39m  'findNextMonthlyChangeSectionTitleRow_' is defined but never used. Allowed unused vars must match /^_/u               [2mno-unused-vars[22m
+  [2m10570:10[22m  [33mwarning[39m  'runMonthlyUpdate' is defined but never used. Allowed unused vars must match /^_/u                                    [2mno-unused-vars[22m
+  [2m10715:10[22m  [33mwarning[39m  'createMasterList' is defined but never used. Allowed unused vars must match /^_/u                                    [2mno-unused-vars[22m
+  [2m10887:10[22m  [33mwarning[39m  'createOrRefreshMasterListTemplate_' is defined but never used. Allowed unused vars must match /^_/u                  [2mno-unused-vars[22m
+  [2m10977:10[22m  [33mwarning[39m  'writeMasterListTitleDateBlock_' is defined but never used. Allowed unused vars must match /^_/u                      [2mno-unused-vars[22m
+  [2m11071:10[22m  [33mwarning[39m  'configureIndexRestoreWebAppUrl' is defined but never used. Allowed unused vars must match /^_/u                      [2mno-unused-vars[22m
+  [2m11102:9[22m   [33mwarning[39m  'indexMonthParts' is assigned a value but never used. Allowed unused vars must match /^_/u                            [2mno-unused-vars[22m
+  [2m11397:10[22m  [33mwarning[39m  'doGet' is defined but never used. Allowed unused vars must match /^_/u                                               [2mno-unused-vars[22m
+  [2m11803:10[22m  [33mwarning[39m  'assignSortOrderAndHideExtraRows' is defined but never used. Allowed unused vars must match /^_/u                     [2mno-unused-vars[22m
+  [2m11837:10[22m  [33mwarning[39m  'showAllMasterListRows' is defined but never used. Allowed unused vars must match /^_/u                               [2mno-unused-vars[22m
+  [2m11845:10[22m  [33mwarning[39m  'sortMasterListByParticipantNameAndPMR_' is defined but never used. Allowed unused vars must match /^_/u              [2mno-unused-vars[22m
+  [2m11924:10[22m  [33mwarning[39m  'hideNonPrimaryPMRRows_' is defined but never used. Allowed unused vars must match /^_/u                              [2mno-unused-vars[22m
+  [2m11979:10[22m  [33mwarning[39m  'applyFinalMasterListColorAndDisplay_' is defined but never used. Allowed unused vars must match /^_/u                [2mno-unused-vars[22m
+  [2m11985:10[22m  [33mwarning[39m  'processMasterListSingleDataPass_' is defined but never used. Allowed unused vars must match /^_/u                    [2mno-unused-vars[22m
+  [2m12176:10[22m  [33mwarning[39m  'buildMappedMasterRowFromDemoRow_' is defined but never used. Allowed unused vars must match /^_/u                    [2mno-unused-vars[22m
+  [2m12186:10[22m  [33mwarning[39m  'mutateMasterRowColumnsFromDemoRow_' is defined but never used. Allowed unused vars must match /^_/u                  [2mno-unused-vars[22m
+  [2m12196:10[22m  [33mwarning[39m  'hideTemplates' is defined but never used. Allowed unused vars must match /^_/u                                       [2mno-unused-vars[22m
+  [2m12200:10[22m  [33mwarning[39m  'showTemplates' is defined but never used. Allowed unused vars must match /^_/u                                       [2mno-unused-vars[22m
+  [2m12204:10[22m  [33mwarning[39m  'enforceGlobalSheetSortOrder' is defined but never used. Allowed unused vars must match /^_/u                         [2mno-unused-vars[22m
+  [2m12253:10[22m  [33mwarning[39m  'getPrimaryMergeRowItem_' is defined but never used. Allowed unused vars must match /^_/u                             [2mno-unused-vars[22m
+  [2m12272:10[22m  [33mwarning[39m  'getPrimaryRowChangedColumnDetails_' is defined but never used. Allowed unused vars must match /^_/u                  [2mno-unused-vars[22m
+  [2m12352:10[22m  [33mwarning[39m  'getMergeAuditParticipantNameFromRows_' is defined but never used. Allowed unused vars must match /^_/u               [2mno-unused-vars[22m
+  [2m12373:10[22m  [33mwarning[39m  'getMergeAuditChangedFields_' is defined but never used. Allowed unused vars must match /^_/u                         [2mno-unused-vars[22m
+  [2m12406:10[22m  [33mwarning[39m  'buildMergeRowsByPMRFromData_' is defined but never used. Allowed unused vars must match /^_/u                        [2mno-unused-vars[22m
+  [2m12430:10[22m  [33mwarning[39m  'buildSecondaryMergeKeyMapForRows_' is defined but never used. Allowed unused vars must match /^_/u                   [2mno-unused-vars[22m
+  [2m12499:10[22m  [33mwarning[39m  'createDisenrolledList' is defined but never used. Allowed unused vars must match /^_/u                               [2mno-unused-vars[22m
+  [2m12514:10[22m  [33mwarning[39m  'buildDisenrolledPMRSetFromDemoPValues_' is defined but never used. Allowed unused vars must match /^_/u              [2mno-unused-vars[22m
+  [2m12829:10[22m  [33mwarning[39m  'appendDisenrolledPMRBlocksToExclusion_' is defined but never used. Allowed unused vars must match /^_/u              [2mno-unused-vars[22m
+  [2m12873:10[22m  [33mwarning[39m  'loadDisenrolledExclusionPMRsForPart3_' is defined but never used. Allowed unused vars must match /^_/u               [2mno-unused-vars[22m
+  [2m12894:7[22m   [33mwarning[39m  'CHANGE_SECTION_ENROLLMENTS' is assigned a value but never used. Allowed unused vars must match /^_/u                 [2mno-unused-vars[22m
+  [2m12896:7[22m   [33mwarning[39m  'CHANGE_SECTION_DISENROLLMENTS' is assigned a value but never used. Allowed unused vars must match /^_/u              [2mno-unused-vars[22m
+  [2m12898:7[22m   [33mwarning[39m  'CHANGE_SECTION_DEMOGRAPHIC' is assigned a value but never used. Allowed unused vars must match /^_/u                 [2mno-unused-vars[22m
+  [2m12900:7[22m   [33mwarning[39m  'CHANGE_SECTION_CASELOAD' is assigned a value but never used. Allowed unused vars must match /^_/u                    [2mno-unused-vars[22m
+  [2m12902:7[22m   [33mwarning[39m  'CHANGE_SECTION_CONTACT' is assigned a value but never used. Allowed unused vars must match /^_/u                     [2mno-unused-vars[22m
+  [2m12904:7[22m   [33mwarning[39m  'MCR_OUTPUT_HEADERS' is assigned a value but never used. Allowed unused vars must match /^_/u                         [2mno-unused-vars[22m
+  [2m13106:9[22m   [33mwarning[39m  'lastCol' is assigned a value but never used. Allowed unused vars must match /^_/u                                    [2mno-unused-vars[22m
+  [2m13130:10[22m  [33mwarning[39m  'getScriptFunctionForDashboardSection_' is defined but never used. Allowed unused vars must match /^_/u               [2mno-unused-vars[22m
+  [2m13601:10[22m  [33mwarning[39m  'ensureDashboardQualitySheetShellForWorkflow_' is defined but never used. Allowed unused vars must match /^_/u        [2mno-unused-vars[22m
+  [2m13770:9[22m   [33mwarning[39m  'ss' is assigned a value but never used. Allowed unused vars must match /^_/u                                         [2mno-unused-vars[22m
+  [2m13970:10[22m  [33mwarning[39m  'updateDashboardQualityTimestampsOnly_' is defined but never used. Allowed unused vars must match /^_/u               [2mno-unused-vars[22m
+  [2m13985:10[22m  [33mwarning[39m  'runAllFrameworkTestsAndBuildDashboard' is defined but never used. Allowed unused vars must match /^_/u               [2mno-unused-vars[22m
+  [2m13994:10[22m  [33mwarning[39m  'repairAllTemplateDateFormats' is defined but never used. Allowed unused vars must match /^_/u                        [2mno-unused-vars[22m
+  [2m14064:7[22m   [33mwarning[39m  'RFF_DASHBOARD_QUALITY_WRAP_COLUMNS' is assigned a value but never used. Allowed unused vars must match /^_/u         [2mno-unused-vars[22m
+  [2m14075:7[22m   [33mwarning[39m  'RFF_DASHBOARD_QUALITY_MIN_SECTION_ROWS' is assigned a value but never used. Allowed unused vars must match /^_/u     [2mno-unused-vars[22m
+  [2m14368:10[22m  [33mwarning[39m  'ensureDashboardQualityTemplateShell_' is defined but never used. Allowed unused vars must match /^_/u                [2mno-unused-vars[22m
+  [2m14377:10[22m  [33mwarning[39m  'getDashboardQualityFixedSectionStartRow_' is defined but never used. Allowed unused vars must match /^_/u            [2mno-unused-vars[22m
+  [2m14547:10[22m  [33mwarning[39m  'getTimingProcessNameForDashboardQualitySection_' is defined but never used. Allowed unused vars must match /^_/u     [2mno-unused-vars[22m
+  [2m14683:10[22m  [33mwarning[39m  'getStoredDashboardQualityOverallStatus_' is defined but never used. Allowed unused vars must match /^_/u             [2mno-unused-vars[22m
+  [2m14692:10[22m  [33mwarning[39m  'getStoredDashboardQualityFailureNotes_' is defined but never used. Allowed unused vars must match /^_/u              [2mno-unused-vars[22m
+  [2m14715:10[22m  [33mwarning[39m  'buildCombinedFrameworkTestDashboard' is defined but never used. Allowed unused vars must match /^_/u                 [2mno-unused-vars[22m
+  [2m14761:10[22m  [33mwarning[39m  'updateDashboardQualitySummarySection_' is defined but never used. Allowed unused vars must match /^_/u               [2mno-unused-vars[22m
+  [2m15341:10[22m  [33mwarning[39m  'runWorkflowSyncVerification' is defined but never used. Allowed unused vars must match /^_/u                         [2mno-unused-vars[22m
+  [2m15362:10[22m  [33mwarning[39m  'verifyFrameworkConfiguration' is defined but never used. Allowed unused vars must match /^_/u                        [2mno-unused-vars[22m
+  [2m15370:11[22m  [33mwarning[39m  'timingSheet' is assigned a value but never used. Allowed unused vars must match /^_/u                                [2mno-unused-vars[22m
+  [2m15536:10[22m  [33mwarning[39m  'writeTimingReport_' is defined but never used. Allowed unused vars must match /^_/u                                  [2mno-unused-vars[22m
+  [2m15540:10[22m  [33mwarning[39m  'rebuildProductionMonthlyChangeTemplate' is defined but never used. Allowed unused vars must match /^_/u              [2mno-unused-vars[22m
+
+[31m[1m✖ 130 problems (1 error, 129 warnings)[22m[39m
+[0m
