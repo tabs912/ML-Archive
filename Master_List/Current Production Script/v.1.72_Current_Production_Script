@@ -2599,6 +2599,7 @@ const ML_MENU_CALLBACKS = Object.freeze({
     "createOrRefreshAllReportTemplates",
     "createIndexSheet",
     "restoreSheetFromActiveIndexRow",
+    "configureIndexRestoreWebAppUrl",
     "configureArchiveSpreadsheetId"
   ])
 });
@@ -2701,6 +2702,7 @@ function onOpen() {
     .addItem("🖼️ Create / Refresh All Templates", "createOrRefreshAllReportTemplates")
     .addItem("📇 Build Index", "createIndexSheet")
     .addItem("↩️ Restore Selected Archive Row", "restoreSheetFromActiveIndexRow")
+    .addItem("🌐 Configure Index Restore Web App URL", "configureIndexRestoreWebAppUrl")
     .addItem("🔗 Configure Archive Spreadsheet ID", "configureArchiveSpreadsheetId");
 
   ui.createMenu("Master List")
@@ -10960,6 +10962,23 @@ function getIndexRestoreWebAppUrl_() {
   }
 }
 
+function configureIndexRestoreWebAppUrl() {
+  const ui = SpreadsheetApp.getUi();
+  const props = PropertiesService.getDocumentProperties();
+  const current = getIndexRestoreWebAppUrl_();
+  const response = ui.prompt(
+    "Configure Index Restore Web App URL",
+    "Paste the deployed Web App /exec URL used by Index restore hyperlinks. Leave blank to disable hyperlink restore formulas and keep the menu-based restore fallback.\n\nCurrent URL: " + (current || "(not configured)"),
+    ui.ButtonSet.OK_CANCEL
+  );
+  if (response.getSelectedButton() !== ui.Button.OK) return;
+  const value = String(response.getResponseText() || "").trim();
+  if (value) props.setProperty("ML_INDEX_RESTORE_WEB_APP_URL", value);
+  else props.deleteProperty("ML_INDEX_RESTORE_WEB_APP_URL");
+  createIndexSheet();
+  ui.alert("Index Restore Web App URL", value ? "Index restore hyperlinks are now enabled and the Index was rebuilt." : "Index restore hyperlinks are disabled; the menu-based restore fallback remains available.", ui.ButtonSet.OK);
+}
+
 function buildIndexRestoreHyperlinkFormula_(targetSheetName) {
   const webAppUrl = getIndexRestoreWebAppUrl_();
   if (!webAppUrl || !targetSheetName) return "↩ [Click cell to select, then run Restore]";
@@ -15072,6 +15091,7 @@ function getRequiredMenuFunctionNames_() {
     "runFrameworkSmokeValidation",
     "createIndexSheet",
     "restoreSheetFromActiveIndexRow",
+    "configureIndexRestoreWebAppUrl",
     "formatMonthlySheets",
     "buildDemoPFromScratch",
     "updateDemoPMonthlySync",
