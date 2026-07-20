@@ -1,301 +1,406 @@
-# Master List Documentation Build Specification v1.0
+# Master List Framework Build Specification v1.0
 
-**Status:** Production Build Contract\
-**Authority:** Master List Framework Governance\
-**Applies To:** All Markdown → DOCX, Google Docs, and PDF builds
+**Status:** Current Framework Build Specification
+**Implementation authority:** **Master_List/Current Production Script/v.1.7.7_Current_Production_Script**
+**Framework version:** `1.7.7`
+**Build basis:** Previous v1.9 governing specification, historical supporting specifications, `Master_List/v2_Framework_Reference`, and current production script v1.7.7.
+**Source-of-truth rule:** The production script governs implementation behavior. Historical documents and supporting inventories provide context only when production implements the behavior.
 
-------------------------------------------------------------------------
+## Framework Overview
 
-# 1. Purpose
+The Master List Framework is a single-file Google Apps Script framework for monthly Master List production, source report formatting, Demo P processing, Monthly Change reporting, disenrollment maintenance, dashboard-governed templates, Index/archive lifecycle management, timing instrumentation, and consolidated quality validation.
 
-This specification defines the required behavior of the documentation
-build process.
+The framework exists to preserve approved business rules while making monthly processing repeatable, auditable, and maintainable. It uses governed sheet names, dashboard configuration, template-first formatting, batch data operations, and explicit validation gates. The current implementation baseline is `1.7.7` and contains 15,750 lines, 676 declared functions, and 64 public Apps Script-callable entry points.
 
-The builder SHALL produce a publication-quality Microsoft Word document
-from the Markdown source without requiring manual formatting.
+### Objectives
 
-The Markdown document is the **only** editable source.
+- Preserve Raw Data and Demo P evidence for monthly processing and review.
+- Maintain Primary PMR row ownership for participant-level operational output.
+- Create governed monthly Master List, Monthly Change, Banner, Care Plan Due, Unlocked Care Plan, Raw Data, Demo P, and Disenrolled Exclusion outputs.
+- Keep dashboard, template, Index, archive, timing, and Dashboard Quality surfaces synchronized with production behavior.
+- Validate before destructive operations and stop when missing dependencies or data-integrity failures would place governed output at risk.
 
-------------------------------------------------------------------------
+### Design Principles
 
-# 2. Source of Truth
+| Principle | Requirement |
+|---|---|
+| Production authority | Production script v1.7.7 controls behavior when documentation conflicts. |
+| Single-file framework | The production implementation remains one Apps Script file until an approved migration changes the architecture. |
+| Dashboard governance | **Format Dashboard** defines supported sheet, behavior, system-surface, column, and header configuration. |
+| Template-first formatting | Governed outputs are created from templates, populated in batch, and finalized with targeted formatting/validation. |
+| Primary PMR ownership | Participant-level synchronized output belongs on the Primary PMR row. |
+| Consolidated QA | **Dashboard Quality Report** is the consolidated QA and signoff surface. |
+| Safe lifecycle operations | Hide, archive, restore, sort, and delete operations must protect framework-owned sheets and validate prerequisites. |
 
-  -----------------------------------------------------------------------
-  Item                   Requirement
-  ---------------------- ------------------------------------------------
-  Editable source        Markdown (.md)
+## Framework Architecture
 
-  Generated output       DOCX
+The framework is organized as layered Apps Script subsystems:
 
-  Secondary outputs      Google Docs, PDF
+1. **Configuration layer**: constants, feature flags, document properties, dashboard sections, and runtime cache.
+2. **Dashboard/template layer**: Format Dashboard defaults, template creation, smart refresh signatures, validation, and formatting rules.
+3. **Workflow layer**: menu callbacks, monthly source formatting, Demo P, Monthly Change, Disenrolled Exclusion, Master List, Index, archive, and restore flows.
+4. **Data layer**: normalized headers, PMR keys, source row maps, Primary PMR selection, source-to-output transformations, and synchronization maps.
+5. **Quality/timing layer**: Dashboard Quality Sections A-Q, Framework Timing report, smoke validation, health checks, and workflow sync verification.
+6. **Governance layer**: protected public interfaces, naming standards, safe-change requirements, versioning, and release validation.
 
-  Editing rule           Never edit generated documents to change
-                         content. Update the Markdown source instead.
-  -----------------------------------------------------------------------
+The architecture intentionally separates editable runtime governance from protected implementation defaults. The dashboard can control only values that production loaders and validators support; script constants remain protected defaults.
 
-------------------------------------------------------------------------
+## Configuration Framework
 
-# 3. Build Pipeline
+Configuration is layered and must be interpreted in authority order.
 
-``` text
-Read Markdown
-    ↓
-Parse Document Structure
-    ↓
-Classify Content Types
-    ↓
-Apply Styles
-    ↓
-Convert Tables
-    ↓
-Convert Lists
-    ↓
-Generate TOC
-    ↓
-Insert Page Numbers
-    ↓
-Run Validation
-    ↓
-Write DOCX
+| Configuration Source | Examples | Governance |
+|---|---|---|
+| Script constants | Version, sheet types, prefixes, templates, timing limits, archive ID default, row constants, date rules, feature flags, protected sheet names. | Protected implementation defaults. |
+| Format Dashboard | Sheet definitions, report titles, output naming patterns, template names, behaviors, system surfaces, column definitions, header/source lineage. | Editable configuration after dashboard validation. |
+| Document properties | Archive spreadsheet override, Index restore web-app URL, template signatures, workflow busy/deferred state, Dashboard Quality state. | Runtime/deployment state. |
+| Runtime cache | Dashboard config, monthly sheet lookup, sheet dimensions, headers, header maps, template signatures, timing state. | Execution optimization only. |
+
+### Format Dashboard Sections
+
+The implemented dashboard section order is:
+
+| Section | Implemented Scope |
+|---|---|
+| **SECTION A - GLOBAL SETTINGS** | Global row, format, color, font, date, wrapping, alignment, and template-version settings. |
+| **SECTION B - TITLE ROWS** | Title-row definitions and title/header row presentation. |
+| **SECTION C - SHEET DEFINITIONS** | Sheet types, report titles, templates, output naming, colors, row counts, columns, and test-row controls. |
+| **SECTION D - SHEET BEHAVIORS** | Sheet behavior controls including title rows, filters, alternating colors, subheaders, hidden templates, and output visibility. |
+| **SECTION E - SYSTEM SHEET SURFACES** | System-sheet display names, sort order, output visibility, title colors, and notes. |
+| **SECTION F - COLUMN DEFINITIONS** | Column width, font size, date-column flag, hidden-column flag, wrapping, alignment, and number format. |
+| **SECTION G - SHEET HEADERS** | Sheet type, column order, header name, and source-of-data lineage. |
+
+## Workflow Architecture
+
+`onOpen` builds the **Master List** menu and exposes stable public callbacks. Public functions must remain callable by menu strings, triggers, web-app routes, and compatibility wrappers unless an approved migration updates all callers.
+
+### Main Workflow Sequence
+
+1. Startup/setup creates or refreshes Format Dashboard, system sheets, templates, Dashboard Quality shell, Framework Timing report, and Index/archive surfaces.
+2. Monthly source formatting prompts once for report month and processes route-coded imports: `B`, `CD`, `UC`, and `RD`.
+3. Monthly Update validates prerequisites, builds Monthly Change, updates Demo P, applies Disenrolled Exclusion, creates Master List, refreshes Index, sorts sheets, records timing, and notifies completion.
+4. Standalone workflows remain available for recovery and targeted operations but must preserve the same validation, ownership, cache, and timing rules.
+
+### Public Entry Points
+
+The public entry-point inventory is:
+
+`configureArchiveSpreadsheetId, setupReportFormattingDashboard, rebuildFormatDashboardDefaults, quickSystemSetup, quickBuildAllTemplates, refreshFrameworkTimingReport, writeFrameworkTimingPerformanceRecommendations, onEdit, onOpen, toggleFrameworkTiming, formatDashboard, saveActiveLayoutToDashboardSettings, clearDiagnosticsAndTimingLogs, createOrRefreshAllReportTemplates, hideReportTemplates, showReportTemplates, validateReportTemplates, formatMonthlySheets, formatBannerReport, validateActiveBannerFormatterOutput, archiveActiveRawDataSheet, runFrameworkSmokeValidation, hideMonthlyImportSheets, hideMonthlyActiveSheets, archiveMonthlyImportSheets, archiveMonthlyActiveSheets, formatMonthlyChangeSubheaderRow, formatMonthlyChangeSubsectionBlock, getMonthlyChangeSubsectionLabels, formatRawData, formatCarePlanDueReport, formatUnlockedCarePlanReport, buildDemoPFromScratch, updateDemoPMonthlySync, processDemoP, formatDemoPStructure, buildMonthlyChangeReport, runMonthlyUpdate, createMasterList, configureIndexRestoreWebAppUrl, createIndexSheet, restoreSheetFromActiveIndexRow, restoreSheetFromArchiveWorkbook, doGet, assignSortOrderAndHideExtraRows, showAllMasterListRows, hideTemplates, showTemplates, enforceGlobalSheetSortOrder, hideSystemSheetsNow, showSystemSheetsNow, createDisenrolledList, runDashboardQualityStartUp, runDashboardQualityQuick, runDashboardQualityValidateTemplates, runDashboardQualityFull, runAllFrameworkTestsAndBuildDashboard, repairAllTemplateDateFormats, buildCombinedFrameworkTestDashboard, runFrameworkHealthCheck, runWorkflowSyncVerification, setupSystemSheets, verifyFrameworkConfiguration, rebuildProductionMonthlyChangeTemplate`
+
+## Data Architecture
+
+Data ownership is organized around monthly source evidence, normalized identifiers, and Primary PMR row output. Raw Data feeds Demo P and Monthly Change. Demo P feeds Master List, Disenrolled Exclusion, and replacement-retention flows. Banner, Care Plan Due, and Unlocked Care Plan enrich Master List participant rows through synchronization helpers. Replaced Demo P rows are retained in **Archive - Demo P** before monthly body rewrites.
+
+| Data Surface | Ownership |
+|---|---|
+| Raw Data | Source evidence for Demo P generation and Monthly Change comparison. |
+| Demo P | Flattened participant/contact processing sheet and Master List input. |
+| Primary PMR Row | Participant-level ownership marker and synchronization destination. |
+| Monthly Change | Current/prior comparison evidence for monthly changes. |
+| Disenrolled Exclusion | Governed exclusion and disenrollment evidence. |
+| Master List | Primary operational participant output containing Primary PMR rows. |
+| Banner / Care Plan Due / Unlocked Care Plan | Source enrichment for Master List synchronization. |
+| Archive - Demo P | Retention surface for replaced Demo P rows. |
+| External archive workbook | Cold storage for archived monthly sheets surfaced through Index. |
+
+## Sheet Architecture
+
+| Sheet / Family | Purpose | Lifecycle and Visibility |
+|---|---|---|
+| **Index** | Inventory active sheets and external archive records; provide restore actions. | Created/refreshed by Index workflow and sorted first. |
+| **Format Dashboard** | Editable framework configuration surface. | System surface; rebuilt from defaults only by governed callbacks. |
+| **Dashboard Quality Report** | Consolidated QA, validation, summary, and signoff artifact. | Section-governed writes; not a participant-processing sheet. |
+| **Framework Timing Report** | Runtime timing evidence, performance issues, recommendations, and detailed logs. | Updated by timing wrappers and refresh callbacks. |
+| **Template - \*** and **RFF_BASE_TEMPLATE** | Governed output formatting sources. | Created/refreshed by template workflows; normally hidden. |
+| **Raw Data**, **Banners**, **CP Due**, **Unlock CP** | Formatted monthly import outputs. | Created from imports and templates; may be hidden or archived by monthly import lifecycle callbacks. |
+| **Demo P**, **Monthly Change**, **Master List**, **Disenrolled Exclusion** | Active operational outputs. | Built/updated by processing workflows; may be hidden or archived by active-sheet lifecycle callbacks. |
+| **Archive - Demo P** | Retains replaced Demo P rows. | Normally hidden and protected from unsafe deletion. |
+
+## Column Architecture
+
+Column behavior is dashboard-governed through Section F and header lineage is dashboard-governed through Section G. Header lookup must use normalized header maps where practical rather than hard-coded positions. Required identity columns such as PMR identifiers, Primary PMR Row, dates of birth, contact fields, update tracking, and synchronization fields must not be renamed without coordinated production, dashboard, template, validator, and documentation updates.
+
+Column categories include required source columns, optional source columns, generated processing columns, calculated/display columns, synchronization columns, validation columns, hidden helper columns, and protected key columns.
+
+## Mapping Architecture
+
+Mapping uses normalized PMR keys, normalized header names, dashboard header definitions, source row maps, and workflow-specific lookup rules. Source-to-destination mapping is implementation-owned and may not be rewritten from historical mapping documents alone. Master List synchronization maps Banner, Care Plan Due, and Unlocked Care Plan data onto Primary PMR rows only. Conflicts and missing required keys must fail or warn according to the workflow risk.
+
+## Template Architecture
+
+Templates are the authoritative formatting sources for governed outputs. Template generation reads Format Dashboard Section C sheet definitions, Section D behaviors, Section F column definitions, Section G headers, and Section A/B presentation settings. Smart refresh uses expected signatures, stored document-property signatures, and sheet-note signatures. Metadata-only refresh is allowed only when normalized signatures match expected structure; otherwise templates are rebuilt.
+
+Template rules:
+
+- Use template-first output generation for normal reports.
+- Preserve hidden template state after batch operations.
+- Validate template existence, headers, dimensions, formatting signatures, frozen rows/columns, date formats, filters, hidden columns, and row-height expectations.
+- Do not treat historical templates as governing unless production recreates their behavior.
+
+## Dashboard Architecture
+
+The dashboard architecture contains three major surfaces: **Format Dashboard**, **Dashboard Quality Report**, and **Framework Timing Report**. Format Dashboard governs configurable formatting and sheet metadata. Dashboard Quality validates readiness and records quality evidence. Framework Timing records execution performance and feeds performance summary reporting.
+
+### Dashboard Quality Sections
+
+| Section | Implemented Title |
+|---|---|
+| A | **SECTION A - GLOBAL INPUTS VERIFICATION** |
+| B | **SECTION B - SHEET DEFINITIONS VERIFICATION** |
+| C | **SECTION C - SHEET BEHAVIOR VERIFICATION** |
+| D | **SECTION D - COLUMN DEFINITIONS VERIFICATION** |
+| E | **SECTION E - SHEET HEADERS VERIFICATION** |
+| F | **SECTION F - TEMPLATE STRUCTURE & VALIDATION** |
+| G | **SECTION G - FORMAT DASHBOARD CHANGELOG** |
+| H | **SECTION H - FRAMEWORK HEALTH CHECK** |
+| I | **SECTION I - PERFORMANCE SUMMARY** |
+| J | **SECTION J - RAW DATA VALIDATION** |
+| K | **SECTION K - CARE PLAN SYNC VALIDATION** |
+| L | **SECTION L - WORKFLOW & SYNCHRONIZATION VERIFICATION** |
+| M | **SECTION M - DEMO P QUALITY VALIDATION** |
+| N | **SECTION N - DISENROLLED EXCLUSION VALIDATION** |
+| O | **SECTION O - MONTHLY CHANGE VALIDATION** |
+| P | **SECTION P - SUMMARY** |
+| Q | **SECTION Q - SIGNOFF** |
+
+Dashboard Quality writes are section-scoped. Tests and workflows should update only their assigned sections where possible and must preserve the shell structure.
+
+## Processing Modules
+
+| Module | Purpose | Primary Inputs | Primary Outputs |
+|---|---|---|---|
+| Startup/System Setup | Build required framework surfaces. | Current workbook, constants, dashboard defaults. | System sheets, templates, Index, validation shells. |
+| Monthly Source Formatting | Format imported `B`, `CD`, `UC`, and `RD` sheets. | Imported source tabs and prompt month. | Governed monthly source output sheets. |
+| Demo P Processing | Build and update Demo P from Raw Data. | Raw Data, existing Demo P, Monthly Change dependency. | Demo P rows, archived replacement rows. |
+| Monthly Change | Compare current/prior month data. | Current and prior source sheets. | Monthly Change report sections. |
+| Disenrolled Exclusion | Detect and retain disenrolled participants. | Demo P and governed source fields. | Disenrolled Exclusion and retained Demo P body. |
+| Master List | Create operational participant output. | Demo P, templates, Banner, Care Plan Due, Unlocked Care Plan. | Master List Primary PMR rows. |
+| Index/Archive/Restore | Manage visibility, cold storage, and restore actions. | Workbook sheets, external archive workbook. | Index sheet, archived copies, restored sheets. |
+| Dashboard Quality | Validate framework readiness and outputs. | Dashboard, templates, sheets, timing state. | Dashboard Quality sections A-Q. |
+| Framework Timing | Measure and summarize runtime. | Timed workflow execution. | Framework Timing sections and performance recommendations. |
+
+## Reporting Architecture
+
+Framework reports are generated as workbook sheets rather than external binary artifacts. The Dashboard Quality Report is the acceptance and signoff report. The Framework Timing Report is the performance evidence report. Monthly Change and Master List are operational reports. Report generation must apply dashboard/template governance, validate required inputs, preserve timing evidence, and refresh Index visibility after sheet-producing workflows.
+
+## Validation Framework
+
+Validation is layered:
+
+1. Active-sheet validation prevents workflows from running against system, dashboard, index, archive, template, or invalid source sheets.
+2. Dashboard validation verifies required settings, sheet definitions, behaviors, columns, headers, and changelog state.
+3. Template validation verifies governed template structure and signatures.
+4. Workflow preflight validation checks source availability, date/month resolution, required headers, PMR identity, and destructive-operation safety.
+5. Data-integrity validation checks row counts, replacement coverage, synchronization readiness, and report-specific quality.
+6. Dashboard Quality consolidates validation evidence and signoff.
+
+Blocking validation failures must stop the workflow before unsafe mutation. Best-effort warnings may be logged when core data integrity remains safe.
+
+## Quality Assurance Framework
+
+Quality Assurance is governed through Dashboard Quality Sections A-Q, framework smoke validation, health checks, workflow synchronization verification, template validation, performance summary, and report-specific validations. Acceptance requires that required setup, dashboard, template, data, synchronization, timing, health, summary, and signoff sections have current evidence.
+
+## Error Handling Framework
+
+Errors are classified as blocking failures or best-effort warnings. Blocking failures include missing required source/output dependencies, invalid active sheets, missing required headers, unsafe monthly update state, invalid PMR identity, restore conflicts, and destructive-operation preflight failures. Warnings are appropriate for optional telemetry, formatting polish, hiding/sorting visibility issues, optional quality-section writes, or noncritical timing/report refreshes.
+
+Workflow busy/deferred state prevents overlapping workflow execution and defers Index refresh when required. Notifications should inform users of completion, validation failures, or configuration issues without suppressing errors that affect data integrity.
+
+## Performance Framework
+
+The framework uses batch reads/writes, in-memory arrays, Maps/Sets, cached dashboard and header lookups, template signatures, compact section updates, and guarded flushes. High-complexity areas include template creation/refresh, Dashboard Quality full validation, Monthly Change comparison, Demo P monthly synchronization, Master List synchronization, archive/index inventory, and sheet sorting. Framework Timing must preserve enough evidence to identify bottlenecks and support release decisions.
+
+## Framework Governance
+
+Protected standards include public function names, menu callback strings, trigger names, web-app parameters, sheet names, template names, dashboard section names, header names, source-lineage definitions, Primary PMR ownership, Dashboard Quality schema, timing schema, Index/archive schema, cache invalidation, and safe-deletion protections.
+
+Before removing or renaming any function, constant, configuration key, menu entry, trigger, sheet definition, template, header, property key, or compatibility wrapper, maintainers must verify direct callers, indirect callers, menu strings, trigger references, web-app routes, `google.script.run` usage, dynamic invocation, document properties, templates, validators, Dashboard Quality sections, health checks, and external consumers.
+
+## Function Organization
+
+| Group | Responsibility |
+|---|---|
+| Public menu/workflow functions | Apps Script-callable callbacks for setup, formatting, processing, validation, lifecycle, archive, restore, and QA. |
+| Configuration functions | Version, constants, dashboard defaults, properties, and runtime configuration. |
+| Dashboard functions | Dashboard setup, load, validation, changelog, quality sections, system surfaces, and layout capture. |
+| Template functions | Base/template creation, smart refresh, signatures, validation, hiding/showing, and output formatting. |
+| Workflow functions | Monthly formatting, Demo P, Monthly Change, Master List, Disenrolled Exclusion, archive, restore, and Index. |
+| Formatter functions | Report-specific and universal sheet formatting. |
+| Validator functions | Preflight, active-sheet, template, dashboard, workflow, sync, data-integrity, and health checks. |
+| Utility helpers | Header normalization, dates, colors, ranges, sorting, caches, locks, properties, safe deletion, and timing. |
+
+The v1.7.7 implementation has 676 declared functions and 64 public entry points. Internal helpers use trailing underscores and are implementation details, but they remain protected when referenced by workflows, validators, registries, menus, triggers, or tests.
+
+## Framework Maintenance
+
+Future development must begin with current production source, current framework specification, relevant dashboard/template references, and current validation evidence. Changes must be minimal, versioned, tested, and synchronized across code, dashboard defaults, templates, validators, Dashboard Quality expectations, timing expectations, and documentation. Historical files may inform intent but cannot override production behavior.
+
+Release preparation must verify no unrelated files or binary artifacts are staged, run repository preparation tooling, review the generated diff, and ensure the specification remains synchronized with implementation changes.
+
+## Appendices
+
+### Appendix A — Framework Terminology
+
+| Term | Meaning |
+|---|---|
+| Primary PMR Row | Representative participant row that owns participant-level synchronized output. |
+| Format Dashboard | Editable configuration surface for governed formatting and sheet metadata. |
+| Dashboard Quality Report | Consolidated QA, validation, summary, and signoff surface. |
+| Framework Timing Report | Runtime evidence and performance recommendation surface. |
+| Template-first output | Pattern that creates output from a governed template before writing data. |
+| External archive workbook | Cold-storage spreadsheet for archived monthly sheets. |
+
+### Appendix B — Sheet Inventory
+
+- Index.
+- Format Dashboard.
+- Dashboard Quality Report.
+- Framework Timing Report.
+- RFF_BASE_TEMPLATE.
+- Template - Banner Report.
+- Template - Care Plan Due.
+- Template - Unlocked Care Plan.
+- Template - Raw Data.
+- Template - Demo P.
+- Template - Disenrolled Exclusion.
+- Template - Master List.
+- Template - Monthly Change.
+- Raw Data monthly outputs.
+- Banners / Banner Report monthly outputs.
+- CP Due / Care Plan Due Date Report monthly outputs.
+- Unlock CP / Unlocked Care Plan monthly outputs.
+- Demo P.
+- Monthly Change.
+- Master List.
+- Disenrolled Exclusion.
+- Archive - Demo P.
+- Unformatted `B`, `CD`, `UC`, and `RD` source imports.
+
+### Appendix C — Public Entry Point Inventory
+
+- `configureArchiveSpreadsheetId`
+- `setupReportFormattingDashboard`
+- `rebuildFormatDashboardDefaults`
+- `quickSystemSetup`
+- `quickBuildAllTemplates`
+- `refreshFrameworkTimingReport`
+- `writeFrameworkTimingPerformanceRecommendations`
+- `onEdit`
+- `onOpen`
+- `toggleFrameworkTiming`
+- `formatDashboard`
+- `saveActiveLayoutToDashboardSettings`
+- `clearDiagnosticsAndTimingLogs`
+- `createOrRefreshAllReportTemplates`
+- `hideReportTemplates`
+- `showReportTemplates`
+- `validateReportTemplates`
+- `formatMonthlySheets`
+- `formatBannerReport`
+- `validateActiveBannerFormatterOutput`
+- `archiveActiveRawDataSheet`
+- `runFrameworkSmokeValidation`
+- `hideMonthlyImportSheets`
+- `hideMonthlyActiveSheets`
+- `archiveMonthlyImportSheets`
+- `archiveMonthlyActiveSheets`
+- `formatMonthlyChangeSubheaderRow`
+- `formatMonthlyChangeSubsectionBlock`
+- `getMonthlyChangeSubsectionLabels`
+- `formatRawData`
+- `formatCarePlanDueReport`
+- `formatUnlockedCarePlanReport`
+- `buildDemoPFromScratch`
+- `updateDemoPMonthlySync`
+- `processDemoP`
+- `formatDemoPStructure`
+- `buildMonthlyChangeReport`
+- `runMonthlyUpdate`
+- `createMasterList`
+- `configureIndexRestoreWebAppUrl`
+- `createIndexSheet`
+- `restoreSheetFromActiveIndexRow`
+- `restoreSheetFromArchiveWorkbook`
+- `doGet`
+- `assignSortOrderAndHideExtraRows`
+- `showAllMasterListRows`
+- `hideTemplates`
+- `showTemplates`
+- `enforceGlobalSheetSortOrder`
+- `hideSystemSheetsNow`
+- `showSystemSheetsNow`
+- `createDisenrolledList`
+- `runDashboardQualityStartUp`
+- `runDashboardQualityQuick`
+- `runDashboardQualityValidateTemplates`
+- `runDashboardQualityFull`
+- `runAllFrameworkTestsAndBuildDashboard`
+- `repairAllTemplateDateFormats`
+- `buildCombinedFrameworkTestDashboard`
+- `runFrameworkHealthCheck`
+- `runWorkflowSyncVerification`
+- `setupSystemSheets`
+- `verifyFrameworkConfiguration`
+- `rebuildProductionMonthlyChangeTemplate`
+
+### Appendix D — Workflow Diagram
+
+```mermaid
+flowchart TD
+  A[Open Workbook] --> B[onOpen Master List Menu]
+  B --> C[Startup and System Setup]
+  C --> D[Format Dashboard]
+  C --> E[Templates]
+  C --> F[Dashboard Quality]
+  C --> G[Index and Timing]
+  B --> H[Format Monthly Sources]
+  H --> I[Raw Data / Banner / CP Due / Unlock CP Outputs]
+  B --> J[Create Monthly Update]
+  J --> K[Monthly Change]
+  K --> L[Demo P Monthly Sync]
+  L --> M[Disenrolled Exclusion]
+  M --> N[Master List]
+  N --> O[Index Refresh and Sort]
+  O --> P[Timing and Quality Evidence]
 ```
 
-The builder SHALL fail if any validation rule fails.
-
-------------------------------------------------------------------------
-
-# 4. Markdown Mapping
-
-  Markdown   Word Style
-  ---------- ------------
-  \#         Title
-  \##        Heading 1
-  \###       Heading 2
-  \####      Heading 3
-  \#####     Heading 4
-  Body       Normal
-
-Heading levels SHALL NOT be skipped.
-
-------------------------------------------------------------------------
-
-# 5. Typography
-
-## Title
-
--   Font: Calibri
--   Size: 26 pt
--   Color: #366091
--   Bold
--   Centered
--   26 pt before and after
-
-## Subtitle
-
--   Calibri
--   12 pt
--   Italic
--   Color #4F81BD
-
-## Heading 1
-
--   Calibri
--   20 pt
--   Bold
--   Color #4F81BD
-
-## Heading 2
-
--   Calibri
--   16 pt
--   Bold
--   Color #4F81BD
-
-## Heading 3
-
--   Calibri
--   14 pt
--   Bold
--   Color #4F81BD
-
-## Heading 4
-
--   Calibri
--   12 pt
--   Bold
--   Color #4F81BD
-
-## Normal Text
-
--   Cambria
--   11 pt
--   Line spacing 1.15
--   5 pt before
--   5 pt after
-
-------------------------------------------------------------------------
-
-# 6. Lists
-
-Bullet and numbered lists SHALL use:
-
--   Cambria 11
--   1.15 spacing
--   5 pt before/after
--   0.25 inch left indent
--   0.25 inch hanging indent
-
-Numbered lists SHALL preserve Markdown numbering.
-
-------------------------------------------------------------------------
-
-# 7. Tables
-
-Every Markdown table SHALL become a native Word table.
-
-Requirements:
-
--   Table Grid style
--   Header fill #C7D8EA
--   Header font Calibri Bold 12
--   Header text color #366091
--   Body Cambria 11
--   Top vertical alignment
--   Repeat Header Row enabled
--   Fit within page margins
--   AutoFit to window
-
-Markdown pipe tables SHALL NOT appear in the final document.
-
-------------------------------------------------------------------------
-
-# 8. Identifier Classification
-
-The builder SHALL classify inline identifiers before assigning
-typography.
-
-## Use Bold Cambria
-
--   File names
--   File paths
--   Sheet names
--   Template sheet names
--   Dashboard section names
--   Menu commands
-
-Examples
-
--   **Master_List_Framework_Specification_v2.0.md**
--   **Template - Master List**
--   **Master List**
--   **SECTION A - GLOBAL SETTINGS**
-
-## Use Consolas 10.5
-
--   Apps Script functions
--   Constants
--   Property keys
--   Code blocks
-
-Examples
-
--   runMonthlyUpdate()
--   createMasterList()
--   HEADER_ROW
--   RFF_ARCHIVE_SPREADSHEET_ID
-
-Backticks alone SHALL NOT determine formatting.
-
-------------------------------------------------------------------------
-
-# 9. Tables of Contents
-
-The builder SHALL generate a native Word Table of Contents using Heading
-1 through Heading 4.
-
-------------------------------------------------------------------------
-
-# 10. Page Layout
-
--   Letter (8.5 x 11)
--   Portrait
--   Top 0.70"
--   Bottom 0.70"
--   Left 0.75"
--   Right 0.75"
--   Centered page numbers
-
-Landscape MAY be used for wide tables.
-
-------------------------------------------------------------------------
-
-# 11. Page Break Rules
-
-The builder SHALL:
-
--   Start Heading 1 sections on a new page.
--   Start appendices on a new page.
--   Keep headings with the following paragraph.
--   Avoid orphaned headings.
--   Avoid splitting small tables across pages.
-
-------------------------------------------------------------------------
-
-# 12. Validation
-
-The build SHALL fail if:
-
--   Markdown tables remain.
--   Heading styles are missing.
--   Fonts differ from this specification.
--   Line spacing is incorrect.
--   Repeat table headers are missing.
--   TOC is missing.
--   Page numbers are missing.
--   Markdown syntax appears in the output.
-
-------------------------------------------------------------------------
-
-# 13. Build Report
-
-The builder SHALL output a report similar to:
-
-``` text
-Build Successful
-
-Headings: XX
-Tables: XX
-Lists: XX
-Identifiers Classified: XX
-
-Warnings: 0
-Errors: 0
-Elapsed Time: XX sec
-```
-
-------------------------------------------------------------------------
-
-# 14. Acceptance Criteria
-
-A build is production-ready only when:
-
--   No manual formatting is required.
--   The DOCX matches this specification.
--   Google Docs import preserves formatting.
--   PDF export preserves formatting.
--   All validation checks pass.
-
-------------------------------------------------------------------------
-
-# 15. Implementation Guidance for Codex
-
-The implementation SHOULD:
-
--   Parse Markdown into a document object model rather than processing
-    line-by-line.
--   Apply formatting based on semantic content, not Markdown syntax
-    alone.
--   Separate parsing, classification, formatting, and validation into
-    distinct stages.
--   Centralize all formatting values in a configuration object.
--   Produce deterministic output so identical Markdown always generates
-    identical documents.
+### Appendix E — Configuration Reference
+
+| Key Area | Representative Identifiers |
+|---|---|
+| Version | `MASTER_LIST_MERGE_ML_VERSION`, `RFF_VERSION`. |
+| Archive | `RFF_ARCHIVE_SPREADSHEET_ID`, `RFF_ARCHIVE_SPREADSHEET_ID` document property. |
+| Index Restore | `ML_INDEX_RESTORE_WEB_APP_URL`. |
+| Workflow state | `ML_WORKFLOW_BUSY`, `ML_WORKFLOW_BUSY_STARTED`, `ML_INDEX_REFRESH_DEFERRED`. |
+| Templates | `RFF_BASE_TEMPLATE_NAME`, template sheet constants, template signature properties. |
+| Rows | `HEADER_ROW`, `DATA_START_ROW`, Index row constants. |
+| Dashboard | `RFF_DASHBOARD_SHEET`, `RFF_DASHBOARD_CONFIG_MAX_READ_COLS`, dashboard section constants. |
+
+### Appendix F — Dashboard Reference
+
+Format Dashboard Sections A-G and Dashboard Quality Sections A-Q are protected schema surfaces. Generated PDF or DOCX copies must be rebuilt from this Markdown source and current production defaults rather than edited manually.
+
+### Appendix G — Validation Reference
+
+- Dashboard setup/startup validation.
+- Template structure and signature validation.
+- Active source/output sheet validation.
+- Raw Data preflight validation.
+- Demo P replacement coverage validation.
+- Monthly Change output validation.
+- Disenrolled Exclusion validation.
+- Care Plan synchronization validation.
+- Workflow synchronization verification.
+- Framework health check.
+- Dashboard Quality summary and signoff.
+
+### Appendix H — Glossary
+
+| Term | Definition |
+|---|---|
+| Governing implementation | The current production script whose behavior controls documentation. |
+| Historical support file | Prior specification, PDF, report, or reference used as context only. |
+| Public entry point | Function without trailing underscore that Apps Script can call directly. |
+| Internal helper | Trailing-underscore function used by implementation internals. |
+| Cold storage | External archive workbook used for archived monthly tabs. |
+| Safe deletion | Protected deletion path that rejects framework-owned surfaces and validates workbook state. |
