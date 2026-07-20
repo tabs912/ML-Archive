@@ -1,0 +1,1455 @@
+/*************************************************
+ * HOME SAFETY INTAKE - MASTER INTEGRATED SCRIPT
+ * Version: 8.1
+ * - Builds intake form with dropdowns
+ * - Supports mobile-friendly multi-select
+ * - Generates standardized clinical narrative
+ * - Implements latest Column D corrections
+ *************************************************/
+
+const CONFIG = {
+  intakeSheetName: 'Home Safety Intake',
+  optionsSheetName: '_Options',
+  outputName: 'Generated Note',
+  fieldCol: 1,      // Column A
+  responseCol: 2,   // Column B
+  detailsCol: 3,    // Column C
+  firstDataRow: 2,
+  delimiter: ', ',
+
+  multiSelectFields: new Set([
+    'Source of Information for Assessment',
+    'Infestation Concerns',
+    'Overall Condition',
+    'Pathways',
+    'Tripping Hazard Types',
+    'Appliances Not Working',
+    'Bathroom DME in Use',
+    'Bathroom DME Recommended',
+    'Who Provides ADL Assistance',
+    'Community Services',
+    'Type of Supplies',
+    'Medical Services Type',
+    'Safety Concerns Identified',
+    'ADL Assistance Needed',
+    'IADL Assistance Needed',
+    'DME Details',
+    'Additional DME Recommended Details',
+    'Clothing Storage Locations'
+  ])
+};
+
+/* =========================
+ * MENU
+ * ========================= */
+function onOpen() {
+  SpreadsheetApp.getUi()
+    .createMenu('Home Safety Tools')
+    .addItem('Build / Refresh Sheet', 'setupHomeSafetySheet')
+    .addItem('Generate Narrative Note', 'generateNarrative')
+    .addToUi();
+}
+
+/* =========================
+ * BUILD SHEET
+ * ========================= */
+function setupHomeSafetySheet() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let intake = ss.getSheetByName(CONFIG.intakeSheetName);
+  let optionsSheet = ss.getSheetByName(CONFIG.optionsSheetName);
+
+  if (!intake) intake = ss.insertSheet(CONFIG.intakeSheetName);
+  if (!optionsSheet) optionsSheet = ss.insertSheet(CONFIG.optionsSheetName);
+
+  intake.clear();
+  optionsSheet.clear();
+
+  intake.getRange(1, 1, 1, 3)
+    .setValues([['Field', 'Response', 'Details / Notes']])
+    .setFontWeight('bold')
+    .setBackground('#1f4e78')
+    .setFontColor('white');
+
+  const relOpts = ['DPOA', 'Guardian', 'Spouse', 'Son', 'Daughter', 'Friend', 'Significant Other'];
+  const freqOpts = ['1x week', '1x every other week', '1x month', '1x daily', '2x daily', 'TID'];
+
+  const FIELD_DEFS = [
+    { f: 'Name', o: null },
+    { f: 'Gender', o: ['Male', 'Female'] },
+    { f: 'Source of Information for Assessment', o: ['Name', 'Name 1', 'Name 2'] },
+
+    { f: 'Name 1', o: null, n: 'Secondary Contact' },
+    { f: 'Relationship 1', o: relOpts },
+
+    { f: 'Name 2', o: null, n: 'Secondary Contact' },
+    { f: 'Relationship 2', o: relOpts },
+
+    { f: 'Lives With', o: ['Alone', 'With Spouse', 'With Family', 'With Friend', 'Other'] },
+    { f: 'Type of Home', o: ['Apartment', 'Single Family Home', 'Duplex', 'Senior Apartment', 'Quadplex', 'Mobile Home', 'Other'] },
+    { f: '# Bedrooms', o: ['1', '2', '3', 'Studio'] },
+    { f: 'Housing Details', o: null, n: 'Free text' },
+    { f: 'Floor Level', o: ['Ground-floor', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th', '10th'] },
+    { f: 'Elevator Access', o: ['Yes', 'No'] },
+    { f: 'Can Evacuate Without Elevator', o: ['Yes', 'No', 'Needs Assistance'] },
+    { f: 'Length of Time in Home', o: null, n: 'Free text' },
+
+    { f: 'Front Steps', o: ['None', '1', '2', '3', '4'] },
+    { f: 'Front Railing', o: ['None', '1', '2'] },
+    { f: 'Ramp Present', o: ['Yes', 'No'] },
+    { f: 'Type of Ramp', o: ['Wood', 'Aluminum'] },
+    { f: 'Ramp ADA Compatible', o: ['Yes', 'No', 'Unknown'] },
+    { f: 'Able to Leave Home Independently', o: ['Yes', 'No', 'Needs Assistance'] },
+    { f: 'Requires Assistance Leaving Home Due To', o: ['Yes', 'No', 'Needs Assistance'] },
+    { f: 'Sidewalk Condition', o: ['Good', 'Poor', 'No Sidewalk'] },
+
+    { f: 'Rear Exit', o: ['Yes', 'No'] },
+    { f: 'Rear Steps', o: ['None', '1', '2', '3', '4'] },
+    { f: 'Rear Railing', o: ['None', '1', '2'] },
+    { f: 'Rear Sidewalk Condition', o: ['Good', 'Poor', 'No Sidewalk'] },
+
+    { f: 'Infestation Concerns', o: ['None', 'Roaches', 'Bed Bugs', 'Mice', 'Multiple', 'Other'] },
+    { f: 'Current Infestation Treatment', o: ['Yes', 'No'] },
+    { f: 'Preventative Infestation Treatment', o: ['Yes', 'No'] },
+    { f: 'Infestation Treatment Provider', o: ['Self', 'Property Management', 'HOPE', 'Other'] },
+    { f: 'Infestation Treatment Frequency', o: ['Monthly', 'Every other month', 'Quarterly', 'Bi-annually'] },
+
+    { f: 'Weapons in Home', o: ['Yes', 'No'] },
+    { f: 'Weapons Stored Safely', o: ['Yes', 'No', 'N/A'] },
+
+    { f: 'Pets in Home', o: ['Yes', 'No'] },
+    { f: 'Pet Type / Name', o: null, n: 'Free text' },
+
+    { f: 'Smoke Detectors Present', o: ['1', '2', '3'] },
+    { f: 'Smoke Detectors Working', o: ['Yes', 'No'] },
+    { f: 'Smoke Detectors Maintained By', o: ['Self', 'Property Manager', 'Family', 'Other'] },
+
+    { f: 'Fire Extinguisher Present', o: ['Yes', 'No'] },
+    { f: 'Fire Extinguisher Location', o: null, n: 'Free text' },
+
+    { f: 'Overall Condition', o: ['Clean', 'Cluttered', 'Dirty', 'Neat and Tidy'] },
+    { f: 'Lighting', o: ['Adequate', 'Inadequate'] },
+    { f: 'Area Rugs Present', o: ['Yes', 'No'] },
+    { f: 'Area Rugs Secured', o: ['Yes', 'No', 'N/A'] },
+    { f: 'Seating Adequate', o: ['Yes', 'No'] },
+    { f: 'Pathways', o: ['Clear', 'Obstructed', 'Narrow'] },
+    { f: 'Tripping Hazards Present', o: ['Yes', 'No'] },
+    { f: 'Tripping Hazard Types', o: ['Loose Rugs', 'Clutter', 'Cords', 'Poor Lighting'] },
+
+    { f: 'Kitchen Cleanliness', o: ['Clean', 'Cluttered', 'Dirty'] },
+    { f: 'Countertops Condition', o: ['Clean', 'Cluttered', 'Dirty'] },
+    { f: 'Adequate Meal Prep Space', o: ['Yes', 'No'] },
+    { f: 'Food Available', o: ['Yes', 'No'] },
+    { f: 'Appliances Working', o: ['All Working', 'Some Not Working', 'None Working'] },
+    { f: 'Appliances Not Working', o: ['None', 'Stove Burners', 'Oven', 'Refrigerator', 'Dishwasher', 'Microwave', 'Other'] },
+    { f: 'Type of Stove', o: ['Electric', 'Gas', 'None'] },
+    { f: 'Appliance Notes', o: ['Gas', 'Electric'] },
+
+    { f: 'Tub / Shower Type', o: ['Tub/Shower', 'Walk-in Shower', 'Step-in Shower', 'Free Standing Tub'] },
+    { f: 'Built-in Shower Bench Present', o: ['Yes', 'No'] },
+    { f: 'Tub / Shower Grab Bars', o: ['None', 'One', 'Two'] },
+    { f: 'Toilet Height', o: ['Standard', 'ADA'] },
+    { f: 'Toilet Grab Bars', o: ['None', 'One', 'Two'] },
+    { f: 'Bathroom DME in Use', o: ['Shower Chair', 'HHSH', 'Tub Transfer Bench', 'Tub Rail'] },
+    { f: 'Bathroom DME Recommended', o: ['Shower Chair', 'HHSH', 'Tub Transfer Bench', 'Tub Rail'] },
+
+    { f: 'Bed Size', o: ['Twin', 'Full', 'Queen', 'King', 'Hospital Bed'] },
+    { f: 'Bed Accessibility', o: ['Left', 'Right', 'Both'] },
+    { f: 'Able to Transfer In/Out of Bed Independently', o: ['Yes', 'No'] },
+    { f: 'Clothing Storage Locations', o: ['Dresser', 'Closet', 'Totes'] },
+    { f: 'Storage for Clothing', o: ['Adequate', 'Inadequate'] },
+    { f: 'Uses Bedside Commode', o: ['Yes', 'No'] },
+
+    { f: 'Orientation', o: ['A&O x4', 'A&O x3', 'A&O x2', 'A&O x1'] },
+    { f: 'Appropriate Dress for Season', o: ['Yes', 'No'] },
+    { f: 'Understands Emergency Response', o: ['Yes', 'No'] },
+    { f: 'Evacuate Safely', o: ['Yes', 'No'] },
+    { f: 'Evacuation Requires Assistance', o: ['Yes', 'No'] },
+    { f: 'Responds Appropriately to Medical Emergency', o: ['Yes', 'No'] },
+
+    { f: 'Ambulates With Assistive Device in Home', o: ['Yes', 'No'] },
+    { f: 'Assistive Device Type', o: ['None', 'SPC', 'Quad-Cane', '4WW', 'FWW', 'Wheelchair', 'POV', 'Other'] },
+    { f: 'Ambulates With Assistive Device in Community', o: ['Yes', 'No'] },
+    { f: 'Assistive Device Used in Community', o: ['None', 'SPC', 'Quad-Cane', '4WW', 'FWW', 'Wheelchair', 'POV', 'Other'] },
+
+    { f: 'DME in Home', o: ['Yes', 'No'] },
+    { f: 'DME Details', o: ['Lift Chair', 'Sit-to-Stand Lift', 'Hoyer Lift', 'Shower Chair', 'HHSH', 'Tub Transfer Bench', 'Tub Rail'] },
+    { f: 'Additional DME Recommended', o: ['Yes', 'No'] },
+    { f: 'Additional DME Recommended Details', o: ['Lift Chair', 'Sit-to-Stand Lift', 'Hoyer Lift', 'Shower Chair', 'HHSH', 'Tub Transfer Bench', 'Tub Rail'] },
+
+    { f: 'ADLs', o: ['Independent', 'Needs Some Assistance', 'Dependent'] },
+    { f: 'Bathing', o: ['Independent', 'Needs Assistance'] },
+    { f: 'Bathing Assistance Reason', o: null, n: 'Free text' },
+    { f: 'Bathing Frequency', o: freqOpts },
+    { f: 'Dress / Undress', o: ['Independent', 'Needs Assistance'] },
+    { f: 'Dress / Undress Assistance Reason', o: null, n: 'Free text' },
+    { f: 'Dress / Undress Frequency', o: freqOpts },
+    { f: 'Toileting / Incontinence Care', o: ['Independent', 'Needs Assistance'] },
+    { f: 'Toileting / Incontinence Care Assistance Reason', o: null, n: 'Free text' },
+    { f: 'Toileting / Incontinence Care Frequency', o: freqOpts },
+    { f: 'Transfer / Reposition', o: ['Independent', 'Needs Assistance'] },
+    { f: 'Transfer / Reposition Assistance Reason', o: null, n: 'Free text' },
+    { f: 'Transfer / Reposition Frequency', o: freqOpts },
+    { f: 'Who Provides ADL Assistance', o: ['Wife/Husband', 'Family', 'HOPE', 'Other'] },
+
+    { f: 'IADLs', o: ['Independent', 'Needs Some Assistance', 'Dependent'] },
+    { f: 'Housekeeping', o: ['Independent', 'Needs Assistance'] },
+    { f: 'Housekeeping Assistance Reason', o: null, n: 'Free text' },
+    { f: 'Housekeeping Frequency', o: freqOpts },
+    { f: 'Laundry', o: ['Independent', 'Needs Assistance'] },
+    { f: 'Laundry Assistance Reason', o: null, n: 'Free text' },
+    { f: 'Laundry Frequency', o: freqOpts },
+    { f: 'Shopping', o: ['Independent', 'Needs Assistance', 'Grocery Delivery'] },
+    { f: 'Shopping Assistance Reason', o: null, n: 'Free text' },
+    { f: 'Shopping Frequency', o: freqOpts },
+    { f: 'Meal Prep', o: ['Independent', 'Needs Assistance', 'Receives MOM', 'Take Home Meals', 'MOW'] },
+    { f: 'Meal Prep Assistance Reason', o: null, n: 'Free text' },
+    { f: 'Meal Prep Frequency', o: freqOpts },
+    { f: 'Medication Reminder Frequency', o: freqOpts },
+    { f: 'IADL Assistance Details', o: null, n: 'Free text' },
+
+    { f: 'Medication Management', o: ['Independent', 'Needs Some Assistance', 'Dependent'] },
+    { f: 'Medication Reminders', o: ['Independent', 'Needs Assistance', 'Med Buddy', 'In-Person Reminders', 'Phone Med Reminders', 'Family Manages'] },
+    { f: 'Medication Reminder Assistance Reason', o: null, n: 'Free text' },
+    { f: 'How Medications Are Taken', o: ['Pill Planner', 'Bottle', 'Co-mingle', 'Caregiver Managed', 'Med Buddy', 'Other'] },
+    { f: 'Difficulty Opening Medications', o: ['Yes', 'No'] },
+    { f: 'Difficulty Retrieving Medications', o: ['Yes', 'No'] },
+    { f: 'Medication Compliance Issues', o: ['Yes', 'No'] },
+    { f: 'Excess Medications in Home', o: ['Yes', 'No'] },
+    { f: 'Medication Storage Location', o: null, n: 'Free text' },
+
+    { f: 'Caregiver Present', o: ['Yes', 'No'] },
+    { f: 'Assistance Provided', o: null, n: 'Free text' },
+    { f: 'Willing to Continue', o: ['Yes', 'No'] },
+
+    { f: 'Home Care Needed', o: ['Yes', 'No'] },
+    { f: 'ADL Assistance Needed', o: ['Bathing', 'Dress / Undress', 'Toileting / Incontinence Care', 'Transfer / Reposition'] },
+    { f: 'IADL Assistance Needed', o: ['Housekeeping', 'Laundry', 'Shopping', 'Meal Prep', 'Med Reminders'] },
+
+    { f: 'Reason for Joining HOPE', o: null, n: 'Free text' },
+    { f: 'Receiving Community Services', o: ['Yes', 'No'] },
+    { f: 'Community Services', o: ['None', 'Comcare', 'MH Caseworker', 'HCBS', 'Paid Caregiver', 'MOW', "Mom's Meals", 'Other'] },
+    { f: 'Current Home Care Services', o: null, n: 'Free text' },
+
+    { f: 'Uses Supplies', o: ['Yes', 'No'] },
+    { f: 'Type of Supplies', o: ['O2', 'CPAP', 'Diabetic', 'Incontinence', 'Ostomy', 'Nebulizer', 'Nutritional Supplements', 'Other'] },
+
+    { f: 'Receiving Medical Services', o: ['Yes', 'No'] },
+    { f: 'Medical Services Type', o: ['Dialysis', 'Wound Care', 'Other'] },
+
+    { f: 'Vision or Hearing Concerns', o: ['Yes', 'No'] },
+    { f: 'Dental Care / Other Notes', o: null, n: 'Free text' },
+
+    { f: 'Previously Scheduled Appointments', o: ['Yes', 'No'] },
+    { f: 'Appointment Details', o: null, n: 'Free text' },
+
+    { f: 'Safety Concerns Identified', o: ['Fall Risk', 'Fire Safety', 'Medication Safety', 'Mobility Limitation', 'Poor Lighting', 'Clutter', 'Bathroom Safety', 'Other'] },
+    { f: 'Enrollment Recommendation', o: ['Approve', 'Deny'] }
+  ];
+
+  let currentOptRow = 2;
+  const intakeRows = [];
+  const optRows = [['Field', 'Option']];
+
+  FIELD_DEFS.forEach((def, i) => {
+    const isMulti = CONFIG.multiSelectFields.has(def.f);
+    intakeRows.push([def.f, '', isMulti ? 'Multi-select' : (def.n || '')]);
+
+    if (def.o) {
+      const options = def.o.slice();
+      if (isMulti && !options.includes('N/A')) options.push('N/A');
+
+      const start = currentOptRow;
+      options.forEach(opt => {
+        optRows.push([def.f, opt]);
+        currentOptRow++;
+      });
+
+      const validationRange = optionsSheet.getRange(start, 2, options.length, 1);
+      const rule = SpreadsheetApp.newDataValidation()
+        .requireValueInRange(validationRange)
+        .setAllowInvalid(true)
+        .build();
+
+      intake.getRange(i + 2, 2).setDataValidation(rule);
+    }
+  });
+
+  intake.getRange(2, 1, intakeRows.length, 3).setValues(intakeRows);
+  optionsSheet.getRange(1, 1, optRows.length, 2).setValues(optRows);
+  optionsSheet.hideSheet();
+
+  intake.setColumnWidth(1, 300);
+  intake.setColumnWidth(2, 320);
+  intake.setColumnWidth(3, 420);
+  intake.getRange('A:C').setWrap(true).setVerticalAlignment('top');
+
+  SpreadsheetApp.getUi().alert('Sheet Setup Complete!');
+}
+
+/* =========================
+ * MOBILE-FRIENDLY MULTI-SELECT
+ * ========================= */
+function onEdit(e) {
+  if (!e || !e.range) return;
+
+  const sheet = e.range.getSheet();
+  if (sheet.getName() !== CONFIG.intakeSheetName) return;
+  if (e.range.getColumn() !== CONFIG.responseCol) return;
+  if (e.range.getRow() < CONFIG.firstDataRow) return;
+
+  const fieldName = String(sheet.getRange(e.range.getRow(), CONFIG.fieldCol).getValue()).trim();
+  if (!CONFIG.multiSelectFields.has(fieldName)) return;
+
+  const newValue = String(e.value || '').trim();
+  if (!newValue) return;
+
+  const storageCell = sheet.getRange(e.range.getRow(), CONFIG.detailsCol);
+  const responseCell = sheet.getRange(e.range.getRow(), CONFIG.responseCol);
+
+  let currentSelections = String(storageCell.getValue() || responseCell.getValue() || '')
+    .split(CONFIG.delimiter)
+    .map(s => s.trim())
+    .filter(Boolean)
+    .filter(s => s.toLowerCase() !== 'multi-select');
+
+  if (newValue === 'N/A' || newValue.toLowerCase() === 'none') {
+    currentSelections = [newValue];
+  } else {
+    currentSelections = currentSelections.filter(v => v !== 'N/A' && v.toLowerCase() !== 'none');
+    if (!currentSelections.includes(newValue)) {
+      currentSelections.push(newValue);
+    }
+  }
+
+  const result = currentSelections.join(CONFIG.delimiter);
+  storageCell.setValue(result);
+  responseCell.setValue(result);
+}
+
+/* =========================
+ * GENERATE NARRATIVE
+ * ========================= */
+function generateNarrative() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.intakeSheetName);
+  if (!sheet) throw new Error(`Sheet "${CONFIG.intakeSheetName}" not found.`);
+
+  const data = sheet.getDataRange().getValues();
+  const form = {};
+
+  data.forEach(row => {
+    const field = String(row[0] || '').trim();
+    if (field) {
+      form[field] = {
+        a: String(row[1] || '').trim(),
+        d: String(row[2] || '').trim()
+      };
+    }
+  });
+
+  const v = f => form[f]?.a || '';
+  const d = f => form[f]?.d || '';
+  const rawMulti = f => d(f) || v(f);
+
+  const name = v('Name') || 'Participant';
+  const gender = v('Gender') || '';
+  const isFemale = gender.toLowerCase() === 'female';
+  const he = isFemale ? 'she' : 'he';
+  const He = isFemale ? 'She' : 'He';
+  const his = isFemale ? 'her' : 'his';
+
+  const parts = [];
+  const add = txt => {
+    const clean = cleanSentence(txt);
+    if (clean) parts.push(clean);
+  };
+
+  /* ---------- Intro ---------- */
+  {
+    const introNames = [name];
+    if (v('Name 1') && v('Relationship 1')) {
+      introNames.push(`${his} ${v('Relationship 1').toLowerCase()}, ${v('Name 1')}`);
+    }
+    if (v('Name 2') && v('Relationship 2')) {
+      introNames.push(`${his} ${v('Relationship 2').toLowerCase()}, ${v('Name 2')}`);
+    }
+    add(`HCCRN met with ${oxfordJoin(introNames)} at ${his} home to complete the Intake Home Safety assessment.`);
+  }
+
+  /* ---------- Source of information ---------- */
+  const sources = parseSources(rawMulti('Source of Information for Assessment'), v('Name 1'), v('Name 2'), name);
+  if (sources.length) {
+    add(`The source of information for the assessment included ${oxfordJoin(sources)}.`);
+  }
+
+  /* ---------- Present for assessment ---------- */
+  if (v('Name 1')) {
+    add(`${v('Name 1')} (${relationshipWord(v('Relationship 1'), gender)}) was also present for the assessment.`);
+  }
+  if (v('Name 2')) {
+    add(`${v('Name 2')} (${relationshipWord(v('Relationship 2'), gender)}) was also present for the assessment.`);
+  }
+
+  /* ---------- Living arrangement ---------- */
+  {
+    let s = `${name} lives`;
+    const lw = clinicalValue('Lives With', v('Lives With'), gender);
+    const homeType = clinicalValue('Type of Home', v('Type of Home'), gender);
+    const bedrooms = bedroomText(v('# Bedrooms'));
+
+    if (lw) s += ` ${lw}`;
+
+    if (bedrooms && homeType) {
+      s += ` in ${addArticle(`${bedrooms} ${homeType}`)}`;
+    } else if (homeType) {
+      s += ` in ${addArticle(homeType)}`;
+    }
+
+    if (v('Housing Details')) s += ` (${cleanFreeText(v('Housing Details'))})`;
+    if (s !== `${name} lives`) add(s + '.');
+  }
+
+  if (v('Floor Level')) add(`${name} resides on the ${v('Floor Level').toLowerCase()} level.`);
+  if (v('Elevator Access')) {
+    add(v('Elevator Access') === 'Yes' ? `Elevator access is available.` : `Elevator access is not available.`);
+  }
+
+  if (v('Can Evacuate Without Elevator')) {
+    if (v('Can Evacuate Without Elevator') === 'Yes') {
+      add(`${name} states ${he} could evacuate without use of an elevator if needed.`);
+    } else if (v('Can Evacuate Without Elevator') === 'No') {
+      add(`${name} states ${he} could not evacuate without use of an elevator.`);
+    } else {
+      add(`${name} reports ${he} cannot evacuate without assistance if elevator access is unavailable.`);
+    }
+  }
+
+  if (v('Length of Time in Home')) {
+    add(`${name} reports that ${he} has lived in the current home for ${cleanFreeText(v('Length of Time in Home'))}.`);
+  }
+
+  /* ---------- Entry / exit ---------- */
+  if (v('Front Steps')) {
+    if (v('FrontSteps') === 'None') {
+      // safeguard no-op
+    }
+    if (v('Front Steps') === 'None') {
+      add(`There are no steps into the home's front entrance.`);
+    } else {
+      let s = `There ${v('Front Steps') === '1' ? 'is' : 'are'} ${v('Front Steps')} step${v('Front Steps') === '1' ? '' : 's'} into the home's front entrance`;
+      if (v('Front Railing') && v('Front Railing') !== 'None') {
+        s += ` with ${v('Front Railing')} railing${v('Front Railing') === '1' ? '' : 's'}`;
+      }
+      add(s + '.');
+    }
+  }
+
+  if (v('Ramp Present')) {
+    if (v('Ramp Present') === 'Yes') {
+      let s = `There is`;
+      if (v('Type of Ramp')) s += ` ${v('Type of Ramp').toLowerCase()}`;
+      s += ` ramp present at the entrance`;
+      if (v('Ramp ADA Compatible') === 'Yes') s += `, and it appears ADA compliant`;
+      if (v('Ramp ADA Compatible') === 'No') s += `, and it does not appear ADA compliant`;
+      if (v('Ramp ADA Compatible') === 'Unknown') s += `; it is unknown if it is ADA compliant`;
+      add(s + '.');
+    } else {
+      add(`There is no ramp present at the entrance.`);
+    }
+  }
+
+  if (v('Sidewalk Condition')) {
+    if (v('Sidewalk Condition') === 'No Sidewalk') {
+      add(`There is no front sidewalk.`);
+    } else {
+      add(`The front sidewalk is in ${v('Sidewalk Condition').toLowerCase()} condition.`);
+    }
+  }
+
+  if (v('Rear Exit')) {
+    if (v('Rear Exit') === 'Yes') {
+      add(`The home has a rear exit.`);
+      if (v('Rear Steps')) {
+        if (v('Rear Steps') === 'None') {
+          add(`There are no steps at the rear exit.`);
+        } else {
+          let s = `There ${v('Rear Steps') === '1' ? 'is' : 'are'} ${v('Rear Steps')} step${v('Rear Steps') === '1' ? '' : 's'} at the rear exit`;
+          if (v('Rear Railing') && v('Rear Railing') !== 'None') {
+            s += ` with ${v('Rear Railing')} railing${v('Rear Railing') === '1' ? '' : 's'}`;
+          }
+          add(s + '.');
+        }
+      }
+      if (v('Rear Sidewalk Condition')) {
+        if (v('Rear Sidewalk Condition') === 'No Sidewalk') {
+          add(`There is no rear sidewalk.`);
+        } else {
+          add(`The rear sidewalk is in ${v('Rear Sidewalk Condition').toLowerCase()} condition.`);
+        }
+      }
+    } else {
+      add(`There is no rear exit.`);
+    }
+  }
+
+  if (v('Able to Leave Home Independently')) {
+    if (v('Able to Leave Home Independently') === 'Yes') {
+      add(`${name} reports that ${he} is able to leave the home independently without assistance.`);
+    } else if (v('Able to Leave Home Independently') === 'No') {
+      add(`${name} reports that ${he} is unable to leave the home independently.`);
+    } else {
+      add(`${name} reports that ${he} needs assistance to leave the home.`);
+    }
+  }
+
+  if (v('Requires Assistance Leaving Home Due To') && v('Requires Assistance Leaving Home Due To') !== 'No') {
+    if (v('Requires Assistance Leaving Home Due To') === 'Yes') {
+      add(`${name} requires assistance leaving the home.`);
+    } else if (v('Requires Assistance Leaving Home Due To') === 'Needs Assistance') {
+      add(`${name} needs assistance leaving the home.`);
+    }
+  }
+
+  /* ---------- Environmental risks ---------- */
+  const inf = clinicalMultiValue('Infestation Concerns', rawMulti('Infestation Concerns'), gender);
+  if (rawMulti('Infestation Concerns')) {
+    if (!inf || rawMulti('Infestation Concerns').toLowerCase() === 'none' || rawMulti('Infestation Concerns').toLowerCase() === 'n/a') {
+      add(`${name} reports no infestation concerns.`);
+    } else {
+      add(`${name} reports infestation concerns, including ${inf}.`);
+    }
+  }
+
+  if (v('Current Infestation Treatment')) {
+    add(v('Current Infestation Treatment') === 'Yes'
+      ? `Current treatment for infestation is in place.`
+      : `There is no current treatment for infestation.`);
+  }
+
+  if (v('Preventative Infestation Treatment')) {
+    add(v('Preventative Infestation Treatment') === 'Yes'
+      ? `Preventative infestation treatment is in place.`
+      : `Preventative infestation treatment is not in place.`);
+  }
+
+  if (v('Infestation Treatment Provider') || v('Infestation Treatment Frequency')) {
+    let s = `Infestation treatment`;
+    if (v('Infestation Treatment Provider')) {
+      s += ` is provided by ${clinicalValue('Infestation Treatment Provider', v('Infestation Treatment Provider'), gender)}`;
+    }
+    if (v('Infestation Treatment Frequency')) {
+      s += ` and occurs ${v('Infestation Treatment Frequency').toLowerCase()}`;
+    }
+    add(s + '.');
+  }
+
+  if (v('Weapons in Home')) {
+    if (v('Weapons in Home') === 'Yes') {
+      let s = `${name} reports that there are weapons in the home`;
+      if (v('Weapons Stored Safely') === 'Yes') s += ` and that they are stored safely`;
+      if (v('Weapons Stored Safely') === 'No') s += ` and that they are not stored safely`;
+      add(s + '.');
+    } else {
+      add(`${name} reports that there are no weapons in the home.`);
+    }
+  }
+
+  if (v('Pets in Home')) {
+    if (v('Pets in Home') === 'Yes') {
+      let s = `There are pets in the home`;
+      if (v('Pet Type / Name')) s += `, including ${cleanFreeText(v('Pet Type / Name'))}`;
+      add(s + '.');
+    } else {
+      add(`${He} reports that there are no pets in the home.`);
+    }
+  }
+
+  /* ---------- Fire / general home safety ---------- */
+  if (v('Smoke Detectors Present')) {
+    let s = v('Smoke Detectors Present') === '1'
+      ? `There is one smoke detector in the home`
+      : `There are ${v('Smoke Detectors Present')} smoke detectors in the home`;
+
+    if (v('Smoke Detectors Working') === 'Yes') {
+      s += v('Smoke Detectors Present') === '1'
+        ? `, and it is working correctly`
+        : `, and they are working correctly`;
+    } else if (v('Smoke Detectors Working') === 'No') {
+      s += v('Smoke Detectors Present') === '1'
+        ? `, and it is not working correctly`
+        : `, and they are not working correctly`;
+    }
+    add(s + '.');
+
+    if (v('Smoke Detectors Maintained By')) {
+      const maint = clinicalValue('Smoke Detectors Maintained By', v('Smoke Detectors Maintained By'), gender);
+      add(`${capitalizeFirst(maint)} maintains the smoke detectors.`);
+    }
+  }
+
+  if (v('Fire Extinguisher Present')) {
+    if (v('Fire Extinguisher Present') === 'Yes') {
+      let s = `${name} reports that there is a fire extinguisher in the home`;
+      if (v('Fire Extinguisher Location')) s += ` located ${cleanFreeText(v('Fire Extinguisher Location'))}`;
+      add(s + '.');
+    } else {
+      add(`${name} reports that there is no fire extinguisher in the home.`);
+    }
+  }
+
+  const conditionList = clinicalMultiValue('Overall Condition', rawMulti('Overall Condition'), gender);
+  if (conditionList) {
+    add(`The home is ${conditionList}.`);
+  }
+
+  if (v('Lighting')) {
+    add(v('Lighting') === 'Adequate'
+      ? `There is adequate lighting throughout the home.`
+      : `Lighting in the home is inadequate.`);
+  }
+
+  if (v('Seating Adequate')) {
+    add(v('Seating Adequate') === 'Yes'
+      ? `${name}'s living room has adequate seating.`
+      : `${name}'s living room does not have adequate seating.`);
+  }
+
+  const pathList = clinicalMultiValue('Pathways', rawMulti('Pathways'), gender);
+  if (pathList) {
+    if (pathList === 'clear') {
+      add(`There are clear pathways throughout the home.`);
+    } else {
+      add(`Pathways in the home are ${pathList}.`);
+    }
+  }
+
+  if (v('Area Rugs Present')) {
+    if (v('Area Rugs Present') === 'Yes') {
+      let s = `There are area rugs in the home`;
+      if (v('Area Rugs Secured') === 'Yes') s += `, and they are secured`;
+      if (v('Area Rugs Secured') === 'No') s += `, and they are not secured`;
+      add(s + '.');
+    } else {
+      add(`There are no area rugs in the home.`);
+    }
+  }
+
+  if (v('Tripping Hazards Present')) {
+    if (v('Tripping Hazards Present') === 'Yes') {
+      let s = `Tripping hazards were identified`;
+      const hazards = clinicalMultiValue('Tripping Hazard Types', rawMulti('Tripping Hazard Types'), gender);
+      if (hazards) s += `, including ${hazards}`;
+      add(s + '.');
+    } else {
+      add(`No tripping hazards were identified.`);
+    }
+  }
+
+  /* ---------- Kitchen ---------- */
+  if (v('Kitchen Cleanliness') || v('Countertops Condition') || v('Adequate Meal Prep Space')) {
+    let s = `${name}'s kitchen`;
+    if (v('Kitchen Cleanliness')) s += ` is ${clinicalValue('Kitchen Cleanliness', v('Kitchen Cleanliness'), gender)}`;
+    if (v('Countertops Condition')) s += `${v('Kitchen Cleanliness') ? ', with' : ' has'} ${clinicalValue('Countertops Condition', v('Countertops Condition'), gender)} countertops`;
+    if (v('Adequate MealPrepSpace')) { /* safeguard no-op */ }
+    if (v('Adequate Meal Prep Space')) {
+      s += v('Adequate Meal Prep Space') === 'Yes'
+        ? `, and there is adequate workspace for meal preparation`
+        : `, and workspace for meal preparation is limited`;
+    }
+    add(s + '.');
+  }
+
+  {
+    const equipment = [];
+    if (v('Type of Stove') && v('Type of Stove') !== 'None') {
+      equipment.push(`${v('Type of Stove').toLowerCase()} stove`);
+    }
+    equipment.push('refrigerator', 'microwave');
+    add(`The kitchen is equipped with ${oxfordJoin(equipment)}.`);
+
+    if (v('Appliances Working')) {
+      if (v('Appliances Working') === 'All Working') {
+        add(`${name} reports that all appliances are working properly.`);
+      } else if (v('Appliances Working') === 'Some Not Working') {
+        let s = `Some appliances are not working properly`;
+        const bad = clinicalMultiValue('Appliances Not Working', rawMulti('Appliances Not Working'), gender);
+        if (bad && rawMulti('Appliances Not Working').toLowerCase() !== 'none') s += `, including ${bad}`;
+        if (v('Appliance Notes')) s += ` (${cleanFreeText(v('Appliance Notes'))})`;
+        add(s + '.');
+      } else if (v('Appliances Working') === 'None Working') {
+        add(`No appliances are currently working properly.`);
+      }
+    }
+  }
+
+  if (v('Food Available')) {
+    add(v('Food Available') === 'Yes'
+      ? `There is food available to meet ${his} nutritional needs.`
+      : `Food availability is limited.`);
+  }
+
+  /* ---------- Bathroom / bedroom ---------- */
+  if (v('Tub / Shower Type') || v('Built-in Shower Bench Present') || v('Tub / Shower Grab Bars') || v('Toilet Height') || v('Toilet Grab Bars')) {
+    let s = `The bathroom has `;
+    s += v('Tub / Shower Type')
+      ? `a ${clinicalValue('Tub / Shower Type', v('Tub / Shower Type'), gender)}`
+      : `standard bathing facilities`;
+
+    if (v('Built-in Shower Bench Present') === 'Yes') s += ` with a built-in shower bench`;
+    if (v('Built-in Shower Bench Present') === 'No') s += ` without a built-in shower bench`;
+
+    if (v('Tub / Shower Grab Bars') === 'None') s += ` and no grab bars`;
+    if (v('Tub / Shower Grab Bars') === 'One') s += ` and one grab bar`;
+    if (v('Tub / Shower Grab Bars') === 'Two') s += ` and two grab bars`;
+
+    if (v('Toilet Height')) s += `; the toilet is ${clinicalValue('Toilet Height', v('Toilet Height'), gender)}`;
+    if (v('Toilet Grab Bars') === 'None') s += ` with no toilet grab bars`;
+    if (v('Toilet Grab Bars') === 'One') s += ` with one toilet grab bar`;
+    if (v('Toilet Grab Bars') === 'Two') s += ` with two toilet grab bars`;
+
+    add(s + '.');
+  }
+
+  const bathUse = clinicalMultiValue('Bathroom DME in Use', rawMulti('Bathroom DME in Use'), gender);
+  if (bathUse) add(`Bathroom DME currently in use includes ${bathUse}.`);
+
+  const bathRec = clinicalMultiValue('Bathroom DME Recommended', rawMulti('Bathroom DME Recommended'), gender);
+  if (bathRec) add(`Recommended bathroom DME includes ${bathRec}.`);
+
+  if (v('Uses Bedside Commode')) {
+    add(v('Uses Bedside Commode') === 'Yes'
+      ? `${name} uses a bedside commode.`
+      : `${name} does not use a bedside commode.`);
+  }
+
+  if (v('Bed Size') || v('Bed Accessibility')) {
+    let s = `${name} has ${v('Bed Size') ? `a ${v('Bed Size').toLowerCase()} bed` : 'a bed'}`;
+    if (v('Bed Accessibility')) s += ` ${clinicalValue('Bed Accessibility', v('Bed Accessibility'), gender)}`;
+    add(s + '.');
+  }
+
+  if (v('Able to Transfer In/Out of Bed Independently')) {
+    add(v('Able to Transfer In/Out of Bed Independently') === 'Yes'
+      ? `${name} reports being able to transfer in and out of bed independently.`
+      : `${name} reports needing assistance to transfer in and out of bed.`);
+  }
+
+  if (v('Storage for Clothing') || v('Clothing Storage Locations')) {
+    let s = v('Storage for Clothing') === 'Adequate'
+      ? `There is adequate storage for ${his} clothing and belongings`
+      : `Storage for ${his} clothing and belongings is inadequate`;
+
+    const locations = clinicalMultiValue('Clothing Storage Locations', rawMulti('Clothing Storage Locations'), gender);
+    if (locations) s += ` in ${locations}`;
+    add(s + '.');
+  }
+
+  /* ---------- Orientation / emergency / mobility ---------- */
+  if (v('Orientation') || v('Appropriate Dress for Season')) {
+    let s = `${name} is `;
+    if (v('Orientation')) {
+      s += clinicalValue('Orientation', v('Orientation'), gender);
+    } else {
+      s += `appropriately presented`;
+    }
+
+    if (v('Appropriate Dress for Season') === 'Yes') s += ` and dressed appropriately for the season`;
+    if (v('Appropriate Dress for Season') === 'No') s += ` and not dressed appropriately for the season`;
+
+    add(s + '.');
+  }
+
+  if (v('Understands Emergency Response')) {
+    add(v('Understands Emergency Response') === 'Yes'
+      ? `${name} demonstrates understanding of appropriate emergency response.`
+      : `${name} does not demonstrate understanding of appropriate emergency response.`);
+  }
+
+  if (v('Evacuate Safely')) {
+    let s = v('Evacuate Safely') === 'Yes'
+      ? `${name} could evacuate the home safely`
+      : `${name} could not evacuate the home safely`;
+
+    if (v('Evacuation Requires Assistance') === 'Yes') s += ` and would require assistance`;
+    if (v('Evacuation Requires Assistance') === 'No') s += ` without assistance`;
+
+    add(s + '.');
+  }
+
+  if (v('Responds Appropriately to Medical Emergency')) {
+    add(v('Responds Appropriately to Medical Emergency') === 'Yes'
+      ? `${name} is able to identify an appropriate response to a medical or fire emergency.`
+      : `${name} is unable to identify an appropriate response to a medical or fire emergency.`);
+  }
+
+  if (v('Ambulates With Assistive Device in Home')) {
+    if (v('Ambulates With Assistive Device in Home') === 'Yes') {
+      let s = `${name} ambulates with an assistive device in the home`;
+      const dev = clinicalValue('Assistive Device Type', v('Assistive Device Type'), gender);
+      if (dev) s += `, using ${addArticle(dev)}`;
+      add(s + '.');
+    } else {
+      add(`${name} ambulates without an assistive device in the home.`);
+    }
+  }
+
+  if (v('Ambulates With Assistive Device in Community')) {
+    if (v('Ambulates With Assistive Device in Community') === 'Yes') {
+      let s = `${name} ambulates with an assistive device in the community`;
+      const dev = clinicalValue('Assistive Device Used in Community', v('Assistive Device Used in Community'), gender);
+      if (dev) s += `, using ${addArticle(dev)}`;
+      add(s + '.');
+    } else {
+      add(`${name} ambulates without an assistive device in the community.`);
+    }
+  }
+
+  if (v('DME in Home')) {
+    if (v('DME in Home') === 'Yes') {
+      let s = `DME is present in the home`;
+      const dmeDetails = clinicalMultiValue('DME Details', rawMulti('DME Details'), gender);
+      if (dmeDetails) s += `, including ${dmeDetails}`;
+      add(s + '.');
+    } else {
+      add(`No additional DME was reported in the home.`);
+    }
+  }
+
+  if (v('Additional DME Recommended')) {
+    if (v('Additional DME Recommended') === 'Yes') {
+      let s = `Additional DME is recommended`;
+      const details = clinicalMultiValue('Additional DME Recommended Details', rawMulti('Additional DME Recommended Details'), gender);
+      if (details) s += `, including ${details}`;
+      add(s + '.');
+    } else {
+      add(`No additional DME is recommended at this time.`);
+    }
+  }
+
+  /* ---------- ADLs ---------- */
+  if (v('ADLs')) {
+    add(`${name} is ${clinicalValue('ADLs', v('ADLs'), gender)} with all ADLs.`);
+  }
+
+  const adlSentence = buildFunctionalSentence(name, [
+    { name: 'bathing', status: v('Bathing'), reason: cleanFreeText(v('Bathing Assistance Reason')) },
+    { name: 'dressing', status: v('Dress / Undress'), reason: cleanFreeText(v('Dress / Undress Assistance Reason')) },
+    { name: 'toileting/incontinence care', status: v('Toileting / Incontinence Care'), reason: cleanFreeText(v('Toileting / Incontinence Care Assistance Reason')) },
+    { name: 'transfers/repositioning', status: v('Transfer / Reposition'), reason: cleanFreeText(v('Transfer / Reposition Assistance Reason')) }
+  ]);
+  if (adlSentence) add(adlSentence);
+
+  const adlProviders = clinicalMultiValue('Who Provides ADL Assistance', rawMulti('Who Provides ADL Assistance'), gender);
+  if (adlProviders) add(`ADL assistance is provided by ${adlProviders}.`);
+
+  addTaskFrequency(parts, 'Bathing', v('Bathing'), v('Bathing Frequency'));
+  addTaskFrequency(parts, 'Dressing/undressing', v('Dress / Undress'), v('Dress / Undress Frequency'));
+  addTaskFrequency(parts, 'Toileting/incontinence care', v('Toileting / Incontinence Care'), v('Toileting / Incontinence Care Frequency'));
+  addTaskFrequency(parts, 'Transfer/reposition assistance', v('Transfer / Reposition'), v('Transfer / Reposition Frequency'));
+
+  /* ---------- IADLs ---------- */
+  if (v('IADLs')) {
+    add(`${name} is ${clinicalValue('IADLs', v('IADLs'), gender)} with all IADLs.`);
+  }
+
+  const iadlItems = [
+    { name: 'housekeeping', status: v('Housekeeping'), reason: cleanFreeText(v('Housekeeping Assistance Reason')) },
+    { name: 'laundry', status: v('Laundry'), reason: cleanFreeText(v('Laundry Assistance Reason')) },
+    { name: 'shopping', status: (v('Shopping') === 'Independent' ? 'Independent' : (v('Shopping') ? 'Needs Assistance' : '')), reason: cleanFreeText(v('Shopping Assistance Reason')) },
+    { name: 'meal preparation', status: (v('Meal Prep') === 'Independent' ? 'Independent' : (v('Meal Prep') ? 'Needs Assistance' : '')), reason: cleanFreeText(v('Meal Prep Assistance Reason')) }
+  ];
+  const iadlSentence = buildFunctionalSentence(name, iadlItems);
+  if (iadlSentence) add(iadlSentence);
+
+  if (v('Shopping') === 'Grocery Delivery') {
+    add(`${name} requires assistance with shopping and uses grocery delivery services.`);
+  }
+
+  if (v('Meal Prep') === 'Receives MOM') {
+    add(`${name} requires assistance with meal preparation and receives Mom's Meals.`);
+  } else if (v('Meal Prep') === 'Take Home Meals') {
+    add(`${name} requires assistance with meal preparation and receives take-home meals.`);
+  } else if (v('Meal Prep') === 'MOW') {
+    add(`${name} requires assistance with meal preparation and receives Meals on Wheels.`);
+  }
+
+  addTaskFrequency(parts, 'Housekeeping', v('Housekeeping'), v('Housekeeping Frequency'));
+  addTaskFrequency(parts, 'Laundry', v('Laundry'), v('Laundry Frequency'));
+  addTaskFrequency(parts, 'Shopping', v('Shopping') && v('Shopping') !== 'Independent' ? 'Needs Assistance' : v('Shopping'), v('Shopping Frequency'));
+  addTaskFrequency(parts, 'Meal preparation', v('Meal Prep') && v('Meal Prep') !== 'Independent' ? 'Needs Assistance' : v('Meal Prep'), v('Meal Prep Frequency'));
+
+  if (v('IADL Assistance Details')) {
+    add(`Additional IADL details: ${cleanFreeText(v('IADL Assistance Details'))}.`);
+  }
+
+  /* ---------- Medications ---------- */
+  if (v('Medication Management')) {
+    add(`${name} is ${clinicalValue('Medication Management', v('Medication Management'), gender)} with medication management.`);
+  }
+
+  if (v('Medication Reminders')) {
+    const reminderSentence = medicationReminderSentence(name, v('Medication Reminders'));
+    if (reminderSentence) add(reminderSentence);
+  }
+
+  if (v('Medication Reminder Assistance Reason')) {
+    add(`Medication reminder assistance is needed due to ${cleanFreeText(v('Medication Reminder Assistance Reason'))}.`);
+  }
+
+  if (v('Medication Reminder Frequency')) {
+    add(`Medication reminder assistance is provided ${v('Medication Reminder Frequency').toLowerCase()}.`);
+  }
+
+  if (v('How Medications Are Taken')) {
+    add(`${name}'s medication management includes taking medications from ${clinicalValue('How Medications Are Taken', v('How Medications Are Taken'), gender)}.`);
+  }
+
+  if (v('Difficulty Opening Medications')) {
+    add(v('Difficulty Opening Medications') === 'Yes'
+      ? `${name} reports difficulty opening medication containers.`
+      : `${name} does not report difficulty opening medication containers.`);
+  }
+
+  if (v('Difficulty Retrieving Medications')) {
+    add(v('Difficulty Retrieving Medications') === 'Yes'
+      ? `${name} reports difficulty retrieving medications.`
+      : `${name} does not report difficulty retrieving medications.`);
+  }
+
+  if (v('Medication Compliance Issues')) {
+    add(v('Medication Compliance Issues') === 'Yes'
+      ? `Medication compliance issues are reported.`
+      : `No medication compliance issues are reported.`);
+  }
+
+  if (v('Excess Medications in Home')) {
+    add(v('Excess Medications in Home') === 'Yes'
+      ? `Excess medications are present in the home.`
+      : `There are no excess medications noted in the home.`);
+  }
+
+  if (v('Medication Storage Location')) {
+    add(`${He} stores medications ${cleanFreeText(v('Medication Storage Location'))}.`);
+  }
+
+  /* ---------- Caregiver / services ---------- */
+  if (v('Caregiver Present')) {
+    if (v('Caregiver Present') === 'Yes') {
+      let s = `${name} has a caregiver involved`;
+      if (v('Assistance Provided')) s += ` who assists with ${cleanFreeText(v('Assistance Provided'))}`;
+      add(s + '.');
+    } else {
+      add(`${name} does not currently report caregiver assistance.`);
+    }
+  }
+
+  if (v('Willing to Continue')) {
+    add(v('Willing to Continue') === 'Yes'
+      ? `The caregiver is willing to continue providing assistance.`
+      : `The caregiver is not willing or available to continue providing assistance.`);
+  }
+
+  if (v('Home Care Needed')) {
+    if (v('Home Care Needed') === 'Yes') {
+      add(`HCCRN identified a need for home care services.`);
+
+      const adlNeeded = clinicalMultiValue('ADL Assistance Needed', rawMulti('ADL Assistance Needed'), gender);
+      if (adlNeeded) add(`Recommended ADL assistance includes ${adlNeeded}.`);
+
+      const iadlNeeded = clinicalMultiValue('IADL Assistance Needed', rawMulti('IADL Assistance Needed'), gender);
+      if (iadlNeeded) add(`Recommended IADL assistance includes ${iadlNeeded}.`);
+    } else {
+      add(`HCCRN did not identify a need for home care services at this time.`);
+    }
+  }
+
+  if (v('Current Home Care Services')) {
+    add(`Current home care services include ${cleanFreeText(v('Current Home Care Services'))}.`);
+  }
+
+  if (v('Reason for Joining HOPE')) {
+    add(`${name} reports that the reason for joining HOPE is ${cleanFreeText(v('Reason for Joining HOPE'))}.`);
+  }
+
+  if (v('Receiving Community Services')) {
+    if (v('Receiving Community Services') === 'Yes') {
+      const services = clinicalMultiValue('Community Services', rawMulti('Community Services'), gender);
+      add(services
+        ? `${name} is currently receiving community services, including ${services}.`
+        : `${name} is currently receiving community services.`);
+    } else if (v('Receiving Community Services') === 'No') {
+      add(`${name} is not currently receiving community services.`);
+    }
+  }
+
+  if (v('Uses Supplies')) {
+    if (v('Uses Supplies') === 'Yes') {
+      const supplies = clinicalMultiValue('Type of Supplies', rawMulti('Type of Supplies'), gender);
+      add(supplies
+        ? `${name} uses medical supplies, including ${supplies}.`
+        : `${name} uses medical supplies.`);
+    } else if (v('Uses Supplies') === 'No') {
+      add(`${name} does not use medical or incontinence supplies.`);
+    }
+  }
+
+  if (v('Receiving Medical Services')) {
+    if (v('Receiving Medical Services') === 'Yes') {
+      const med = clinicalMultiValue('Medical Services Type', rawMulti('Medical Services Type'), gender);
+      add(med
+        ? `${name} receives ongoing medical services, including ${med}.`
+        : `${name} receives ongoing medical services.`);
+    } else if (v('Receiving Medical Services') === 'No') {
+      add(`${name} does not receive ongoing medical services such as dialysis or wound care.`);
+    }
+  }
+
+  if (v('Vision or Hearing Concerns')) {
+    add(v('Vision or Hearing Concerns') === 'Yes'
+      ? `${name} reports vision and/or hearing concerns.`
+      : `${name} does not report vision or hearing concerns.`);
+  }
+
+  if (v('Dental Care / Other Notes')) {
+    add(`Additional notes: ${cleanFreeText(v('Dental Care / Other Notes'))}.`);
+  }
+
+  if (v('Previously Scheduled Appointments')) {
+    if (v('Previously Scheduled Appointments') === 'Yes') {
+      let s = `${name} has previously scheduled appointments`;
+      if (v('Appointment Details')) s += `, including ${cleanFreeText(v('Appointment Details'))}`;
+      add(s + '.');
+    } else if (v('Previously Scheduled Appointments') === 'No') {
+      add(`${name} does not report previously scheduled appointments requiring follow-up.`);
+    }
+  }
+
+  const concerns = clinicalMultiValue('Safety Concerns Identified', rawMulti('Safety Concerns Identified'), gender);
+  if (concerns) {
+    add(`Safety concerns identified during the assessment include ${concerns}.`);
+  }
+
+  if (v('Enrollment Recommendation')) {
+    if (v('Enrollment Recommendation') === 'Approve') {
+      add(`HCCRN recommends enrollment approval with HOPE and will report findings and recommendations to the Enrollment Committee.`);
+    } else {
+      add(`HCCRN does not recommend enrollment approval at this time and will report findings and recommendations to the Enrollment Committee.`);
+    }
+  } else {
+    add(`HCCRN will report findings and recommendations to the Enrollment Committee.`);
+  }
+
+  const note = parts.join(' ');
+
+  let out = ss.getSheetByName(CONFIG.outputName);
+  if (!out) out = ss.insertSheet(CONFIG.outputName);
+  out.clear();
+  out.getRange('A1').setValue('Clinical Narrative').setFontWeight('bold').setFontSize(14);
+  out.getRange('A2').setValue(note).setWrap(true).setVerticalAlignment('top');
+  out.setColumnWidth(1, 1100);
+  out.activate();
+}
+
+/* =========================
+ * HELPERS
+ * ========================= */
+function cleanSentence(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/\s+/g, ' ')
+    .replace(/\s+([.,;:])/g, '$1')
+    .replace(/\.{2,}/g, '.')
+    .trim();
+}
+
+function cleanFreeText(text) {
+  if (!text) return '';
+  return String(text).replace(/\s+/g, ' ').trim();
+}
+
+function capitalizeFirst(text) {
+  if (!text) return '';
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+function addArticle(text) {
+  if (!text) return '';
+  return /^[aeiou]/i.test(text) ? `an ${text}` : `a ${text}`;
+}
+
+function oxfordJoin(arr) {
+  const items = arr.filter(Boolean).map(s => String(s).trim()).filter(Boolean);
+  if (!items.length) return '';
+  if (items.length === 1) return items[0];
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  return `${items.slice(0, -1).join(', ')}, and ${items[items.length - 1]}`;
+}
+
+function splitMulti(value) {
+  if (!value) return [];
+  return String(value)
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+    .filter(s => s.toLowerCase() !== 'n/a');
+}
+
+function bedroomText(value) {
+  if (!value) return '';
+  const val = String(value).trim();
+  if (val.toLowerCase() === 'studio') return 'studio';
+  if (/^\d+$/.test(val)) return `${val}-bedroom`;
+  return val.toLowerCase();
+}
+
+function relationshipWord(rel, gender) {
+  if (!rel) return 'secondary contact';
+  const isFemale = String(gender).toLowerCase() === 'female';
+  if (rel === 'Spouse') return isFemale ? 'husband' : 'wife';
+  return rel.toLowerCase();
+}
+
+function parseSources(value, name1, name2, participantName) {
+  const raw = splitMulti(value);
+  return raw.map(item => {
+    if (item === 'Name') return participantName;
+    if (item === 'Name 1') return name1 || 'Name 1';
+    if (item === 'Name 2') return name2 || 'Name 2';
+    return item;
+  });
+}
+
+function medicationReminderSentence(name, value) {
+  switch (value) {
+    case 'Independent':
+      return `${name} does not require medication reminders.`;
+    case 'Needs Assistance':
+      return `${name} requires assistance with medication management and receives medication reminders.`;
+    case 'Med Buddy':
+      return `${name} requires assistance with medication management and receives Med Buddy support.`;
+    case 'In-Person Reminders':
+      return `${name} requires assistance with medication management and receives in-person medication reminders.`;
+    case 'Phone Med Reminders':
+      return `${name} requires assistance with medication management and receives phone medication reminders.`;
+    case 'Family Manages':
+      return `${name} requires assistance with medication management and medications are managed by family.`;
+    default:
+      return '';
+  }
+}
+
+function buildFunctionalSentence(name, items) {
+  const independent = [];
+  const assist = [];
+
+  items.forEach(item => {
+    if (!item.status) return;
+    if (item.status === 'Independent') {
+      independent.push(item.name);
+    } else if (item.status === 'Needs Assistance') {
+      let txt = item.name;
+      if (item.reason) txt += ` due to ${item.reason}`;
+      assist.push(txt);
+    }
+  });
+
+  const out = [];
+  if (independent.length) out.push(`${name} is independent with ${oxfordJoin(independent)}`);
+  if (assist.length) out.push(`requires assistance with ${oxfordJoin(assist)}`);
+  if (!out.length) return '';
+  return `${out.join(' but ')}.`;
+}
+
+function addTaskFrequency(parts, taskName, status, frequency) {
+  if (status === 'Needs Assistance' && frequency) {
+    parts.push(`${taskName} assistance is provided ${frequency.toLowerCase()}.`);
+  }
+}
+
+function clinicalMultiValue(field, value, gender) {
+  const items = splitMulti(value)
+    .map(item => clinicalValue(field, item, gender))
+    .filter(Boolean);
+  return oxfordJoin(items);
+}
+
+function clinicalValue(field, value, gender) {
+  if (!value) return '';
+  const isFemale = String(gender).toLowerCase() === 'female';
+  const spouseWord = isFemale ? 'husband' : 'wife';
+  const hisHer = isFemale ? 'her' : 'his';
+  const v = String(value).trim();
+
+  const maps = {
+    'Lives With': {
+      'Alone': 'alone',
+      'With Spouse': `with ${hisHer} ${spouseWord}`,
+      'With Family': 'with family',
+      'With Friend': 'with a friend',
+      'Other': 'with others'
+    },
+
+    'Type of Home': {
+      'Apartment': 'apartment',
+      'Single Family Home': 'single family home',
+      'Duplex': 'duplex',
+      'Senior Apartment': 'senior apartment',
+      'Quadplex': 'quadplex',
+      'Mobile Home': 'mobile home',
+      'Other': 'residence'
+    },
+
+    'Infestation Treatment Provider': {
+      'Self': 'self',
+      'Property Management': 'property management',
+      'HOPE': 'HOPE',
+      'Other': 'others'
+    },
+
+    'Overall Condition': {
+      'Clean': 'clean',
+      'Cluttered': 'cluttered',
+      'Dirty': 'unclean',
+      'Neat and Tidy': 'neat and tidy'
+    },
+
+    'Kitchen Cleanliness': {
+      'Clean': 'clean',
+      'Cluttered': 'cluttered',
+      'Dirty': 'dirty'
+    },
+
+    'Countertops Condition': {
+      'Clean': 'clean',
+      'Cluttered': 'cluttered',
+      'Dirty': 'dirty'
+    },
+
+    'Lighting': {
+      'Adequate': 'adequate',
+      'Inadequate': 'inadequate'
+    },
+
+    'Pathways': {
+      'Clear': 'clear',
+      'Obstructed': 'obstructed',
+      'Narrow': 'narrow'
+    },
+
+    'Tub / Shower Type': {
+      'Tub/Shower': 'tub/shower combination',
+      'Walk-in Shower': 'walk-in shower',
+      'Step-in Shower': 'step-in shower',
+      'Free Standing Tub': 'free-standing tub'
+    },
+
+    'Toilet Height': {
+      'Standard': 'standard height',
+      'ADA': 'ADA height'
+    },
+
+    'Bed Accessibility': {
+      'Left': 'accessible on the left side',
+      'Right': 'accessible on the right side',
+      'Both': 'accessible from both sides'
+    },
+
+    'Orientation': {
+      'A&O x4': 'alert and oriented x4',
+      'A&O x3': 'alert and oriented x3',
+      'A&O x2': 'alert and oriented x2',
+      'A&O x1': 'alert and oriented x1'
+    },
+
+    'ADLs': {
+      'Independent': 'independent',
+      'Needs Some Assistance': 'currently needs some assistance',
+      'Dependent': 'dependent'
+    },
+
+    'IADLs': {
+      'Independent': 'independent',
+      'Needs Some Assistance': 'currently needs some assistance',
+      'Dependent': 'dependent'
+    },
+
+    'Medication Management': {
+      'Independent': 'independent',
+      'Needs Some Assistance': 'currently needs some assistance',
+      'Dependent': 'dependent'
+    },
+
+    'Smoke Detectors Maintained By': {
+      'Self': 'the participant',
+      'Property Manager': 'the property manager',
+      'Family': 'family',
+      'Other': 'another responsible party'
+    },
+
+    'Assistive Device Type': {
+      'None': '',
+      'SPC': 'single-point cane',
+      'Quad-Cane': 'quad cane',
+      '4WW': 'four-wheel walker',
+      'FWW': 'front-wheeled walker',
+      'Wheelchair': 'wheelchair',
+      'POV': 'power-operated vehicle',
+      'Other': 'assistive device'
+    },
+
+    'Assistive Device Used in Community': {
+      'None': '',
+      'SPC': 'single-point cane',
+      'Quad-Cane': 'quad cane',
+      '4WW': 'four-wheel walker',
+      'FWW': 'front-wheeled walker',
+      'Wheelchair': 'wheelchair',
+      'POV': 'power-operated vehicle',
+      'Other': 'assistive device'
+    },
+
+    'Bathroom DME in Use': {
+      'Shower Chair': 'shower chair',
+      'HHSH': 'handheld shower head',
+      'Tub Transfer Bench': 'tub transfer bench',
+      'Tub Rail': 'tub rail'
+    },
+
+    'Bathroom DME Recommended': {
+      'Shower Chair': 'shower chair',
+      'HHSH': 'handheld shower head',
+      'Tub Transfer Bench': 'tub transfer bench',
+      'Tub Rail': 'tub rail'
+    },
+
+    'DME Details': {
+      'Lift Chair': 'lift chair',
+      'Sit-to-Stand Lift': 'sit-to-stand lift',
+      'Hoyer Lift': 'hoyer lift',
+      'Shower Chair': 'shower chair',
+      'HHSH': 'handheld shower head',
+      'Tub Transfer Bench': 'tub transfer bench',
+      'Tub Rail': 'tub rail'
+    },
+
+    'Additional DME Recommended Details': {
+      'Lift Chair': 'lift chair',
+      'Sit-to-Stand Lift': 'sit-to-stand lift',
+      'Hoyer Lift': 'hoyer lift',
+      'Shower Chair': 'shower chair',
+      'HHSH': 'handheld shower head',
+      'Tub Transfer Bench': 'tub transfer bench',
+      'Tub Rail': 'tub rail'
+    },
+
+    'Community Services': {
+      'None': '',
+      'Comcare': 'Comcare',
+      'MH Caseworker': 'mental health case management',
+      'HCBS': 'HCBS services',
+      'Paid Caregiver': 'paid caregiver support',
+      'MOW': 'Meals on Wheels',
+      "Mom's Meals": "Mom's Meals",
+      'Other': 'other community services'
+    },
+
+    'Type of Supplies': {
+      'O2': 'oxygen supplies',
+      'CPAP': 'CPAP supplies',
+      'Diabetic': 'diabetic supplies',
+      'Incontinence': 'incontinence supplies',
+      'Ostomy': 'ostomy supplies',
+      'Nebulizer': 'nebulizer supplies',
+      'Nutritional Supplements': 'nutritional supplements',
+      'Other': 'other medical supplies'
+    },
+
+    'Medical Services Type': {
+      'Dialysis': 'dialysis',
+      'Wound Care': 'wound care',
+      'Other': 'other ongoing medical services'
+    },
+
+    'Safety Concerns Identified': {
+      'Fall Risk': 'fall risk',
+      'Fire Safety': 'fire safety concerns',
+      'Medication Safety': 'medication safety concerns',
+      'Mobility Limitation': 'mobility limitations',
+      'Poor Lighting': 'poor lighting',
+      'Clutter': 'clutter',
+      'Bathroom Safety': 'bathroom safety concerns',
+      'Other': 'other safety concerns'
+    },
+
+    'Who Provides ADL Assistance': {
+      'Wife/Husband': spouseWord,
+      'Family': 'family',
+      'HOPE': 'HOPE staff',
+      'Other': 'another caregiver'
+    },
+
+    'Infestation Concerns': {
+      'None': '',
+      'Roaches': 'roaches',
+      'Bed Bugs': 'bed bugs',
+      'Mice': 'mice',
+      'Multiple': 'multiple infestation concerns',
+      'Other': 'other infestation concerns'
+    },
+
+    'Tripping Hazard Types': {
+      'Loose Rugs': 'loose rugs',
+      'Clutter': 'clutter',
+      'Cords': 'cords',
+      'Poor Lighting': 'poor lighting'
+    },
+
+    'Appliances Not Working': {
+      'None': '',
+      'Stove Burners': 'stove burners',
+      'Oven': 'oven',
+      'Refrigerator': 'refrigerator',
+      'Dishwasher': 'dishwasher',
+      'Microwave': 'microwave',
+      'Other': 'other appliances'
+    },
+
+    'Clothing Storage Locations': {
+      'Dresser': 'dresser',
+      'Closet': 'closet',
+      'Totes': 'totes'
+    },
+
+    'ADL Assistance Needed': {
+      'Bathing': 'bathing',
+      'Dress / Undress': 'dressing/undressing',
+      'Toileting / Incontinence Care': 'toileting/incontinence care',
+      'Transfer / Reposition': 'transfer/reposition assistance'
+    },
+
+    'IADL Assistance Needed': {
+      'Housekeeping': 'housekeeping',
+      'Laundry': 'laundry',
+      'Shopping': 'shopping',
+      'Meal Prep': 'meal preparation',
+      'Med Reminders': 'medication reminders'
+    },
+
+    'How Medications Are Taken': {
+      'Pill Planner': 'a pill planner',
+      'Bottle': 'the original prescription bottles',
+      'Co-mingle': 'co-mingled medication storage',
+      'Caregiver Managed': 'caregiver-managed medication administration',
+      'Med Buddy': 'Med Buddy',
+      'Other': 'an alternate medication system'
+    }
+  };
+
+  if (maps[field] && maps[field][v] !== undefined) return maps[field][v];
+
+  const preserve = ['HOPE', 'CPAP', 'O2', 'ADA', 'HHSH', 'POV', '4WW', 'FWW', 'SPC', 'MOW'];
+  if (preserve.includes(v)) return v;
+  if (/^[A-Z0-9]+$/.test(v)) return v;
+
+  return v.toLowerCase();
+}
