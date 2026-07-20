@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.7.6.4";
+const MASTER_LIST_MERGE_ML_VERSION = "1.7.6.5";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -5568,10 +5568,25 @@ function showSheetIfNeeded_(sheet, timing, stepName) {
   }
 }
 
+function activateVisibleSheetBeforeHiding_(sheet) {
+  if (!sheet || !sheet.getParent || !sheet.getSheetId) return false;
+  const ss = sheet.getParent();
+  const activeSheet = ss.getActiveSheet && ss.getActiveSheet();
+  if (!activeSheet || activeSheet.getSheetId() !== sheet.getSheetId()) return true;
+  const fallback = ss.getSheets().filter(function(candidate) {
+    return candidate.getSheetId() !== sheet.getSheetId() &&
+      (!candidate.isSheetHidden || !candidate.isSheetHidden());
+  })[0];
+  if (!fallback) return false;
+  ss.setActiveSheet(fallback);
+  return true;
+}
+
 function hideSheetIfNeeded_(sheet, timing, stepName) {
   if (!sheet) return;
   try {
     if (typeof sheet.isSheetHidden === "function" && !sheet.isSheetHidden()) {
+      activateVisibleSheetBeforeHiding_(sheet);
       sheet.hideSheet();
       if (timing && stepName) markFrameworkStep_(timing, stepName);
     }
@@ -6847,6 +6862,7 @@ function hideMonthlyImportSheets() {
   if (!monthParts) return null;
   const parsed = buildPromptedMonthContext_(monthParts);
   const specs = [
+    { label: "Raw Data", keywords: ["Raw Data"] },
     { label: "Banners", keywords: ["Banners", "Banner Report"] },
     { label: "CP Due Date", keywords: ["CP Due Date", "CP Due", "Care Plan Due Date Report", "Care Plan Due"] },
     { label: "Unlocked CP", keywords: ["Unlocked CP", "Unlock CP", "Unlocked Care Plan"] }
@@ -6878,7 +6894,10 @@ function hideMonthlySheetsBySpecs_(processName, parsedMonth, specs) {
       }
       sheets.forEach(function(sheet) {
         try {
-          if (!sheet.isSheetHidden()) sheet.hideSheet();
+          if (!sheet.isSheetHidden()) {
+            activateVisibleSheetBeforeHiding_(sheet);
+            sheet.hideSheet();
+          }
           result.hidden.push(sheet.getName());
         } catch (err) {
           result.skipped.push(sheet.getName() + ": " + err.message);
@@ -7966,7 +7985,7 @@ function formatCarePlanDueOrUnlockedFromDashboard_(sheetType, promptTitle, start
     archiveRawSourceAndDeleteLocal_(ss, rawSheet, rawName, outputSheet, timing);
 
 
-    applyOutputVisibilityPolicy_(outputSheet, dashboard, sheetDef.sheetType, timing);
+    applyOutputVisibilityPolicy_(outputSheet, null, sheetDef.sheetType, timing);
 
 
     clearSheetRuntimeCachesForSheet_(outputSheet);
@@ -9292,7 +9311,8 @@ function processDemoP() {
 
 
     setUniqueSheetName_(sheet, DEMO_P_PREFIX);
-    markRuntimeStep_(timing, "Maintain ongoing Demo P sheet name");
+    placeCreatedSheetInConfiguredOrder_(sheet);
+    markRuntimeStep_(timing, "Maintain ongoing Demo P sheet name and place behind Index");
 
 
     lockFinalOutputRowHeights_(sheet, "Demo P");
@@ -11228,7 +11248,13 @@ function isUnformattedImportSheetNameForIndex_(sheetName) {
   const name = String(sheetName || "").trim();
   if (!name) return false;
   if (/^(B|CD|UC|RD)$/i.test(name)) return true;
-  return /^(B|CD|UC|RD)\s+/i.test(name);
+  if (/^(B|CD|UC|RD)\s+/i.test(name)) return true;
+  return name.indexOf("Raw Data - Banners") === 0 ||
+    name.indexOf("Raw Data - Banner Report") === 0 ||
+    name.indexOf("Raw Data - CP Due") === 0 ||
+    name.indexOf("Raw Data - Care Plan Due") === 0 ||
+    name.indexOf("Raw Data - Unlock CP") === 0 ||
+    name.indexOf("Raw Data - Unlocked") === 0;
 }
 
 
@@ -11733,7 +11759,10 @@ function moveSheetToPositionPreservingVisibility_(ss, record, targetPosition, co
   } finally {
     if (wasHidden) {
       try {
-        if (!sheet.isSheetHidden()) sheet.hideSheet();
+        if (!sheet.isSheetHidden()) {
+          activateVisibleSheetBeforeHiding_(sheet);
+          sheet.hideSheet();
+        }
       } catch (hideErr) {
         logBestEffortWarning_((context || "Sheet sort") + " visibility restore skipped for " + record.name + ": " + hideErr.message);
       }
@@ -11767,7 +11796,10 @@ function enforceSystemTemplateTailBlockOrder_(ss) {
   tailRecords.forEach(function(record) {
     if (!record.forceHidden) return;
     try {
-      if (!record.sheet.isSheetHidden()) record.sheet.hideSheet();
+      if (!record.sheet.isSheetHidden()) {
+        activateVisibleSheetBeforeHiding_(record.sheet);
+        record.sheet.hideSheet();
+      }
     } catch (err) {
       logBestEffortWarning_("System/template tail-block hide enforcement skipped for " + record.name + ": " + err.message);
     }
@@ -11776,10 +11808,36 @@ function enforceSystemTemplateTailBlockOrder_(ss) {
 }
 
 
+function captureHiddenSheetIds_(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const hiddenIds = {};
+  ss.getSheets().forEach(function(sheet) {
+    if (sheet.isSheetHidden && sheet.isSheetHidden()) hiddenIds[sheet.getSheetId()] = true;
+  });
+  return hiddenIds;
+}
+
+function restoreHiddenSheetIds_(ss, hiddenIds, context) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  hiddenIds = hiddenIds || {};
+  ss.getSheets().forEach(function(sheet) {
+    if (!hiddenIds[sheet.getSheetId()] || !sheet.isSheetHidden || sheet.isSheetHidden()) return;
+    try {
+      activateVisibleSheetBeforeHiding_(sheet);
+      sheet.hideSheet();
+    } catch (err) {
+      logBestEffortWarning_((context || "Sheet visibility restore") + " skipped for " + sheet.getName() + ": " + err.message);
+    }
+  });
+}
+
 function enforceGlobalSheetSortOrder_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const hiddenSheetIds = captureHiddenSheetIds_(ss);
   const records = getOrderedSheetSortRecords_(ss, monthParts);
-  return applySheetSortRecords_(ss, records, 1, "Global sheet sort") + enforceSystemTemplateTailBlockOrder_(ss);
+  const moves = applySheetSortRecords_(ss, records, 1, "Global sheet sort") + enforceSystemTemplateTailBlockOrder_(ss);
+  restoreHiddenSheetIds_(ss, hiddenSheetIds, "Global sheet sort visibility restore");
+  return moves;
 }
 
 function extractFirstDateFromSheetName_(sheetName) {
@@ -14361,22 +14419,26 @@ function initializeDashboardQualitySheet_() {
 function initializeSystemSheets_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
-  // 1. Build Format Dashboard first.
-  let dashboardSheet = ss.getSheetByName(RFF_DASHBOARD_SHEET);
-  if (!dashboardSheet) {
-    dashboardSheet = ss.insertSheet(RFF_DASHBOARD_SHEET, 1);
-  }
-
-  // 2. Build Framework Timing Report second.
+  // Build system sheets in configured tail-block order.
   let timingSheet = ss.getSheetByName(RFF_TIMING_SHEET);
   if (!timingSheet) {
-    timingSheet = ss.insertSheet(RFF_TIMING_SHEET, 2);
+    timingSheet = insertGovernedOutputSheet_(ss, RFF_TIMING_SHEET);
+  } else {
+    placeCreatedSheetInConfiguredOrder_(timingSheet);
   }
 
-  // 3. Build Dashboard Quality Report third.
   let qualitySheet = ss.getSheetByName(RFF_TEST_DASHBOARD_SHEET);
   if (!qualitySheet) {
-    qualitySheet = ss.insertSheet(RFF_TEST_DASHBOARD_SHEET, 3);
+    qualitySheet = insertGovernedOutputSheet_(ss, RFF_TEST_DASHBOARD_SHEET);
+  } else {
+    placeCreatedSheetInConfiguredOrder_(qualitySheet);
+  }
+
+  let dashboardSheet = ss.getSheetByName(RFF_DASHBOARD_SHEET);
+  if (!dashboardSheet) {
+    dashboardSheet = insertGovernedOutputSheet_(ss, RFF_DASHBOARD_SHEET);
+  } else {
+    placeCreatedSheetInConfiguredOrder_(dashboardSheet);
   }
 
   showSheetIfNeeded_(dashboardSheet);
