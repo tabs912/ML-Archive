@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.7.6.2";
+const MASTER_LIST_MERGE_ML_VERSION = "1.7.6.3";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -688,7 +688,6 @@ function createTemplateFromScriptDefaultsForActiveBuild_(ss, sheetDef) {
     logBestEffortWarning_("Active-build template environment setup skipped for " + sheetDef.templateName + ": " + err.message);
   }
   hideSheetIfNeeded_(template, null, null);
-  positionSheetInGlobalSortOrder_(template);
   clearSheetRuntimeCachesForSheet_(template);
   logBestEffortWarning_("Missing active-build template created from script defaults: " + sheetDef.templateName);
   return template;
@@ -1595,66 +1594,12 @@ function clearMonthlySheetLookupCache_() {
   getRuntimeCache_().monthlySheets = {};
 }
 
-function getGovernedNewSheetInsertIndex_(ss) {
-  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
-  const frameworkTiming = ss.getSheetByName(RFF_TIMING_SHEET) || ss.getSheetByName("Framework Timing Report");
-  if (frameworkTiming) return Math.max(frameworkTiming.getIndex() - 1, 1);
-
-  const protectedNames = [
-    RFF_TEST_DASHBOARD_SHEET,
-    "Dashboard Quality Report",
-    RFF_DASHBOARD_SHEET,
-    "Template - Banner Report",
-    "Template - Care Plan Due",
-    "Template - Unlocked Care Plan",
-    "Template - Raw Data",
-    "Template - Demo P",
-    "Template - Disenrolled Exclusion",
-    "Template - Master List",
-    "Template - Monthly Change",
-    RFF_BASE_TEMPLATE_NAME
-  ];
-  let firstProtectedIndex = null;
-  protectedNames.forEach(function(sheetName) {
-    const sheet = ss.getSheetByName(sheetName);
-    if (!sheet) return;
-    const idx = sheet.getIndex();
-    if (firstProtectedIndex === null || idx < firstProtectedIndex) firstProtectedIndex = idx;
-  });
-  if (firstProtectedIndex === null) return ss.getNumSheets();
-  return Math.max(firstProtectedIndex - 1, 1);
-}
 
 function insertGovernedOutputSheet_(ss, sheetName) {
   ss = ss || SpreadsheetApp.getActiveSpreadsheet();
-  return ss.insertSheet(sheetName, getGovernedSheetInsertIndex_(ss, sheetName));
+  return ss.insertSheet(sheetName);
 }
 
-function getGovernedSheetInsertIndex_(ss, sheetName) {
-  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
-  const targetName = String(sheetName || "").trim();
-  const targetRank = getGlobalSheetSortRankByName_(targetName);
-  let maxAllowedIndex = ss.getNumSheets() + 1;
-  if (targetRank < 150) {
-    const timingSheet = ss.getSheetByName("Framework Timing Report") || ss.getSheetByName(RFF_TIMING_SHEET);
-    if (timingSheet) maxAllowedIndex = timingSheet.getIndex();
-  }
-  let targetIndex = targetRank > 20 ? 3 : 1;
-  ss.getSheets().forEach(function(sheet) {
-    const name = String(sheet.getName() || "").trim();
-    if (!name || name === targetName) return;
-    const rank = getGlobalSheetSortRankByName_(name);
-    if (rank < targetRank) targetIndex = Math.max(targetIndex, sheet.getIndex() + 1);
-    if (rank === targetRank && compareSheetNamesByGlobalOrder_(name, targetName) < 0) {
-      targetIndex = Math.max(targetIndex, sheet.getIndex() + 1);
-    }
-  });
-  return Math.max(1, Math.min(targetIndex, maxAllowedIndex));
-}
-
-function getOperationalNewSheetInsertIndex_(ss, sheetName) {
-  return getGovernedSheetInsertIndex_(ss, sheetName);
-}
 
 function getMonthlySheetLookupCacheKey_(ss, prefix, firstDay, lastDay) {
   const spreadsheetId = ss && ss.getId ? ss.getId() : "";
@@ -3873,13 +3818,11 @@ function createOrRefreshAllReportTemplates() {
         return result.templateName + (result.issue ? " (" + result.issue + ")" : "");
       }).join(", "));
     }
-    organizeTemplateTabsBeforeBaseTemplate_(dashboard, timing);
     setReportTemplateVisibility_(dashboard, true, timing);
     forceBaseTemplateHidden_();
     markFrameworkStep_(timing, "Templates hidden once after template creation");
     createIndexSheet();
     markFrameworkStep_(timing, "Index refreshed after template creation without showing hidden sheets");
-    markFrameworkStep_(timing, "Template tabs organized between Format Dashboard and RFF_BASE_TEMPLATE without global sort");
     markFrameworkStep_(timing, "All report templates refreshed");
   });
 }
@@ -3923,35 +3866,6 @@ function ensureGoldenMasterTemplate_(dashboard, timing) {
   return baseSheet;
 }
 
-function moveTemplateBeforeBaseTemplate_(sheet, timing) {
-  if (!sheet || !String(sheet.getName() || "").startsWith("Template - ")) return false;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const baseSheet = ss.getSheetByName(RFF_BASE_TEMPLATE_NAME);
-  if (!baseSheet || baseSheet.getSheetId() === sheet.getSheetId()) return false;
-  try {
-    const targetIndex = getGovernedSheetInsertIndex_(ss, sheet.getName());
-    if (sheet.getIndex() === targetIndex || sheet.getIndex() === targetIndex - 1) return false;
-    if (typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden()) return false;
-    ss.setActiveSheet(sheet);
-    ss.moveActiveSheet(Math.min(targetIndex, ss.getNumSheets()));
-    if (timing) markFrameworkStep_(timing, "Template positioned in governed order: " + sheet.getName());
-    return true;
-  } catch (err) {
-    logBestEffortWarning_("Template tab positioning skipped for " + sheet.getName() + ": " + err.message);
-    return false;
-  }
-}
-
-function organizeTemplateTabsBeforeBaseTemplate_(dashboard, timing) {
-  let moved = 0;
-  sortSheetDefinitionsByProductionOrder_((dashboard && dashboard.sheetDefinitions) || []).forEach(function(sheetDef) {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetDef.templateName);
-    if (moveTemplateBeforeBaseTemplate_(sheet, timing)) moved++;
-  });
-  forceBaseTemplateHidden_();
-  if (timing) markFrameworkStep_(timing, "Template block positioned before RFF_BASE_TEMPLATE | Moves: " + moved);
-  return moved;
-}
 
 function summarizeTemplateRefreshModes_(templateResults) {
   const counts = {};
@@ -4436,7 +4350,6 @@ function createOrRefreshTemplateFromDashboard_(dashboard, sheetDef, timing) {
     const baseSheet = ss.getSheetByName(RFF_BASE_TEMPLATE_NAME) || ensureGoldenMasterTemplate_(dashboard, timing);
     sheet = baseSheet.copyTo(ss);
     sheet.setName(sheetDef.templateName);
-    moveTemplateBeforeBaseTemplate_(sheet, timing);
   }
   markFrameworkStep_(timing, "Open/create sheet: " + sheetDef.templateName);
 
@@ -4576,7 +4489,6 @@ function promoteStagedTemplateBuild_(ss, buildSheet, existingSheet, sheetDef, ti
     markFrameworkStep_(timing, "Previous template replaced after staged validation: " + sheetDef.templateName);
   }
   buildSheet.setName(sheetDef.templateName);
-  moveTemplateBeforeBaseTemplate_(buildSheet, timing);
   if (!RFF_DEFER_TEMPLATE_HIDE_DURING_BATCH_ && typeof buildSheet.hideSheet === "function") {
     hideSheetIfNeeded_(buildSheet, timing, "Hide promoted template: " + sheetDef.templateName);
   }
@@ -5763,7 +5675,6 @@ function formatMonthlyBannerSheet_(rawSheet, parsedMonth, timing) {
   deleteSheetIfExists_(ss, outputName, rawSheet.getName(), templateName);
   const outputSheet = templateSheet.copyTo(ss);
   outputSheet.setName(outputName);
-  positionSheetInGlobalSortOrder_(outputSheet);
   showSheetIfNeeded_(outputSheet, timing, "Banner output sheet shown: " + outputName);
   writeBannerReportDates_(outputSheet, reportDate);
   copyRawBannerDataToOutput_(rawSheet, outputSheet);
@@ -5853,9 +5764,8 @@ function formatBannerReport() {
     deleteSheetIfExists_(ss, outputName, rawSheet.getName(), templateName);
     const outputSheet = templateSheet.copyTo(ss);
     outputSheet.setName(outputName);
-    positionSheetInGlobalSortOrder_(outputSheet);
     showSheetIfNeeded_(outputSheet, timing, "Banner output sheet shown: " + outputName);
-    markFrameworkStep_(timing, "Template duplicated as output sheet in governed order: " + outputName);
+    markFrameworkStep_(timing, "Template duplicated as output sheet without automatic sorting: " + outputName);
 
 
     writeBannerReportDates_(outputSheet, reportDate);
@@ -6905,7 +6815,6 @@ function hideMonthlySheetsBySpecs_(processName, parsedMonth, specs) {
         }
       });
     });
-    enforceGlobalSheetSortOrder_(parsedMonth.monthParts);
     notify_(processName + " complete for " + parsedMonth.monthLabel + ". Hidden: " + result.hidden.length + "; Skipped: " + result.skipped.length + ".");
     return result;
   });
@@ -7574,7 +7483,7 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
   // 1. FAST CANVAS: Insert a perfectly blank sheet (zero overhead)
   const sheet = insertGovernedOutputSheet_(ss, outputName);
   showSheetIfNeeded_(sheet, timing, String(timingLabel || "Dashboard fast canvas") + " - sheet visibility enforced visible: " + outputName);
-  markCanvasStep("blank sheet inserted in governed order");
+  markCanvasStep("blank sheet inserted without automatic sorting");
 
   const width = Math.max(headers.length, 1);
   const rows = outputRows || [];
@@ -8927,11 +8836,10 @@ function getOrCreateDemoPArchiveSheet_(ss, sourceHeaders, timing, timingPrefix) 
       sheet = template.copyTo(ss);
       markArchiveStep("template copied for archive sheet");
       setUniqueSheetName_(sheet, DEMO_P_ARCHIVE_SHEET);
-      positionSheetInGlobalSortOrder_(sheet);
-      markArchiveStep("archive sheet named and positioned");
+      markArchiveStep("archive sheet named without automatic sorting");
     } else {
       sheet = insertGovernedOutputSheet_(ss, DEMO_P_ARCHIVE_SHEET);
-      markArchiveStep("blank governed archive sheet inserted");
+      markArchiveStep("blank archive sheet inserted without automatic sorting");
     }
   }
   if (sheet.getMaxColumns() < archiveHeaders.length) {
@@ -10004,9 +9912,8 @@ function buildMonthlyChangeReportForMonth_(monthParts, timing) {
   reportSheet = template.copyTo(ss);
   markRuntimeStep_(timing, "Monthly Change detail - template copied: " + sheetDef.templateName);
   setUniqueSheetName_(reportSheet, reportName);
-  positionSheetInGlobalSortOrder_(reportSheet);
   showSheetIfNeeded_(reportSheet, timing, "Monthly Change detail - report sheet shown");
-  markRuntimeStep_(timing, "Monthly Change report sheet created from template in governed order");
+  markRuntimeStep_(timing, "Monthly Change report sheet created from template; automatic sheet sorting skipped by design");
 
   buildMonthlyChangeReportSectionLayout_(reportSheet, currentDemo, sectionData.currentData.headers, monthParts);
   markRuntimeStep_(timing, "Monthly Change section layout prepared");
@@ -10792,10 +10699,9 @@ function runMonthlyUpdate() {
 
     try {
       createIndexSheet();
-      const monthlyUpdateSortMoves = enforceOperationalSheetSortOrder_(monthParts);
-      markFrameworkStep_(timing, "Create Monthly Update - Index refreshed and active tabs organized without showing hidden system/template sheets | Moves: " + monthlyUpdateSortMoves);
+      markFrameworkStep_(timing, "Create Monthly Update - Index refreshed; automatic sheet sorting skipped by design");
     } catch (err) {
-      logBestEffortWarning_("Monthly Update final index/sort skipped: " + err.message);
+      logBestEffortWarning_("Monthly Update final index refresh skipped: " + err.message);
     }
 
     notify_("Create Monthly Update complete.\n\n" + messages.join("\n"));
@@ -10886,8 +10792,6 @@ function createDisenrolledListForMonth_(monthParts, timing, options) {
   setLastRawDataDisenrolledBuildResult_(result);
 
   const exclusionSheet = ss.getSheetByName(DISENROLLED_EXCLUSION_SHEET);
-  positionSheetInGlobalSortOrder_(exclusionSheet);
-  step("Position Disenrolled Exclusion in governed sort order");
   const oldRowsHidden = hideOldDisenrolledRows_(exclusionSheet);
   step("old rows hidden", "Rows: " + oldRowsHidden);
 
@@ -11122,7 +11026,7 @@ function createMasterListSheetFromTemplate_(ss, targetName, monthParts, timing, 
   const requiredRows = Math.max(template.getMaxRows(), DATA_START_ROW);
 
   const sheet = insertGovernedOutputSheet_(ss, targetName);
-  markCanvasStep("blank governed sheet inserted in governed order", "Required rows: " + requiredRows + "; Columns: " + width);
+  markCanvasStep("blank sheet inserted without automatic sorting", "Required rows: " + requiredRows + "; Columns: " + width);
   showSheetIfNeeded_(sheet, timing, prefix + " - sheet visibility enforced visible: " + targetName);
   resizeSheetGrid_(sheet, requiredRows, width);
   markCanvasStep("grid resized", "Rows: " + requiredRows + "; Columns: " + width);
@@ -11579,10 +11483,6 @@ function restoreSheetFromArchiveWorkbook(targetSheetName) {
   if (typeof restoredSheet.showSheet === "function") {
     restoredSheet.showSheet();
   }
-  if (typeof positionSheetInGlobalSortOrder_ === "function") {
-    positionSheetInGlobalSortOrder_(restoredSheet);
-  }
-
   createIndexSheet();
   mainSs.setActiveSheet(restoredSheet);
   return restoredSheet;
@@ -11685,9 +11585,6 @@ function getGlobalSheetSortRankByName_(sheetName) {
   return getSheetSortProfileByName_(sheetName).rank;
 }
 
-function isOperationalSheetForSort_(sheetName) {
-  return getSheetSortProfileByName_(sheetName).operational === true;
-}
 
 function getSystemTemplateTailBlockNames_() {
   return [
@@ -11803,51 +11700,12 @@ function enforceSystemTemplateTailBlockOrder_(ss) {
   return moves;
 }
 
-function lockSystemTemplateTailBlockOrder_(ss) {
-  return enforceSystemTemplateTailBlockOrder_(ss);
-}
-
-function lockFrameworkTimingReportAsFinalSheet_(ss) {
-  return enforceSystemTemplateTailBlockOrder_(ss) > 0;
-}
-
-function enforceOperationalSheetSortOrder_(monthParts) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const records = getOrderedSheetSortRecords_(ss, monthParts, { operationalOnly: true, visibleOnly: true });
-  const moves = applySheetSortRecords_(ss, records, 1, "Operational sheet sort");
-  try {
-    const archiveTarget = ss.getSheetByName(DEMO_P_ARCHIVE_SHEET) || ss.getSheetByName("Archive - Demo P");
-    if (archiveTarget && typeof archiveTarget.isSheetHidden === "function" && !archiveTarget.isSheetHidden()) {
-      archiveTarget.hideSheet();
-    }
-  } catch (err) {
-    logBestEffortWarning_("Archive tab structural visibility suppression skipped: " + err.message);
-  }
-  return moves + enforceSystemTemplateTailBlockOrder_(ss);
-}
 
 function enforceGlobalSheetSortOrder_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const records = getOrderedSheetSortRecords_(ss, monthParts);
   return applySheetSortRecords_(ss, records, 1, "Global sheet sort") + enforceSystemTemplateTailBlockOrder_(ss);
 }
-
-function positionSheetInGlobalSortOrder_(sheet) {
-  if (!sheet) return false;
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const targetId = sheet.getSheetId();
-  const records = getOrderedSheetSortRecords_(ss);
-  const targetIndex = records.findIndex(function(record) {
-    return record.sheet && record.sheet.getSheetId && record.sheet.getSheetId() === targetId;
-  });
-  if (targetIndex === -1) return false;
-  const targetRecord = records[targetIndex];
-  if (typeof targetRecord.sheet.isSheetHidden === "function" && targetRecord.sheet.isSheetHidden()) return false;
-  const moved = moveSheetToPositionPreservingVisibility_(ss, targetRecord, targetIndex + 1, "Single-sheet positioning");
-  if (moved) clearMonthlySheetLookupCache_();
-  return moved;
-}
-
 
 function extractFirstDateFromSheetName_(sheetName) {
   const text = String(sheetName || "").trim();
@@ -12981,12 +12839,10 @@ function createDisenrolledExclusionSheetFromDashboardTemplate_(ss, monthParts) {
   const template = context.template;
   let sheet = template.copyTo(ss);
   setUniqueSheetName_(sheet, DISENROLLED_EXCLUSION_SHEET);
-  positionSheetInGlobalSortOrder_(sheet);
   showSheetIfNeeded_(sheet, null, null);
 
   updateDisenrolledExclusionReportDates_(sheet, monthParts);
   clearSheetRuntimeCachesForSheet_(sheet);
-  positionSheetInGlobalSortOrder_(sheet);
   return sheet;
 }
 
@@ -15473,9 +15329,8 @@ function runDashboardQualityWorkflowSyncVerification_(timing) {
 function setupSystemSheets() {
   const result = initializeSystemSheets_();
   createIndexSheet();
-  enforceGlobalSheetSortOrder_(getMonthDateParts_(new Date()));
   forceBaseTemplateHidden_();
-  notify_("System sheets setup complete. System/template tabs are organized.");
+  notify_("System sheets setup complete. Use the Organize Tabs menu item when tab sorting is needed.");
   return result;
 }
 
