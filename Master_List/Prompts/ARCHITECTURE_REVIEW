@@ -1,0 +1,31 @@
+ARCHITECTURE REVIEW
+
+Review the overall architecture of the current production framework.
+
+Evaluate:
+
+• Entry points and public interfaces
+• Module organization and separation of responsibilities
+• Function ownership and logical boundaries
+• Data flow between processes
+• Configuration architecture
+• Helper organization and dependency relationships
+• Public APIs and internal interfaces
+• Coupling and cohesion
+• Layering and architectural consistency
+• Maintainability and readability
+• Scalability as the framework grows
+• Opportunities to simplify the architecture without changing business logic
+
+Identify:
+
+• Architectural inconsistencies
+• Circular dependencies
+• Tight coupling
+• Redundant architectural patterns
+• Unnecessary complexity
+• Modules with mixed responsibilities
+• Opportunities to consolidate duplicate architecture
+
+Do not recommend rebuilding the framework unless a clear architectural defect exists.
+Preserve the existing business logic and approved workflow.
