@@ -6862,6 +6862,7 @@ function hideMonthlyImportSheets() {
   if (!monthParts) return null;
   const parsed = buildPromptedMonthContext_(monthParts);
   const specs = [
+    { label: "Raw Data", keywords: ["Raw Data"] },
     { label: "Banners", keywords: ["Banners", "Banner Report"] },
     { label: "CP Due Date", keywords: ["CP Due Date", "CP Due", "Care Plan Due Date Report", "Care Plan Due"] },
     { label: "Unlocked CP", keywords: ["Unlocked CP", "Unlock CP", "Unlocked Care Plan"] }

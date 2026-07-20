@@ -1,8 +1,12 @@
 <!-- markdownlint-disable MD013 MD022 MD024 MD032 MD033 MD056 MD058 MD060 -->
 
-# Master List Framework Specification v2.0
+# Master List Framework Specification v2.0 UPDATEDv2
 
 ## Governing Authority
+
+**Saved artifact:** `Master_List/Specs/Master_List_Framework_Specification_v2.0_UPDATEDv2.md`.
+
+**Source update file:** `Master_List/Specs/Master_List_Framework_Specification_v2.0.md`.
 
 **Authoritative implementation:** `Master_List/Current Production Script/v.1.7.6_Current_Production_Script`.
 
@@ -61,7 +65,7 @@ The framework exists to:
 
 ## 2. Production Script Manifest
 
-The v1.7.6 production script contains 15,670 lines and 672 declared functions: 64 public Apps Script-callable functions and 608 internal underscore helpers.
+The v1.7.6 production script contains 15,785 lines and 672 declared functions: 64 public Apps Script-callable functions and 608 internal underscore helpers.
 
 Protected production surfaces include:
 
@@ -128,10 +132,10 @@ The Format Dashboard is the editable governance surface for report formatting an
 | SECTION A - GLOBAL SETTINGS | Header row, data start row, freeze settings, row heights, default widths, date/number/text formats, wrapping, alignment, font, colors, HSL levels, border style, and template version. |
 | SECTION B - TITLE ROWS | Title row purposes, value sources, target cells, row heights, font sizes, font weight, fill levels, alignment, wrapping, and notes. |
 | SECTION C - SHEET DEFINITIONS | Sheet type, report title, template name, output naming pattern, base color, prompt-date usage, end-date source, row count, column count, row mode, minimum rows, buffer rows, test rows, and test-row usage. |
-| SECTION D - SHEET BEHAVIORS | Title-row usage, filters, alternating colors, subheaders, hidden templates, and output visibility. |
-| SECTION E - SYSTEM SHEET SURFACES | System sheet name, display name, sort order, output visibility, title colors, global defaults, and notes. |
-| SECTION F - COLUMN DEFINITIONS | Header-level width, header font size, date-column flag, hidden-column flag, data wrap, horizontal alignment, vertical alignment, and number format. |
-| SECTION G - SHEET HEADERS | Sheet type, column order, header name, and source-of-data lineage. |
+| SECTION D - COLUMN DEFINITIONS | Header-level width, header font size, date-column flag, hidden-column flag, data wrap, horizontal alignment, vertical alignment, and number format. |
+| SECTION E - SHEET BEHAVIORS | Title-row usage, filters, alternating colors, subheaders, hidden templates, and output visibility. |
+| SECTION F - SHEET HEADERS | Sheet type, column order, header name, and source-of-data lineage. |
+| SECTION G - SYSTEM SHEET SURFACES | System sheet name, display name, sort order, output visibility, title colors, global defaults, and notes. |
 
 Protected dashboard standards:
 
@@ -331,7 +335,7 @@ Standalone workflow callbacks remain supported for targeted troubleshooting, rec
 
 ## 11. Data Ownership and Lineage
 
-Format Dashboard Section G is the governing data dictionary for sheet header order and source-of-data lineage. Format Dashboard Section F is the governing presentation dictionary for column formatting. Demo P raw/flat transformations, synchronization functions, Monthly Change comparisons, Master List copy logic, and Disenrollment exclusion flows must preserve header names, PMR normalization, DOB handling, contact lineage, source maps, and dashboard-governed template outputs.
+Format Dashboard Section F is the governing data dictionary for sheet header order and source-of-data lineage. Format Dashboard Section D is the governing presentation dictionary for column formatting. Demo P raw/flat transformations, synchronization functions, Monthly Change comparisons, Master List copy logic, and Disenrollment exclusion flows must preserve header names, PMR normalization, DOB handling, contact lineage, source maps, and dashboard-governed template outputs.
 
 Critical lineage anchors:
 
@@ -354,8 +358,8 @@ Mapping definitions are governed by the production script and the Format Dashboa
 | Definition Type | Governance Source | Notes |
 |---|---|---|
 | Sheet definitions | Format Dashboard Section C plus script defaults | Sheet type, report title, template name, output naming pattern, color, prompt-date behavior, end-date source, row/column sizing, and test rows. |
-| Column definitions | Format Dashboard Section F plus script defaults | Width, font size, date flag, hidden flag, wrap, alignment, and number format. |
-| Header definitions | Format Dashboard Section G plus script defaults | Sheet type, column order, header, and source-of-data lineage. |
+| Column definitions | Format Dashboard Section D plus script defaults | Width, font size, date flag, hidden flag, wrap, alignment, and number format. |
+| Header definitions | Format Dashboard Section F plus script defaults | Sheet type, column order, header, and source-of-data lineage. |
 | Runtime header maps | Production helpers built from sheet headers | Header lookups must use normalized header maps rather than hard-coded column positions where practical. |
 | Source-to-output transformations | Production workflow helpers | Business transformations are implementation-owned and may not be rewritten from documentation alone. |
 
@@ -489,7 +493,7 @@ Rules:
 
 ## 20. Template Governance
 
-Templates are resolved from Format Dashboard Section C sheet definitions, Section D behaviors, Section G headers, Section F column definitions, and Section A global presentation standards.
+Templates are resolved from Format Dashboard Section C sheet definitions, Section E behaviors, Section F headers, Section D column definitions, and Section A global presentation standards.
 
 Governed templates are:
 
@@ -609,7 +613,7 @@ Testing workflow standards:
 
 1. Run startup/dashboard setup validation.
 2. Validate templates and template signatures.
-3. Validate Format Dashboard global, sheet, behavior, column, and header sections in production order: Section A global inputs / Section B title rows, Section C sheet definitions, Section D sheet behaviors, Section F column definitions, and Section G sheet headers.
+3. Validate Format Dashboard global, sheet, behavior, column, and header sections.
 4. Validate Raw Data readiness.
 5. Validate Care Plan synchronization readiness.
 6. Validate workflow synchronization.
@@ -670,10 +674,10 @@ Minimum dashboard configuration categories:
 - Global settings.
 - Title rows.
 - Sheet definitions.
-- Sheet behaviors.
-- System sheet surfaces.
 - Column definitions.
+- Sheet behaviors.
 - Sheet headers.
+- System sheet surfaces.
 
 Any detailed dashboard table exported into a PDF must be generated from current v1.7.6 script defaults or a validated live Format Dashboard. Historical v1.6.x appendix values are not governing unless revalidated.
 
@@ -705,7 +709,7 @@ Required coverage:
 
 ## Appendix C — Data Source Mapping Summary
 
-A complete data-source mapping appendix must be rebuilt from current v1.7.6 headers and Format Dashboard Section G source-of-data lineage.
+A complete data-source mapping appendix must be rebuilt from current v1.7.6 headers and Format Dashboard Section F source-of-data lineage.
 
 Required mapping coverage:
 
