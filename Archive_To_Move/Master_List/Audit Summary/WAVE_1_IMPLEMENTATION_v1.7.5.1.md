@@ -38,6 +38,13 @@ Master_List/Current Production Script/v.1.7.5_Current_Production_Script
 - Routed `deleteSheetIfExists_()`, raw archive local cleanup, monthly archive local cleanup, and archive replacement deletion through guarded helpers.
 - Preserved existing protected-name parameters supplied by callers.
 
+
+### Static report follow-up — Raw Data fast canvas tracer
+
+- Reviewed `reports/v1.7.5_ESLint_Report.json` and `Master_List/Reports/Gemini node recommendations.pdf` from `origin/main`.
+- Confirmed and corrected the single ESLint error: `markCanvasStep` was referenced in `createRawDataOutputSheetFromTemplateFast_()` without a local definition.
+- Added an optional `timing` parameter and a local `markCanvasStep` closure so the runtime-cache-cleared trace is safe when timing is supplied and a no-op otherwise.
+
 ## Release Notes
 
 - Recommended release version: v1.7.5.
@@ -56,6 +63,16 @@ Master_List/Current Production Script/v.1.7.5_Current_Production_Script
 - Existing-month Master List reruns temporarily create an additional staging sheet during build.
 - This adds a small staging overhead but avoids deleting the approved prior output before validation.
 - No broad performance optimizations were attempted in Wave 1.
+
+## Minimum Clearance Testing
+
+The minimum pass/fail checklist required to clear Wave 1 is documented in:
+
+```text
+Master_List/Audit_Summary/WAVE_1_MINIMUM_TESTING_v1.7.5.md
+```
+
+Wave 1 is not cleared for release until that checklist passes in a copied, non-production workbook and the required evidence is attached.
 
 ## Required Test Plan
 

@@ -636,82 +636,6 @@ function getSheetDefinitionByType_(dashboard, sheetType) {
   return sheetDef;
 }
 
-function getDefaultSheetDefinitionByType_(sheetType) {
-  const normalized = normalizeDashboardSheetTypeKey_(sheetType);
-  const rows = typeof getDefaultSheetDefinitionRowsWithColumnCounts_ === "function" ? getDefaultSheetDefinitionRowsWithColumnCounts_() : getDefaultSheetDefinitionRows_();
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    if (normalizeDashboardSheetTypeKey_(row[0]) !== normalized) continue;
-    return {
-      sheetType: normalized,
-      reportTitle: String(row[1] || row[0] || "").trim(),
-      templateName: String(row[2] || ("Template - " + row[0])).trim(),
-      outputNamingPattern: String(row[3] || "").trim(),
-      baseColor: normalizeHex_(row[4] || "#65A9CC"),
-      usePromptDate: parseBoolean_(row[5]),
-      endDateSource: String(row[6] || "").trim(),
-      templateRowCount: numberOrDefault_(row[7], RFF_DEFAULTS.templateRows),
-      templateColumnCount: numberOrDefault_(row[8], 0),
-      templateRowMode: String(row[9] || "FIXED").trim().toUpperCase(),
-      minimumRows: numberOrDefault_(row[10], numberOrDefault_(row[7], RFF_DEFAULTS.templateRows)),
-      bufferRows: numberOrDefault_(row[11], 100),
-      testRows: numberOrDefault_(row[12], 100),
-      useTestRows: parseBoolean_(row[13])
-    };
-  }
-  throw new Error("Default sheet definition not found: " + sheetType);
-}
-
-function createTemplateFromScriptDefaultsForActiveBuild_(ss, sheetDef) {
-  ss = ss || SpreadsheetApp.getActive();
-  const normalizedSheetType = normalizeDashboardSheetTypeKey_(sheetDef.sheetType);
-  const defaultHeaderItems = (getDefaultHeaderSets_()[normalizedSheetType] || []).slice();
-  const headers = defaultHeaderItems.map(function(item) { return String(item && item.header || "").trim(); }).filter(Boolean);
-  if (!headers.length) throw new Error("Default headers not found for template: " + sheetDef.templateName);
-
-  const baseTemplate = ss.getSheetByName(RFF_BASE_TEMPLATE_NAME);
-  const template = baseTemplate ? baseTemplate.copyTo(ss) : insertGovernedOutputSheet_(ss, sheetDef.templateName);
-  setUniqueSheetName_(template, sheetDef.templateName);
-  const width = Math.max(headers.length, Number(sheetDef.templateColumnCount || 0), 1);
-  const rowCount = Math.max(Number(sheetDef.templateRowCount || RFF_DEFAULTS.templateRows || DATA_START_ROW), DATA_START_ROW);
-  resizeSheetGrid_(template, rowCount, width);
-  ensureStandardTitleRows_(template);
-  template.getRange("A1").setValue(sheetDef.reportTitle || normalizedSheetType);
-  template.getRange("A2").setValue("Date");
-  template.getRange("C2").setValue("to");
-  template.getRange(HEADER_ROW, 1, 1, headers.length).setValues([headers]);
-  try {
-    template.setFrozenRows(HEADER_ROW);
-    template.setFrozenColumns(0);
-    template.setTabColor(sheetDef.baseColor || null);
-  } catch (err) {
-    logBestEffortWarning_("Active-build template environment setup skipped for " + sheetDef.templateName + ": " + err.message);
-  }
-  hideSheetIfNeeded_(template, null, null);
-  positionSheetInGlobalSortOrder_(template);
-  clearSheetRuntimeCachesForSheet_(template);
-  logBestEffortWarning_("Missing active-build template created from script defaults: " + sheetDef.templateName);
-  return template;
-}
-
-function getTemplateDrivenActiveSheetContext_(ss, sheetType) {
-  ss = ss || SpreadsheetApp.getActive();
-  const sheetDef = getDefaultSheetDefinitionByType_(sheetType);
-  let template = ss.getSheetByName(sheetDef.templateName);
-  if (!template) template = createTemplateFromScriptDefaultsForActiveBuild_(ss, sheetDef);
-  const headers = getHeaders_(template, HEADER_ROW);
-  if (!headers.some(function(header) { return String(header || "").trim(); })) {
-    throw new Error("Template not usable: " + sheetDef.templateName + " is missing header values on row " + HEADER_ROW + ".");
-  }
-  return { sheetDef: sheetDef, template: template, headers: headers };
-}
-
-function applyTemplateColumnWidths_(sheet, template, width) {
-  const widths = [];
-  for (let col = 1; col <= width; col++) widths.push(template.getColumnWidth(col));
-  applyColumnWidthsInRuns_(sheet, widths);
-}
-
 function sortSheetDefinitionsByProductionOrder_(sheetDefinitions) {
   const orderMap = {};
   getRequiredFrameworkSheetTypes_().forEach(function(sheetType, index) {
@@ -1363,12 +1287,9 @@ function deleteRowNumberBatches_(sheet, rowNumbers) {
 }
 
 function buildMasterListHeadersBeforeDataCopy_(demoSheet, masterSheet) {
-  void demoSheet;
-  if (!masterSheet) return;
-  const ss = typeof masterSheet.getParent === "function" ? masterSheet.getParent() : SpreadsheetApp.getActive();
-  const template = ss.getSheetByName(MASTER_LIST_TEMPLATE_SHEET);
-  const headers = getHeaders_(template || masterSheet, HEADER_ROW);
-  if (!headers.length || !headers.some(function(header) { return String(header || "").trim(); })) return;
+  const dashboard = loadDashboardConfig_();
+  const headers = getHeadersForSheetType_(dashboard, SHEET_TYPE.MASTER_LIST);
+  if (!masterSheet || !headers.length) return;
   ensureSheetMinimumColumns_(masterSheet, headers.length);
   masterSheet.getRange(HEADER_ROW, 1, 1, headers.length).setValues([headers]);
   clearSheetRuntimeCachesForSheet_(masterSheet);
@@ -1422,8 +1343,10 @@ function ensureContactOutputHeaders_(sheet) {
 
 function trimOutputSheetToDataSize_(sheet, rowCount, sheetType) {
   if (!sheet) return;
-  const sheetDef = getDefaultSheetDefinitionByType_(sheetType);
-  const templateRows = resolveTemplateRowCount_(sheetDef || { templateRowMode: "FIXED" }, RFF_DEFAULTS || {});
+  const dashboard = loadDashboardConfig_();
+  const sheetDef = getSheetDefinitionByType_(dashboard, sheetType);
+  const globals = loadGlobalSettings_(dashboard && dashboard.sectionIndex ? dashboard.sectionIndex : null);
+  const templateRows = resolveTemplateRowCount_(sheetDef || { templateRowMode: "FIXED" }, globals || {});
   const desiredRows = Math.max(DATA_START_ROW + Number(rowCount || 0) + 50, templateRows || DATA_START_ROW);
   forceSheetRowCount_(sheet, desiredRows);
 }
@@ -3886,27 +3809,17 @@ function summarizeTemplateRefreshModes_(templateResults) {
   }).join("; ");
 }
 
-function getDashboardConfigForTemplateVisibility_(dashboardOverride) {
-  if (dashboardOverride) return dashboardOverride;
-  try {
-    return loadDashboardConfig_();
-  } catch (err) {
-    logBestEffortWarning_("Template visibility dashboard config unavailable; using workbook Template - sheet scan only: " + err.message);
-    return { sheetDefinitions: [] };
-  }
-}
-
 function hideReportTemplates(dashboardOverride, timing) {
-  if (timing) return setReportTemplateVisibility_(getDashboardConfigForTemplateVisibility_(dashboardOverride), true, timing);
+  if (timing) return setReportTemplateVisibility_(dashboardOverride || loadDashboardConfig_(), true, timing);
   return runFrameworkTimed_("Hide Report Templates", function(activeTiming) {
-    return setReportTemplateVisibility_(getDashboardConfigForTemplateVisibility_(dashboardOverride), true, activeTiming);
+    return setReportTemplateVisibility_(dashboardOverride || loadDashboardConfig_(), true, activeTiming);
   });
 }
 
 function showReportTemplates(dashboardOverride, timing) {
-  if (timing) return setReportTemplateVisibility_(getDashboardConfigForTemplateVisibility_(dashboardOverride), false, timing);
+  if (timing) return setReportTemplateVisibility_(dashboardOverride || loadDashboardConfig_(), false, timing);
   return runFrameworkTimed_("Show Report Templates", function(activeTiming) {
-    return setReportTemplateVisibility_(getDashboardConfigForTemplateVisibility_(dashboardOverride), false, activeTiming);
+    return setReportTemplateVisibility_(dashboardOverride || loadDashboardConfig_(), false, activeTiming);
   });
 }
 
@@ -5649,12 +5562,14 @@ function buildPromptedMonthContext_(monthParts) {
 
 function formatMonthlyBannerSheet_(rawSheet, parsedMonth, timing) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboard = loadDashboardConfig_();
+  const sheetDef = getSheetDefinitionByType_(dashboard, SHEET_TYPE.BANNER);
   const reportDate = parsedMonth.reportDate;
   const rawName = "Raw Data - Banners " + parsedMonth.monthLabel;
   const outputName = buildBannerReportOutputName_(reportDate);
-  const context = getTemplateDrivenActiveSheetContext_(ss, SHEET_TYPE.BANNER);
-  const templateName = context.sheetDef.templateName;
-  const templateSheet = context.template;
+  const templateName = "Template - Banner Report";
+  const templateSheet = ss.getSheetByName(templateName);
+  if (!templateSheet) throw new Error(templateName + " is missing. Run Refresh Banner Template once before using Format Monthly Sheets.");
 
   deleteSheetIfExists_(ss, outputName, rawSheet.getName(), templateName);
   const outputSheet = templateSheet.copyTo(ss);
@@ -5664,15 +5579,15 @@ function formatMonthlyBannerSheet_(rawSheet, parsedMonth, timing) {
   writeBannerReportDates_(outputSheet, reportDate);
   copyRawBannerDataToOutput_(rawSheet, outputSheet);
   archiveRawSourceAndDeleteLocal_(ss, rawSheet, rawName, outputSheet, timing);
-  applyOutputVisibilityPolicy_(outputSheet, null, SHEET_TYPE.BANNER, timing);
+  applyOutputVisibilityPolicy_(outputSheet, dashboard, sheetDef.sheetType, timing);
   return outputSheet;
 }
 
 function formatMonthlyDashboardSheetFromSource_(sourceSheet, sheetType, monthParts, startDateCellA1, endDateCellA1, timing) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const context = getTemplateDrivenActiveSheetContext_(ss, sheetType);
-  const sheetDef = context.sheetDef;
-  const headers = context.headers;
+  const dashboard = loadDashboardConfig_();
+  const sheetDef = getSheetDefinitionByType_(dashboard, sheetType);
+  const headers = getHeadersForSheetType_(dashboard, sheetType);
   const outputName = buildDashboardOutputSheetName_(sheetDef, monthParts);
   const rawName = buildRawArchiveNameForSheetType_(sheetType, monthParts);
   const originalStartDate = coerceToValidDate_(sourceSheet.getRange(startDateCellA1).getValue()) ||
@@ -5697,7 +5612,7 @@ function formatMonthlyDashboardSheetFromSource_(sourceSheet, sheetType, monthPar
   lockFinalOutputRowHeights_(outputSheet, sheetType);
   markFrameworkStep_(timing, "Locked monthly dashboard row heights: " + outputName);
   archiveRawSourceAndDeleteLocal_(ss, sourceSheet, rawName, outputSheet, timing);
-  applyOutputVisibilityPolicy_(outputSheet, null, sheetDef.sheetType, timing);
+  applyOutputVisibilityPolicy_(outputSheet, dashboard, sheetDef.sheetType, timing);
   clearSheetRuntimeCachesForSheet_(outputSheet);
   return outputSheet;
 }
@@ -5711,6 +5626,8 @@ function formatMonthlyRawDataSheetFromSource_(sourceSheet, monthParts, timing) {
 function formatBannerReport() {
   return runFrameworkTimed_("Format Banner Report", function(timing) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dashboard = loadDashboardConfig_();
+    const sheetDef = getSheetDefinitionByType_(dashboard, SHEET_TYPE.BANNER);
     const rawSheetOriginal = ss.getActiveSheet();
 
 
@@ -5725,8 +5642,7 @@ function formatBannerReport() {
     const dateLabel = formatReportDateLabel_(reportDate);
     const rawName = "Raw Data - Banners " + Utilities.formatDate(reportDate, Session.getScriptTimeZone(), "MM.yy");
     const outputName = buildBannerReportOutputName_(reportDate);
-    const context = getTemplateDrivenActiveSheetContext_(ss, SHEET_TYPE.BANNER);
-    const templateName = context.sheetDef.templateName;
+    const templateName = "Template - Banner Report";
 
 
     if (rawSheetOriginal.getName() === templateName) {
@@ -5741,8 +5657,11 @@ function formatBannerReport() {
     markFrameworkStep_(timing, "Raw source preserved for read without local rename: " + rawSheet.getName());
 
 
-    const templateSheet = context.template;
-    markFrameworkStep_(timing, "Existing template verified or created from script defaults: " + templateName);
+    const templateSheet = ss.getSheetByName(templateName);
+    if (!templateSheet) {
+      throw new Error(templateName + " is missing. Run Refresh Banner Template once before using Format Banner Report.");
+    }
+    markFrameworkStep_(timing, "Existing template verified: " + templateName);
 
 
     deleteSheetIfExists_(ss, outputName, rawSheet.getName(), templateName);
@@ -5767,7 +5686,7 @@ function formatBannerReport() {
     archiveRawSourceAndDeleteLocal_(ss, rawSheet, rawName, outputSheet, timing);
 
 
-    applyOutputVisibilityPolicy_(outputSheet, null, SHEET_TYPE.BANNER, timing);
+    applyOutputVisibilityPolicy_(outputSheet, dashboard, sheetDef.sheetType, timing);
     refreshIndexAfterSheetWorkflow_("Format Banner Report");
     markFrameworkStep_(timing, "Banner formatter complete");
     return outputSheet;
@@ -5964,9 +5883,10 @@ function getCurrentCarePlanDueSheet_(monthParts) {
 function applyStandardFormatting_(sheet, options) {
   if (!sheet) return sheet;
   options = options || {};
-  const globals = RFF_DEFAULTS || {};
+  const dashboard = loadDashboardConfig_();
+  const globals = dashboard.globals || {};
   const sheetType = normalizeDashboardSheetTypeKey_(options.sheetType || getSheetTypeForOrganization_(sheet.getName()));
-  const sheetDef = getDefaultSheetDefinitionByType_(sheetType);
+  const sheetDef = getSheetDefinitionByType_(dashboard, sheetType);
   const theme = getThemeColorsFromBase_((sheetDef && sheetDef.baseColor) || "#65A9CC", globals);
   const lastCol = Math.max(sheet.getLastColumn(), 1);
   const lastRow = Math.max(sheet.getLastRow(), 1);
@@ -7439,7 +7359,7 @@ function applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStart
 function applyOutputVisibilityPolicy_(sheet, dashboard, sheetType, timing) {
   if (!sheet) return;
   const normalizedSheetType = normalizeDashboardSheetTypeKey_(sheetType);
-  const behavior = dashboard ? (getBehaviorForSheetType_(dashboard, normalizedSheetType) || {}) : getDefaultBehavior_();
+  const behavior = getBehaviorForSheetType_(dashboard || loadDashboardConfig_(), normalizedSheetType) || {};
   const visibility = String(behavior.outputVisibility || "VISIBLE").trim().toUpperCase();
   if (visibility === "HIDDEN" || visibility === "HIDE") {
     hideSheetIfNeeded_(sheet, timing, "Hide governed output sheet: " + sheet.getName());
@@ -7450,11 +7370,11 @@ function applyOutputVisibilityPolicy_(sheet, dashboard, sheetType, timing) {
 
 function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRows, firstDay, endDate, timing, timingLabel) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboard = loadDashboardConfig_();
   const normalizedSheetType = normalizeDashboardSheetTypeKey_(sheetType);
-  const context = getTemplateDrivenActiveSheetContext_(ss, normalizedSheetType);
-  const sheetDef = context.sheetDef;
-  const headers = context.headers;
-  const template = context.template;
+  const sheetDef = getSheetDefinitionByType_(dashboard, normalizedSheetType);
+  const headers = getHeadersForSheetType_(dashboard, normalizedSheetType);
+  const template = ss.getSheetByName(sheetDef.templateName);
   const markCanvasStep = function(label) {
     if (timing) markFrameworkStep_(timing, String(timingLabel || "Dashboard fast canvas") + " - " + label + ": " + outputName);
   };
@@ -7478,8 +7398,8 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
   resizeSheetGrid_(sheet, requiredRows, width);
   markCanvasStep("grid resized to " + requiredRows + " rows x " + width + " cols");
 
-  applyTemplateColumnWidths_(sheet, template, width);
-  markCanvasStep("template column widths applied");
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, rows.length);
+  markCanvasStep("governed text/date/number formats applied");
 
   // 3. NAKED WRITE: Set raw values instantly on unformatted cells
   if (rows.length) {
@@ -7531,8 +7451,8 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
     throw new Error("Environmental configurations failed for " + outputName + ": " + err.message);
   }
 
-  sheet.getRange(DATA_START_ROW, 1, Math.max(sheet.getLastRow() - DATA_START_ROW + 1, 1), Math.max(sheet.getLastColumn(), 1)).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
-  markCanvasStep("template-driven canvas wrap applied");
+  applyUniversalFastCanvasFormatting_(sheet, dashboard, headers);
+  markCanvasStep("universal canvas formatting applied");
   clearSheetRuntimeCachesForSheet_(sheet);
   markCanvasStep("runtime caches cleared");
   return sheet;
@@ -7540,11 +7460,11 @@ function createOutputSheetFromDashboardTemplate_(sheetType, outputName, outputRo
 
 function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, outputRows, firstDay, endDate, sourceName, timing) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const dashboard = loadDashboardConfig_();
   const normalizedSheetType = normalizeDashboardSheetTypeKey_(sheetType);
-  const context = getTemplateDrivenActiveSheetContext_(ss, normalizedSheetType);
-  const sheetDef = context.sheetDef;
-  const headers = context.headers;
-  const template = context.template;
+  const sheetDef = getSheetDefinitionByType_(dashboard, normalizedSheetType);
+  const headers = getHeadersForSheetType_(dashboard, normalizedSheetType);
+  const template = ss.getSheetByName(sheetDef.templateName);
   const markCanvasStep = function(label, details) {
     if (timing) markFrameworkStep_(timing, "Raw Data fast canvas - " + label + ": " + outputName, details || "");
   };
@@ -7566,7 +7486,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
   // 2. RIGHT-SIZE GRID: Force dimensions before writing to save rendering ticks
   resizeSheetGrid_(sheet, requiredRows, width);
 
-  applyTemplateColumnWidths_(sheet, template, width);
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, rows.length);
 
   // 3. NAKED WRITE: Set raw values instantly on unformatted cells (~2-3 seconds)
   if (rows.length) {
@@ -7587,7 +7507,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
     template.getRange(DATA_START_ROW, 1, 1, width)
       .copyTo(sheet.getRange(DATA_START_ROW, 1, rows.length, width), SpreadsheetApp.CopyPasteType.PASTE_FORMAT, false);
   } else if (rows.length > rawDataFormatCopyLimit) {
-    logBestEffortWarning_("Raw Data template data-row format copy skipped for " + outputName + " because row count " + rows.length + " exceeds " + rawDataFormatCopyLimit + "; template title/header formatting and column widths were still applied.");
+    logBestEffortWarning_("Raw Data template data-row format copy skipped for " + outputName + " because row count " + rows.length + " exceeds " + rawDataFormatCopyLimit + "; governed formats were applied instead.");
   }
 
   sheet.getRange("A1").setValue(sheetDef.reportTitle || normalizedSheetType || outputName);
@@ -7608,7 +7528,7 @@ function createRawDataOutputSheetFromTemplateFast_(sheetType, outputName, output
     throw new Error("Raw Data environmental configurations failed for " + outputName + ": " + err.message);
   }
 
-  sheet.getRange(DATA_START_ROW, 1, Math.max(sheet.getLastRow() - DATA_START_ROW + 1, 1), Math.max(sheet.getLastColumn(), 1)).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+  applyUniversalFastCanvasFormatting_(sheet, dashboard, headers);
   clearSheetRuntimeCachesForSheet_(sheet);
   markCanvasStep("runtime caches cleared");
   return sheet;
@@ -7810,9 +7730,9 @@ function formatCarePlanDueOrUnlockedFromDashboard_(sheetType, promptTitle, start
     if (!monthParts) return null;
 
 
-    const context = getTemplateDrivenActiveSheetContext_(ss, sheetType);
-    const sheetDef = context.sheetDef;
-    const headers = context.headers;
+    const dashboard = loadDashboardConfig_();
+    const sheetDef = getSheetDefinitionByType_(dashboard, sheetType);
+    const headers = getHeadersForSheetType_(dashboard, sheetType);
     const outputName = buildDashboardOutputSheetName_(sheetDef, monthParts);
     const rawName = buildRawArchiveNameForSheetType_(sheetType, monthParts);
 
@@ -8897,11 +8817,11 @@ function updateDemoPReportDates_(demoSheet, monthParts) {
 
 function enforceDemoPPostFlattenFormatting_(demoSheet) {
   if (!demoSheet) return;
-  const ss = typeof demoSheet.getParent === "function" ? demoSheet.getParent() : SpreadsheetApp.getActive();
-  const context = getTemplateDrivenActiveSheetContext_(ss, SHEET_TYPE.DEMO_P);
-  const headers = context.headers;
+  const dashboard = loadDashboardConfig_();
+  const headers = getHeadersForSheetType_(dashboard, SHEET_TYPE.DEMO_P);
 
-  applyTemplateColumnWidths_(demoSheet, context.template, Math.max(headers.length, 1));
+  applyColumnWidths_(demoSheet, dashboard, headers);
+  applyHiddenColumnSettings_(demoSheet, dashboard, headers);
 
   // High-speed strict alphabetical participant sort core
   sortSheetAlphabeticallyByParticipantName_(demoSheet);
@@ -9411,10 +9331,9 @@ function updateExistingDemoPFromRawData_(demoSheet, rawSheet, monthParts, timing
   const rawData = preflight.rawData;
 
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const context = getTemplateDrivenActiveSheetContext_(ss, SHEET_TYPE.DEMO_P);
-  const sheetDef = context.sheetDef;
-  const headers = context.headers;
+  const dashboard = loadDashboardConfig_();
+  const sheetDef = getSheetDefinitionByType_(dashboard, SHEET_TYPE.DEMO_P);
+  const headers = getHeadersForSheetType_(dashboard, SHEET_TYPE.DEMO_P);
   const outputRows = mapRowsToHeaders_(rawData.values, rawData.headers, headers);
   const workingData = {
     headers: headers,
@@ -9469,10 +9388,9 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
   setLastRawDataDisenrolledBuildResult_(movedResult);
   if (timing) markFrameworkStep_(timing, "Raw Data rows prepared for Demo P without disenrollment exclusion");
 
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const context = getTemplateDrivenActiveSheetContext_(ss, SHEET_TYPE.DEMO_P);
-  const sheetDef = context.sheetDef;
-  const headers = context.headers;
+  const dashboard = loadDashboardConfig_();
+  const sheetDef = getSheetDefinitionByType_(dashboard, SHEET_TYPE.DEMO_P);
+  const headers = getHeadersForSheetType_(dashboard, SHEET_TYPE.DEMO_P);
   const outputRows = mapRowsToHeaders_(rawData.values, rawData.headers, headers);
 
   const workingData = {
@@ -9497,7 +9415,9 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
 
   if (timing) markFrameworkStep_(timing, "Demo P Data processed, metadata mapped, and contacts flattened in memory | Rows retained: " + flatCount);
 
-  const template = context.template;
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const template = ss.getSheetByName(sheetDef.templateName);
+  if (!template) throw new Error("Template not found: " + sheetDef.templateName);
 
   deleteSheetIfExists_(ss, targetName, rawSheet.getName(), sheetDef.templateName);
 
@@ -9509,7 +9429,7 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
   const requiredRows = workingData.values.length ? DATA_START_ROW + workingData.values.length - 1 : DATA_START_ROW;
 
   resizeSheetGrid_(demoSheet, requiredRows, width);
-  applyTemplateColumnWidths_(demoSheet, template, width);
+  applyGovernedTextAndNumberFormats_(demoSheet, dashboard, headers, DATA_START_ROW, workingData.values.length);
 
   if (workingData.values.length) {
     demoSheet.getRange(DATA_START_ROW, 1, workingData.values.length, width).setValues(workingData.values.map(function(row) {
@@ -9543,7 +9463,7 @@ function createActiveDemoPFromRawData_(rawSheet, targetName, monthParts, timing)
     logBestEffortWarning_("Demo P workspace environmental defaults skipped: " + err.message);
   }
 
-  demoSheet.getRange(DATA_START_ROW, 1, Math.max(demoSheet.getLastRow() - DATA_START_ROW + 1, 1), Math.max(demoSheet.getLastColumn(), 1)).setWrapStrategy(SpreadsheetApp.WrapStrategy.CLIP);
+  applyUniversalFastCanvasFormatting_(demoSheet, dashboard, headers);
   clearSheetRuntimeCachesForSheet_(demoSheet);
 
   return {
@@ -10998,17 +10918,15 @@ function createMasterListSheetFromTemplate_(ss, targetName, monthParts, timing, 
     markCanvasStep("existing target sheet deleted after guard validation");
   }
 
-  const templateName = MASTER_LIST_TEMPLATE_SHEET;
-  const template = ss.getSheetByName(templateName);
-  markCanvasStep("template lookup complete", templateName);
+  const dashboard = loadDashboardConfig_();
+  markCanvasStep("dashboard configuration loaded");
+  const sheetDef = getSheetDefinitionByType_(dashboard, SHEET_TYPE.MASTER_LIST);
+  const headers = getHeadersForSheetType_(dashboard, SHEET_TYPE.MASTER_LIST);
+  markCanvasStep("headers resolved | Columns: " + headers.length);
+  const template = ss.getSheetByName(sheetDef.templateName);
+  markCanvasStep("template lookup complete", sheetDef.templateName);
   if (!template) {
-    throw new Error("Template not found: " + templateName + ". Run Create / Refresh Master List Template first.");
-  }
-
-  const headers = getHeaders_(template, HEADER_ROW);
-  markCanvasStep("headers resolved from template | Columns: " + headers.length);
-  if (!headers.some(function(header) { return String(header || "").trim(); })) {
-    throw new Error("Template not usable: " + templateName + " is missing header values on row " + HEADER_ROW + ".");
+    throw new Error("Template not found: " + sheetDef.templateName + ". Run Create / Refresh Master List Template first.");
   }
 
   const width = Math.max(headers.length, 1);
@@ -11041,12 +10959,10 @@ function createMasterListSheetFromTemplate_(ss, targetName, monthParts, timing, 
   } catch (err) {
     logBestEffortWarning_("Master List naked canvas style paint skipped: " + err.message);
   }
-  const templateColumnWidths = [];
-  for (let col = 1; col <= width; col++) {
-    templateColumnWidths.push(template.getColumnWidth(col));
-  }
-  applyColumnWidthsInRuns_(sheet, templateColumnWidths);
-  markCanvasStep("template column widths applied");
+  applyColumnWidths_(sheet, dashboard, headers);
+  markCanvasStep("column widths applied");
+  applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, DATA_START_ROW, requiredRows >= DATA_START_ROW ? requiredRows - DATA_START_ROW + 1 : 0);
+  markCanvasStep("governed text/date/number formats applied");
 
   try {
     sheet.getRange("A1:D2").setValues([
@@ -11182,12 +11098,12 @@ function configureIndexRestoreWebAppUrl() {
   ui.alert("Index Restore Web App URL", value ? "Index restore hyperlinks are now enabled with the configured URL and the Index was rebuilt." : "Configured URL cleared. The Index was rebuilt and will use the deployed Web App URL automatically when available; otherwise the menu-based restore fallback remains available.", ui.ButtonSet.OK);
 }
 
-function buildIndexRestoreHyperlinkFormula_(targetSheetName, actionType) {
+function buildIndexRestoreHyperlinkFormula_(targetSheetName) {
   const webAppUrl = getIndexRestoreWebAppUrl_();
   if (!webAppUrl || !targetSheetName) return "🔄 Click to Restore";
-  const restoreAction = String(actionType || "demo_p_archive").trim() || "demo_p_archive";
+  const isArchiveRow = targetSheetName === "Archive - Demo P" || targetSheetName.indexOf("Archive") === 0;
   const compositeLinkUrl = webAppUrl + "?restoreTarget=" + encodeURIComponent(targetSheetName) +
-    "&action=" + encodeURIComponent(restoreAction);
+    "&action=" + (isArchiveRow ? "demo_p_archive" : "standard_rollback");
   return '=HYPERLINK("' + compositeLinkUrl + '", "🔄 Click to Restore")';
 }
 
@@ -11317,7 +11233,7 @@ function createIndexSheet() {
         ashName,
         '=HYPERLINK("https://docs.google.com/spreadsheets/d/' + archiveId + '/edit#gid=' + ash.getSheetId() + '","Open Archive Tab")',
         ash.isSheetHidden() ? "Archived (Hidden)" : "Visible in Cold Storage",
-        buildIndexRestoreHyperlinkFormula_(ashName, "demo_p_archive")
+        buildIndexRestoreHyperlinkFormula_(ashName)
       ]);
     });
     archiveRows.sort((a, b) => a[0].localeCompare(b[0]));
@@ -11526,11 +11442,7 @@ function doGet(e) {
     return HtmlService.createHtmlOutput("<p style='font-family:sans-serif;color:#cc0000;'>❌ Recovery Routing Execution Failed: " + escapeHtml_(err && err.message ? err.message : err) + "</p>");
   } finally {
     if (lockAcquired) {
-      try {
-        lock.releaseLock();
-      } catch (releaseErr) {
-        logBestEffortWarning_("Archive web restore lock release skipped: " + (releaseErr && releaseErr.message ? releaseErr.message : releaseErr));
-      }
+      lock.releaseLock();
     }
   }
 }
@@ -12801,9 +12713,8 @@ function appendDisenrolledDeltasToExclusionSheet_(exclusionSheet, sourceHeaders,
   updateDisenrolledExclusionReportDates_(exclusionSheet, monthParts);
   if (!rowsToAppendByPMR || rowsToAppendByPMR.size === 0) return 0;
 
-  const ss = typeof exclusionSheet.getParent === "function" ? exclusionSheet.getParent() : SpreadsheetApp.getActive();
-  const context = getTemplateDrivenActiveSheetContext_(ss, SHEET_TYPE.DISENROLLED_EXCLUSION);
-  const exclusionHeaders = context.headers;
+  const dashboard = loadDashboardConfig_();
+  const exclusionHeaders = getHeadersForSheetType_(dashboard, SHEET_TYPE.DISENROLLED_EXCLUSION);
   const sourceHeaderMap = buildHeaderIndexMap_(sourceHeaders || []);
   const sourcePMRIdx = getPMRIndex_(sourceHeaderMap);
   const exclusionHeaderMap = buildHeaderIndexMap_(exclusionHeaders);
@@ -12945,12 +12856,26 @@ function createDisenrolledExclusionSheetFromDashboardTemplate_(ss, monthParts) {
   const existing = ss.getSheetByName(DISENROLLED_EXCLUSION_SHEET);
   if (existing) return existing;
 
-  const context = getTemplateDrivenActiveSheetContext_(ss, SHEET_TYPE.DISENROLLED_EXCLUSION);
-  const template = context.template;
-  let sheet = template.copyTo(ss);
-  setUniqueSheetName_(sheet, DISENROLLED_EXCLUSION_SHEET);
-  positionSheetInGlobalSortOrder_(sheet);
-  showSheetIfNeeded_(sheet, null, null);
+  const dashboard = loadDashboardConfig_();
+  const sheetDef = getSheetDefinitionByType_(dashboard, SHEET_TYPE.DISENROLLED_EXCLUSION);
+  const headers = getHeadersForSheetType_(dashboard, SHEET_TYPE.DISENROLLED_EXCLUSION);
+  const template = sheetDef && sheetDef.templateName ? ss.getSheetByName(sheetDef.templateName) : null;
+  let sheet;
+
+  if (template) {
+    sheet = template.copyTo(ss);
+    setUniqueSheetName_(sheet, DISENROLLED_EXCLUSION_SHEET);
+    positionSheetInGlobalSortOrder_(sheet);
+    showSheetIfNeeded_(sheet, null, null);
+  } else {
+    sheet = insertGovernedOutputSheet_(ss, DISENROLLED_EXCLUSION_SHEET);
+    const width = Math.max(headers.length, 1);
+    resizeSheetGrid_(sheet, Math.max(resolveTemplateRowCount_(sheetDef, dashboard.globals), 25), width);
+    updateDisenrolledExclusionReportDates_(sheet, monthParts);
+    if (headers.length) sheet.getRange(HEADER_ROW, 1, 1, headers.length).setValues([headers]);
+    applyDashboardTemplateFormattingToActiveReportSheet_(sheet, dashboard, sheetDef, headers, getBehaviorForSheetType_(dashboard, SHEET_TYPE.DISENROLLED_EXCLUSION), monthParts, monthParts && monthParts.lastDay, "Initialized without template", null);
+    logBestEffortWarning_("Template layer missing for Disenrolled Exclusion; initialized persistent sheet from dashboard schema.");
+  }
 
   updateDisenrolledExclusionReportDates_(sheet, monthParts);
   clearSheetRuntimeCachesForSheet_(sheet);
