@@ -1,0 +1,272 @@
+# MASTER LIST FRAMEWORK SPECIFICATION GENERATION
+
+You are acting as the Lead Framework Architect and Technical Documentation Engineer for the Master List Framework.
+
+Your objective is to build the definitive Master List Framework Specification for the current production framework from the source materials listed below.
+
+This is **not** a code review, API reference, line-by-line function guide, user manual, remediation plan, or historical comparison. It is a complete engineering specification describing the implemented framework: what it does, how it is organized, why the architecture exists, how the subsystems interact, and how the framework must be maintained.
+
+The completed Markdown document will become the editable source of truth for future DOCX, Google Docs, and PDF builds. It must be publication-ready and must conform to the documentation build requirements in `General/ML/Documentation Build Specification Requirement`.
+
+---
+
+## 1. Primary Source Materials
+
+Use these sources, in this order of authority:
+
+1. `Master_List/Specs/v1.9_Master_List_Framework_Specifications_Final_Governing_Edition.pdf`
+   - Previous Framework Specification - 
+   - Base for Framework Rebuild to be updated to match 
+Historical Supporting files:  Master_List/Specs/Historical_Spec and Master_List/v2_Framework_Reference
+
+2.`Master_List/Current Production Script/v.1.7.7_Current_Production_Script`
+   - Governing implementation source of truth.
+   - If any supporting document conflicts with this file, the production script governs.
+3. `Master_List/Specs/FUNCTION_INVENTORY_REVIEW_v1.7.6.md`
+   - Current static function inventory, ownership map, dependencies, public entry points, workflow groupings, service usage, sheet/config references, trigger usage, and risk notes.
+   - Use this as the primary navigation and coverage reference, but verify architecture assertions against the production script.
+4. `General/ML/Documentation Build Specification Requirement`
+   - Required output-format contract for the Markdown source and downstream DOCX build.
+   - Use this to control heading structure, tables, identifier formatting, appendices, and validation expectations.
+
+Historical Supporting files:  Master_List/Specs/Historical_Spec  and Master_List/v2_Framework_Reference
+
+Do not use archived files or historical specifications as governing source unless the production script explicitly implements the behavior. Do not copy legacy prose. Document the current framework only.
+
+---
+
+## 2. Required Deliverable
+
+Produce the complete Markdown source for:
+
+`Master_List/Specs/Framework_Build_Specification_v1.0.md`
+
+The generated Markdown must be suitable for direct DOCX production without manual formatting. The Markdown file is the only editable source; generated DOCX, Google Docs, and PDF outputs must be treated as build artifacts.
+
+---
+
+## 3. Documentation Build Contract
+
+The Markdown you produce must support the build pipeline specified by `General/ML/Documentation Build Specification Requirement`:
+
+```text
+Read Markdown
+    ↓
+Parse Document Structure
+    ↓
+Classify Content Types
+    ↓
+Apply Styles
+    ↓
+Convert Tables
+    ↓
+Convert Lists
+    ↓
+Generate TOC
+    ↓
+Insert Page Numbers
+    ↓
+Run Validation
+    ↓
+Write DOCX
+```
+
+Follow these authoring rules so the downstream builder can satisfy the contract:
+
+- Use exactly one `#` title at the top of the document.
+- Use `##`, `###`, `####`, and `#####` in hierarchical order; do not skip heading levels.
+- Use pipe tables only where native Word tables are intended in the build output.
+- Keep tables concise enough to fit Letter portrait pages unless the content clearly requires landscape treatment.
+- Use consistent Markdown lists and preserve intended numbering.
+- Use backticks for Apps Script functions, constants, property keys, and code-style identifiers.
+- Use bold text for file names, file paths, sheet names, template names, dashboard section names, and menu commands.
+- Do not leave Markdown syntax artifacts that should not appear in the rendered DOCX.
+- Include enough heading depth for a native Word table of contents using Heading 1 through Heading 4.
+- Make the document deterministic: identical source analysis should produce identical Markdown output.
+
+---
+
+## 4. Required Document Style
+
+Write as a formal software architecture and framework engineering specification.
+
+The document must:
+
+- Explain architecture, behavior, business rules, data movement, validation, synchronization, templates, dashboards, triggers, governance, and maintenance expectations.
+- Distinguish implemented behavior from inferred design intent.
+- Avoid JavaScript tutorials and line-by-line commentary.
+- Avoid unsupported claims, invented features, and speculative future design.
+- Avoid recommendations unless they are framed as maintenance governance for future approved work.
+- Preserve public-interface compatibility and identify public entry points without turning the document into an API manual.
+- Use present tense for implemented behavior.
+- Use formal, concise engineering language.
+
+---
+
+## 5. Coverage Requirements
+
+The specification must be complete enough for an experienced developer to understand and maintain the framework. It must cover:
+
+- Framework purpose, scope, philosophy, objectives, design principles, and major components.
+- Overall architecture, processing architecture, module organization, subsystem relationships, execution model, and framework layers.
+- Configuration model, runtime cache, global constants, dashboard-derived configuration, feature flags, version constants, and property keys.
+- Workflow architecture, process sequence, execution order, dependencies, public entry points, menu-facing operations, trigger-facing operations, and ownership.
+- Data sources, data lifecycle, ownership, movement, transformation, integrity rules, and synchronization model.
+- Sheet architecture for every implemented operational, template, dashboard, report, archive, and system sheet.
+- Column architecture, required/optional/generated/calculated/synchronization/validation/protected columns, and header normalization rules.
+- Mapping architecture, including source-to-destination mapping, lookup rules, merge rules, primary-key rules, and synchronization behavior.
+- Template architecture, including template lifecycle, dashboard-controlled templates, formatting strategy, smart refresh behavior, staged build flags, resizing, visibility, and protection behavior.
+- Dashboard architecture, including configuration dashboard, timing dashboard, dashboard quality report, diagnostics, signoff, validation, and governance areas.
+- Major processing modules, including purpose, inputs, outputs, dependencies, business rules, and subsystem relationships.
+- Reporting architecture, including generation, dependencies, timing, validation, output standards, and quality signals.
+- Validation framework, including preflight validation, template validation, configuration validation, workflow validation, data-integrity validation, and failure behavior.
+- Error-handling framework, including recovery, logging, notification, fault isolation, validation failure behavior, and workflow busy flag protection.
+- Performance framework, including batch operations, caching, in-memory transforms, Maps/Sets, minimized flushes, scalable sheet operations, and known high-complexity areas.
+- Governance, including naming standards, protected standards, architecture decisions, versioning, approved patterns, public-interface stability, and safe-change requirements.
+- Function organization by logical groups and ownership, not every individual function.
+- Maintenance guidance for future development, dependency review, specification synchronization, validation, and release preparation.
+
+---
+
+## 6. Required Sections
+
+Generate the specification with the following top-level structure. Add appropriate lower-level subsections as needed while preserving hierarchy.
+
+## Framework Overview
+
+Include purpose, scope, objectives, framework philosophy, design principles, major components, and the current implementation baseline.
+
+## Framework Architecture
+
+Include overall architecture, processing architecture, module organization, subsystem relationships, execution model, framework layers, and dependency boundaries.
+
+## Configuration Framework
+
+Include configuration objects, runtime configuration, global constants, dashboard configuration, feature flags, version management, document properties, cache behavior, and configuration ownership.
+
+## Workflow Architecture
+
+Include overall workflow, process sequence, execution order, dependencies, entry points, public interfaces, menu operations, trigger operations, workflow ownership, and concurrency controls.
+
+## Data Architecture
+
+Include data sources, data lifecycle, data ownership, data movement, transformation rules, integrity rules, synchronization model, archive behavior, and retention behavior.
+
+## Sheet Architecture
+
+Document every implemented sheet category and notable sheet. For each sheet or sheet family, include purpose, lifecycle, creation, maintenance, processing, dependencies, relationships, visibility, protection, naming standards, and data ownership.
+
+## Column Architecture
+
+Include column definitions, required columns, optional columns, generated columns, calculated columns, synchronization columns, validation columns, protected columns, header normalization, and dashboard-defined column behavior.
+
+## Mapping Architecture
+
+Include source mapping, destination mapping, transformation rules, lookup rules, synchronization rules, merge rules, primary-key rules, and conflict-handling behavior.
+
+## Template Architecture
+
+Include template philosophy, lifecycle, formatting strategy, template synchronization, dashboard-controlled templates, smart refresh, staged build controls, template validation, and template standards.
+
+## Dashboard Architecture
+
+Include dashboard components, dashboard configuration, dashboard quality, dashboard validation, dashboard reporting, dashboard governance, dashboard sections, signoff behavior, timing integration, and diagnostic ownership.
+
+## Processing Modules
+
+Describe every major processing module at a subsystem level. Include purpose, inputs, outputs, dependencies, business rules, relationships, and ownership. Do not document every function individually.
+
+## Reporting Architecture
+
+Include reports, generation processes, dependencies, validation, timing, output standards, dashboards, summaries, diagnostics, and accepted quality signals.
+
+## Validation Framework
+
+Include validation strategy, framework validation, template validation, configuration validation, workflow validation, integrity validation, error detection, preflight gates, and fail-fast rules.
+
+## Quality Assurance Framework
+
+Include QA architecture, verification approach, audit strategy, framework health checks, diagnostic reports, dashboard quality checks, timing review, and acceptance criteria.
+
+## Error Handling Framework
+
+Include error management, recovery, logging, notification, fault isolation, validation failures, workflow busy flag handling, and safe termination behavior.
+
+## Performance Framework
+
+Include performance design, optimization strategy, runtime cache, memory usage, batch operations, scalable sheet manipulation, destructive-operation batching, dashboard timing, and high-complexity function notes.
+
+## Framework Governance
+
+Include engineering standards, naming standards, framework rules, protected standards, architecture decisions, approved patterns, versioning, public-interface stability, and safe-change controls.
+
+## Function Organization
+
+Document logical function groups, responsibilities, ownership, interactions, public entry points, workflow functions, validators, formatters, dashboard functions, utilities, and internal/private helpers. Use the function inventory for summary counts and group coverage.
+
+## Framework Maintenance
+
+Explain how future development should occur, how architecture should evolve, how governance is maintained, how specifications remain synchronized, how dependency review must precede removal or renaming, and how production changes should be validated.
+
+## Appendices
+
+Include at minimum:
+
+- Framework terminology.
+- Sheet inventory.
+- Module inventory.
+- Public entry point inventory.
+- Workflow diagrams expressed as text or Mermaid-compatible fenced diagrams if appropriate.
+- Configuration reference.
+- Dashboard reference.
+- Validation reference.
+- Glossary.
+
+---
+
+## 7. Function Inventory Requirements
+
+Use `General/ML/FUNCTION_INVENTORY_REVIEW_v1.7.6.md` to ensure coverage of the current implementation. The specification must incorporate these inventory facts where appropriate:
+
+- Total functions: 672.
+- Public entry points: 64.
+- Workflow functions: 52.
+- Formatters: 38.
+- Helpers: 192.
+- Validators: 15.
+- Dashboard functions: 140.
+- Utilities: 152.
+- Configuration functions: 1.
+- Trigger functions: 3.
+- Internal/private helpers: 608.
+- Duplicate function declarations: none detected.
+- Potential orphan/internal functions are review candidates only and must not be described as confirmed dead code.
+- `getDefaultHeaderSets_` is the only oversized function candidate and should be framed as a maintenance-review candidate, not a defect.
+- The `loadDashboardConfig_ -> loadGlobalSettings_ -> loadDashboardConfig_` cycle is a circular dependency candidate requiring governance-aware manual review before change.
+
+When documenting function organization, summarize by subsystem and responsibility. Do not create a 672-row function reference unless specifically requested.
+
+---
+
+## 8. Verification Requirements
+
+Before finalizing the specification, verify that:
+
+- Every documented framework component exists in the production script or current inventory.
+- Every major implemented framework component is represented in the specification.
+- No obsolete historical behavior is documented as current behavior.
+- No unsupported feature is invented.
+- Public entry points, triggers, menu operations, sheet names, template names, constants, property keys, and dashboard areas match the production source.
+- Orphan candidates are treated as candidates requiring dynamic-reference review, not deletion instructions.
+- Destructive operations are described with their validation and batching safeguards.
+- Generated documentation remains compatible with the documentation build contract.
+
+---
+
+## 9. Output Rules
+
+Return only the complete Markdown content for `Master_List/Specs/Framework_Build_Specification_v1.0.md`.
+
+Do not include conversational prefaces, implementation notes, source excerpts, or commit-style summaries in the generated specification.
+
+Do not summarize. Produce complete sections with enough engineering detail for long-term maintenance and production validation.
