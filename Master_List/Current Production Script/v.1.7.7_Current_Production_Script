@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.7.6.7";
+const MASTER_LIST_MERGE_ML_VERSION = "1.7.7";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -1134,6 +1134,28 @@ function setUniqueSheetName_(sheet, desiredName) {
 
 
   return name;
+}
+
+
+function setRequiredSheetName_(sheet, desiredName) {
+  if (!sheet || !desiredName) return desiredName;
+
+
+  const ss = sheet.getParent();
+  const existing = ss.getSheetByName(desiredName);
+  if (existing && existing.getSheetId && existing.getSheetId() !== sheet.getSheetId()) {
+    throw new Error("Sheet already exists: " + desiredName + ". Delete or rename the existing sheet before rerunning this workflow.");
+  }
+
+
+  if (sheet.getName() !== desiredName) {
+    sheet.setName(desiredName);
+    clearMonthlySheetLookupCache_();
+    clearSheetRuntimeCachesForSheet_(sheet);
+  }
+
+
+  return desiredName;
 }
 
 
@@ -9989,7 +10011,7 @@ function buildMonthlyChangeReportForMonth_(monthParts, timing) {
   const reportName = buildMonthlySheetName_(MONTHLY_CHANGE_REPORT_PREFIX, monthParts.firstDay, monthParts.lastDay);
   let reportSheet = ss.getSheetByName(reportName);
   if (reportSheet) {
-    markRuntimeStep_(timing, "Monthly Change detail - existing report retained; creating unique monthly report name: " + reportName);
+    throw new Error("Monthly Change report already exists: " + reportName + ". Delete or rename the existing report before rerunning this workflow.");
   }
 
 
@@ -9999,7 +10021,7 @@ function buildMonthlyChangeReportForMonth_(monthParts, timing) {
   if (!template) throw new Error("Template not found: " + sheetDef.templateName + ". Run Create / Refresh All Templates first.");
   reportSheet = template.copyTo(ss);
   markRuntimeStep_(timing, "Monthly Change detail - template copied: " + sheetDef.templateName);
-  setUniqueSheetName_(reportSheet, reportName);
+  setRequiredSheetName_(reportSheet, reportName);
   placeCreatedSheetInConfiguredOrder_(reportSheet);
   showSheetIfNeeded_(reportSheet, timing, "Monthly Change detail - report sheet shown");
   markRuntimeStep_(timing, "Monthly Change report sheet created from template; full-workbook sheet sorting skipped by design");
@@ -10011,7 +10033,7 @@ function buildMonthlyChangeReportForMonth_(monthParts, timing) {
   formatMonthlyChangeReportSectionSheet_(reportSheet, sectionData.currentData.headers);
   markRuntimeStep_(timing, "Monthly Change report drawn and subheaders formatted");
 
-  setUniqueSheetName_(reportSheet, reportName);
+  setRequiredSheetName_(reportSheet, reportName);
   createIndexSheet();
   markRuntimeStep_(timing, "Monthly Change index refreshed");
 
