@@ -14,22 +14,15 @@ The completed Markdown document will become the editable source of truth for fut
 
 Use these sources, in this order of authority:
 
-1. `Master_List/Specs/v1.9_Master_List_Framework_Specifications_Final_Governing_Edition.pdf`
-   - Previous Framework Specification - 
-   - Base for Framework Rebuild to be updated to match 
-Historical Supporting files:  Master_List/Specs/Historical_Spec and Master_List/v2_Framework_Reference
-
-2.`Master_List/Current Production Script/v.1.7.7_Current_Production_Script`
+1. `General/ML/v.1.7.6_Current_Production_Script`
    - Governing implementation source of truth.
    - If any supporting document conflicts with this file, the production script governs.
-3. `Master_List/Specs/FUNCTION_INVENTORY_REVIEW_v1.7.6.md`
+2. `General/ML/FUNCTION_INVENTORY_REVIEW_v1.7.6.md`
    - Current static function inventory, ownership map, dependencies, public entry points, workflow groupings, service usage, sheet/config references, trigger usage, and risk notes.
    - Use this as the primary navigation and coverage reference, but verify architecture assertions against the production script.
-4. `General/ML/Documentation Build Specification Requirement`
+3. `General/ML/Documentation Build Specification Requirement`
    - Required output-format contract for the Markdown source and downstream DOCX build.
    - Use this to control heading structure, tables, identifier formatting, appendices, and validation expectations.
-
-Historical Supporting files:  Master_List/Specs/Historical_Spec  and Master_List/v2_Framework_Reference
 
 Do not use archived files or historical specifications as governing source unless the production script explicitly implements the behavior. Do not copy legacy prose. Document the current framework only.
 
