@@ -1,0 +1,619 @@
+# Master List Framework Engineering FAQ
+
+Version: Current Production
+Status: Governing Reference
+
+---
+
+# Table of Contents
+
+1. What is the Master List Framework?
+2. Repository Structure
+3. Current Production Files
+4. Specifications
+5. Documentation
+6. Reviews
+7. Validation Tools
+8. Development Workflow
+9. Git Workflow
+10. Codex Workflow
+11. Architecture Reviews
+12. Function Inventory
+13. Framework Specification
+14. Testing
+15. Common Tasks
+16. Troubleshooting
+17. Frequently Asked Questions
+
+---
+
+# 1. What is the Master List Framework?
+
+The Master List Framework is a Google Apps Script framework that automates the processing, validation, synchronization, formatting, and reporting of monthly healthcare roster data.
+
+The framework uses:
+
+• Dashboard-driven configuration
+• Template-first formatting
+• Modular workflow architecture
+• Batch processing
+• Dashboard Quality validation
+• Framework governance
+
+The current production script is the implementation source of truth.
+
+---
+
+# 2. Repository Structure
+
+## Current_Production
+
+Contains the current approved production script.
+
+Use when:
+
+• Deploying
+• Reviewing production logic
+• Comparing releases
+
+Never edit archived versions.
+
+---
+
+## scripts/
+
+Contains modular source files.
+
+Use when:
+
+• Development
+• Refactoring
+• Architecture review
+• Function review
+
+---
+
+## spec/
+
+Contains engineering documentation.
+
+Examples:
+
+Framework Specification
+
+Architecture Specification
+
+Function Inventory
+
+Sheet Definitions
+
+Column Definitions
+
+Mapping Documents
+
+Governance Documents
+
+Use these during design and review.
+
+---
+
+## reports/
+
+Contains generated reports.
+
+Examples:
+
+Architecture Review
+
+Function Inventory
+
+Dashboard Quality
+
+Timing Reports
+
+Validation Reports
+
+Review Reports
+
+These are generated artifacts.
+
+Do not edit manually.
+
+---
+
+## Archive/
+
+Historical releases.
+
+Use only for historical reference.
+
+Never use archived files as implementation authority.
+
+---
+
+# 3. What is the Current Production Script?
+
+The current production script is the implementation source of truth.
+
+All engineering reviews are performed against it.
+
+If documentation conflicts with the production script:
+
+The production script governs.
+
+---
+
+# 4. What is the Framework Specification?
+
+The Framework Specification describes:
+
+• architecture
+
+• workflows
+
+• processing
+
+• data flow
+
+• dashboard
+
+• templates
+
+• governance
+
+It does NOT document every function.
+
+Use when:
+
+• understanding the framework
+
+• onboarding
+
+• architecture review
+
+• future development
+
+---
+
+# 5. What is the Architecture Specification?
+
+Documents:
+
+• modules
+
+• ownership
+
+• dependencies
+
+• interfaces
+
+• layering
+
+• coupling
+
+• scalability
+
+Use during:
+
+• architecture review
+
+• refactoring
+
+• module planning
+
+---
+
+# 6. What is the Function Inventory?
+
+Automatically generated.
+
+Contains:
+
+• every function
+
+• ownership
+
+• dependencies
+
+• callers
+
+• public entry points
+
+• helpers
+
+• validators
+
+• triggers
+
+Use for:
+
+• orphan detection
+
+• duplicate detection
+
+• dependency analysis
+
+• cleanup
+
+---
+
+# 7. What is the Mapping Documentation?
+
+Defines:
+
+source columns
+
+destination columns
+
+transformations
+
+merge rules
+
+primary keys
+
+synchronization
+
+Update whenever mappings change.
+
+---
+
+# 8. What are Sheet Definitions?
+
+Documents every worksheet.
+
+Includes:
+
+purpose
+
+headers
+
+columns
+
+creation
+
+workflow
+
+relationships
+
+visibility
+
+Use whenever a sheet changes.
+
+---
+
+# 9. What are Validation Reports?
+
+Validation verifies:
+
+configuration
+
+templates
+
+dashboard
+
+workflow
+
+sheet definitions
+
+column definitions
+
+Use before production releases.
+
+---
+
+# 10. What is Dashboard Quality?
+
+Dashboard Quality validates:
+
+templates
+
+workflow
+
+configuration
+
+framework health
+
+It is a framework diagnostic tool.
+
+---
+
+# 11. What is an Architecture Review?
+
+Reviews:
+
+modules
+
+dependencies
+
+ownership
+
+data flow
+
+configuration
+
+maintainability
+
+Use:
+
+before major releases
+
+after major refactoring
+
+---
+
+# 12. What is a Framework Review?
+
+Compares:
+
+implementation
+
+specification
+
+governance
+
+workflow
+
+mapping
+
+Ensures documentation matches implementation.
+
+---
+
+# 13. What is a Function Review?
+
+Reviews:
+
+helpers
+
+duplicates
+
+orphans
+
+dead code
+
+complexity
+
+dependencies
+
+Use after large code changes.
+
+---
+
+# 14. What is an Exhaustive Review?
+
+Complete engineering review including:
+
+Architecture
+
+Function Inventory
+
+Framework Specification
+
+Dependencies
+
+Performance
+
+Validation
+
+Data Integrity
+
+Governance
+
+Run:
+
+before production releases
+
+after major architectural work
+
+---
+
+# 15. What are Validation Scripts?
+
+## validate_js_node.sh
+
+Checks JavaScript syntax.
+
+Run after:
+
+major code edits
+
+---
+
+## validate_json_manifests.sh
+
+Validates JSON files.
+
+Run after:
+
+manifest changes
+
+configuration updates
+
+---
+
+## validate_all.sh
+
+Runs every validation.
+
+Run:
+
+before committing
+
+before releases
+
+---
+
+# 16. Common Workflow
+
+1.
+
+Modify code
+
+↓
+
+Run validation scripts
+
+↓
+
+Update Function Inventory
+
+↓
+
+Update Framework Specification
+
+↓
+
+Run Architecture Review
+
+↓
+
+Run Exhaustive Review
+
+↓
+
+Deploy
+
+---
+
+# 17. Git Workflow
+
+Feature branch
+
+↓
+
+Commit
+
+↓
+
+Review
+
+↓
+
+Merge into main
+
+↓
+
+Delete stale branches
+
+Never merge obsolete review branches.
+
+---
+
+# 18. Codex Workflow
+
+1.
+
+Read README
+
+2.
+
+Read specifications
+
+3.
+
+Read production script
+
+4.
+
+Understand framework
+
+5.
+
+Make changes
+
+6.
+
+Run reviews
+
+Never rebuild working business logic.
+
+Never replace the framework unless requested.
+
+---
+
+# 19. Frequently Asked Questions
+
+Q:
+What is the source of truth?
+
+A:
+The current production script.
+
+---
+
+Q:
+Can archived scripts be used?
+
+Only as historical reference.
+
+---
+
+Q:
+When should Function Inventory be regenerated?
+
+After structural code changes.
+
+---
+
+Q:
+When should Framework Specification be updated?
+
+When workflows, architecture, governance, or processing changes.
+
+---
+
+Q:
+When should Architecture Review be run?
+
+Before major releases and after major refactoring.
+
+---
+
+Q:
+When should Exhaustive Review be run?
+
+Before production releases.
+
+---
+
+Q:
+What documents are regenerated?
+
+Function Inventory
+
+Architecture Review
+
+Framework Review
+
+Validation Reports
+
+Dashboard Reports
+
+Timing Reports
+
+---
+
+Q:
+Should Codex rebuild working code?
+
+No.
+
+It should evolve the existing framework.
+
+---
+
+# 20. Engineering Philosophy
+
+The objective is continuous improvement of a stable production framework.
+
+Preserve approved business rules.
+
+Improve architecture.
+
+Reduce complexity.
+
+Maintain documentation.
+
+Keep implementation and specifications synchronized.
+
+The framework evolves through controlled engineering changes rather than complete rewrites.

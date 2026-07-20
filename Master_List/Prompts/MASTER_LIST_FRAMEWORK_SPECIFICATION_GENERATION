@@ -1,0 +1,462 @@
+# MASTER LIST FRAMEWORK SPECIFICATION GENERATION
+
+You are acting as the Lead Framework Architect and Technical Documentation Engineer for the Master List Framework.
+
+Your objective is to build the definitive Master List Framework Specification for the current production framework.
+
+This is NOT a code review.
+
+This is NOT API documentation.
+
+This is NOT function documentation.
+
+This is a complete engineering specification describing how the framework operates.
+
+The completed document will become the governing technical specification used for future development, maintenance, architecture reviews, and production validation.
+
+
+------------------------------------------------------------
+PRIMARY SOURCE OF TRUTH
+------------------------------------------------------------
+
+The current approved production script is the implementation source of truth.
+
+Supporting documents include:
+
+• Current Function Inventory
+• Current Architecture Review
+• Current Mapping Documents
+• Current Sheet Definitions
+• Current Column Definitions
+• Dashboard Reports
+• Timing Reports
+• Validation Reports
+• Governance Decisions
+Master_List/Specs/FUNCTION_INVENTORY_REVIEW_v1.7.6.md
+
+Historical Documents 
+Master_List/Specs/v1.9_Master_List_Framework_Specifications_Final_Governing_Edition.pdf
+Master_List/Specs/v1.9 - Master List Knowledge Base Index.pdf
+Master_List/Specs/Updated Dashboard Quality._.pdf
+Master_List/Specs/System Sheet Architecture Specification_.pdf
+Master_List/Specs/Governance Areas Confirmed in v1.pdf
+Master_List/Specs/Dashboard_Quality_Specs_.pdf
+Master_List/Specs/Current_Framework_Update_Log.pdf
+
+Master_List/Specs/SPEC_REVIEW_v1.7.6_vs_Framework_Spec_v2.0_Draft.md
+Master_List/Specs/Master_List_Framework_Specification_v2.0_UPDATEDv2.md
+
+Master_List/Specs/v1.9_GPT_Instructions.pdf
+
+If supporting documents conflict with the current production script, the production script governs.
+
+Do not copy historical documentation.
+
+Document the framework as it currently exists.
+
+------------------------------------------------------------
+DOCUMENT OBJECTIVE
+------------------------------------------------------------
+
+Produce a comprehensive engineering specification that explains the framework, not merely the code.
+
+The document should allow an experienced developer to understand:
+
+• what the framework does
+
+• how it is organized
+
+• why it is organized that way
+
+• how every major subsystem interacts
+
+• how data flows
+
+• how processing flows
+
+• how configuration controls behavior
+
+• how templates control formatting
+
+• how synchronization occurs
+
+• how reports are produced
+
+• how validation operates
+
+• how governance is enforced
+
+------------------------------------------------------------
+DOCUMENT STYLE
+------------------------------------------------------------
+
+Write as an engineering specification.
+
+Do not write a user manual.
+
+Do not explain JavaScript syntax.
+
+Do not document every line of code.
+
+Document architecture, framework behavior, engineering decisions, and implementation standards.
+
+Use formal technical language.
+
+Avoid historical references unless documenting an approved governance decision.
+
+Document only the current framework.
+
+------------------------------------------------------------
+REQUIRED SECTIONS
+------------------------------------------------------------
+
+1.
+Framework Overview
+
+Purpose
+
+Scope
+
+Objectives
+
+Framework Philosophy
+
+Design Principles
+
+Major Components
+
+2.
+Framework Architecture
+
+Overall Architecture
+
+Processing Architecture
+
+Module Organization
+
+Subsystem Relationships
+
+Execution Model
+
+Framework Layers
+
+3.
+Configuration Framework
+
+Configuration Objects
+
+Runtime Configuration
+
+Global Constants
+
+Dashboard Configuration
+
+Feature Flags
+
+Version Management
+
+4.
+Workflow Architecture
+
+Overall Workflow
+
+Process Sequence
+
+Execution Order
+
+Dependencies
+
+Entry Points
+
+Public Interfaces
+
+Workflow Ownership
+
+5.
+Data Architecture
+
+Data Sources
+
+Data Lifecycle
+
+Data Ownership
+
+Data Movement
+
+Data Transformation
+
+Data Integrity
+
+Synchronization Model
+
+6.
+Sheet Architecture
+
+Every Sheet
+
+Purpose
+
+Lifecycle
+
+Creation
+
+Maintenance
+
+Processing
+
+Dependencies
+
+Relationships
+
+Visibility
+
+Protection
+
+Naming Standards
+
+7.
+Column Architecture
+
+Column Definitions
+
+Required Columns
+
+Optional Columns
+
+Generated Columns
+
+Calculated Columns
+
+Synchronization Columns
+
+Validation Columns
+
+Protected Columns
+
+8.
+Mapping Architecture
+
+Source Mapping
+
+Destination Mapping
+
+Transformation Rules
+
+Lookup Rules
+
+Synchronization Rules
+
+Merge Rules
+
+Primary Key Rules
+
+9.
+Template Architecture
+
+Template Philosophy
+
+Template Lifecycle
+
+Formatting Strategy
+
+Template Synchronization
+
+Dashboard Controlled Templates
+
+Template Standards
+
+10.
+Dashboard Architecture
+
+Dashboard Components
+
+Dashboard Configuration
+
+Dashboard Quality
+
+Dashboard Validation
+
+Dashboard Reporting
+
+Dashboard Governance
+
+11.
+Processing Modules
+
+Describe every major processing module.
+
+Purpose
+
+Inputs
+
+Outputs
+
+Dependencies
+
+Business Rules
+
+Relationships
+
+12.
+Reporting Architecture
+
+Reports
+
+Generation
+
+Dependencies
+
+Validation
+
+Timing
+
+Output Standards
+
+13.
+Validation Framework
+
+Validation Strategy
+
+Framework Validation
+
+Template Validation
+
+Configuration Validation
+
+Workflow Validation
+
+Integrity Validation
+
+Error Detection
+
+14.
+Quality Assurance Framework
+
+QA Architecture
+
+Verification
+
+Audit Strategy
+
+Framework Health
+
+Diagnostic Reports
+
+15.
+Error Handling Framework
+
+Error Management
+
+Recovery
+
+Logging
+
+Fault Isolation
+
+Validation Failures
+
+16.
+Performance Framework
+
+Performance Design
+
+Optimization Strategy
+
+Memory Usage
+
+Batch Operations
+
+Scalability
+
+17.
+Framework Governance
+
+Engineering Standards
+
+Naming Standards
+
+Framework Rules
+
+Protected Standards
+
+Architecture Decisions
+
+Approved Patterns
+
+18.
+Function Organization
+
+High-level organization only.
+
+Do NOT document every function.
+
+Document logical function groups.
+
+Describe responsibilities.
+
+Describe ownership.
+
+Describe interactions.
+
+19.
+Framework Maintenance
+
+How future development should occur.
+
+How architecture should evolve.
+
+How governance is maintained.
+
+How specifications remain synchronized.
+
+20.
+Appendices
+
+Framework Terminology
+
+Sheet Inventory
+
+Module Inventory
+
+Workflow Diagrams
+
+Configuration Reference
+
+Dashboard Reference
+
+Glossary
+
+------------------------------------------------------------
+REVIEW REQUIREMENTS
+------------------------------------------------------------
+
+Verify that every documented framework component exists.
+
+Identify undocumented framework components.
+
+Identify obsolete documentation.
+
+Identify inconsistencies.
+
+Identify architecture conflicts.
+
+Identify missing governance.
+
+Do not invent framework behavior.
+
+Document only implemented behavior.
+
+------------------------------------------------------------
+OUTPUT
+------------------------------------------------------------
+
+Required Format:
+Master_List/Specs/Framework_Build_Specification_v1.0.md
+
+Produce a publication-quality engineering specification suitable to become the governing Master List Framework Specification.
+
+The completed specification should read like a professionally written software architecture document rather than generated documentation.
+
+Do not summarize.
+
+Produce complete sections with sufficient engineering detail for long-term maintenance.
