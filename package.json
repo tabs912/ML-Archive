@@ -1,0 +1,27 @@
+{
+  "name": "codelab",
+  "version": "1.0.0",
+  "description": "CodeLab is a multi-project engineering repository for Google Apps Script development.",
+  "main": "eslint.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tabs912/CodeLab.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/tabs912/CodeLab/issues"
+  },
+  "homepage": "https://github.com/tabs912/CodeLab#readme",
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.7.0",
+    "eslint-plugin-googleappsscript": "^1.0.5",
+    "globals": "^17.7.0"
+  }
+}
