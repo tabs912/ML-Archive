@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.7.6";
+const MASTER_LIST_MERGE_ML_VERSION = "1.7.6.2";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -5554,8 +5554,27 @@ function getDefaultBehavior_() {
     usesFilter: true,
     usesAlternatingColors: true,
     usesSubheaders: false,
-    hiddenTemplate: true
+    hiddenTemplate: true,
+    outputVisibility: "VISIBLE"
   };
+}
+
+function getDefaultBehaviorForSheetType_(sheetType) {
+  const normalized = normalizeDashboardSheetTypeKey_(sheetType);
+  const rows = getDefaultBehaviorRows_();
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    if (normalizeDashboardSheetTypeKey_(row[0]) !== normalized) continue;
+    return {
+      usesTitleRows: parseBoolean_(row[1]),
+      usesFilter: parseBoolean_(row[2]),
+      usesAlternatingColors: parseBoolean_(row[3]),
+      usesSubheaders: parseBoolean_(row[4]),
+      hiddenTemplate: parseBoolean_(row[5]),
+      outputVisibility: String(row[6] || "VISIBLE").trim().toUpperCase()
+    };
+  }
+  return getDefaultBehavior_();
 }
 
 function showSheetIfNeeded_(sheet, timing, stepName) {
@@ -7516,7 +7535,17 @@ function applyGovernedTextAndNumberFormats_(sheet, dashboard, headers, dataStart
 function applyOutputVisibilityPolicy_(sheet, dashboard, sheetType, timing) {
   if (!sheet) return;
   const normalizedSheetType = normalizeDashboardSheetTypeKey_(sheetType);
-  const behavior = dashboard ? (getBehaviorForSheetType_(dashboard, normalizedSheetType) || {}) : getDefaultBehavior_();
+  let activeDashboard = dashboard || null;
+  if (!activeDashboard) {
+    try {
+      activeDashboard = loadDashboardConfig_();
+    } catch (err) {
+      logBestEffortWarning_("Output visibility dashboard lookup skipped for " + sheet.getName() + ": " + err.message);
+    }
+  }
+  const behavior = activeDashboard
+    ? (getBehaviorForSheetType_(activeDashboard, normalizedSheetType) || getDefaultBehaviorForSheetType_(normalizedSheetType))
+    : getDefaultBehaviorForSheetType_(normalizedSheetType);
   const visibility = String(behavior.outputVisibility || "VISIBLE").trim().toUpperCase();
   if (visibility === "HIDDEN" || visibility === "HIDE") {
     hideSheetIfNeeded_(sheet, timing, "Hide governed output sheet: " + sheet.getName());
@@ -11617,72 +11646,47 @@ function generateArchiveFileIndex_() {
   return createIndexSheet();
 }
 
+function getSheetSortProfileByName_(sheetName) {
+  const name = String(sheetName || "").trim();
+  const isTemplate = name.indexOf("Template - ") === 0 || name.indexOf("Template") !== -1;
+  if (name === INDEX_SHEET) return { rank: 5, group: "index", operational: true, tail: false };
+  if (name === SHEET_TYPE.DEMO_P || name === DEMO_P_PREFIX) return { rank: 10, group: "demo_p", operational: true, tail: false };
+  if (name.indexOf(MONTHLY_CHANGE_REPORT_PREFIX) === 0) return { rank: 20, group: "monthly_change", operational: true, tail: false };
+  if (name.indexOf(MASTER_LIST_PREFIX) === 0) return { rank: 30, group: "master_list", operational: true, tail: false };
+  if (name === DISENROLLED_EXCLUSION_SHEET || (/^Disenrolled\b/i.test(name) && !isTemplate)) return { rank: 40, group: "disenrolled", operational: true, tail: false };
+  if (name === DEMO_P_ARCHIVE_SHEET || name.indexOf("Archive - Demo P") === 0) return { rank: 45, group: "demo_p_archive", operational: true, tail: false, forceHidden: true };
+  if (name.indexOf("Raw Data ") === 0 && name.indexOf("Raw Data - ") === -1) return { rank: 50, group: "raw_data", operational: true, tail: false };
+  if (name.indexOf(BANNER_PREFIX) === 0 || name.indexOf(BANNER_REPORT_ALT_PREFIX) === 0) return { rank: 60, group: "banner", operational: true, tail: false };
+  if (name.indexOf(CARE_PLAN_DUE_PREFIX) === 0 || name.indexOf(CARE_PLAN_DUE_DATE_ALT_PREFIX) === 0) return { rank: 70, group: "care_plan_due", operational: true, tail: false };
+  if (name.indexOf(UNLOCKED_PREFIX) === 0 || name.indexOf("Unlocked Care Plan") === 0) return { rank: 80, group: "unlocked", operational: true, tail: false };
+  if (name.indexOf("Raw Data - Banners") === 0 || name.indexOf("Raw Data - Banner Report") === 0) return { rank: 90, group: "raw_banner_import", operational: true, tail: false };
+  if (name.indexOf("Raw Data - CP Due") === 0 || name.indexOf("Raw Data - Care Plan Due") === 0) return { rank: 100, group: "raw_care_plan_import", operational: true, tail: false };
+  if (name.indexOf("Raw Data - Unlock CP") === 0 || name.indexOf("Raw Data - Unlocked") === 0) return { rank: 110, group: "raw_unlocked_import", operational: true, tail: false };
+  if (/^B(\b|\s)/i.test(name) || /^CD(\b|\s)/i.test(name) || /^UC(\b|\s)/i.test(name) || /^RD(\b|\s)/i.test(name)) return { rank: 120, group: "short_import", operational: true, tail: false };
+
+  if (name === RFF_TIMING_SHEET || name === "Framework Timing Report") return { rank: 500, group: "framework_timing", operational: false, tail: true };
+  if (name === RFF_TEST_DASHBOARD_SHEET || name === "Dashboard Quality Report") return { rank: 510, group: "dashboard_quality", operational: false, tail: true };
+  if (name === RFF_DASHBOARD_SHEET) return { rank: 520, group: "format_dashboard", operational: false, tail: true };
+  if (name === "Template - Banner Report") return { rank: 800, group: "template", operational: false, tail: true };
+  if (name === "Template - Care Plan Due") return { rank: 810, group: "template", operational: false, tail: true };
+  if (name === "Template - Unlocked Care Plan") return { rank: 820, group: "template", operational: false, tail: true };
+  if (name === "Template - Raw Data") return { rank: 830, group: "template", operational: false, tail: true };
+  if (name === "Template - Demo P") return { rank: 840, group: "template", operational: false, tail: true };
+  if (name === "Template - Disenrolled Exclusion") return { rank: 850, group: "template", operational: false, tail: true };
+  if (name === "Template - Master List") return { rank: 860, group: "template", operational: false, tail: true };
+  if (name === "Template - Monthly Change") return { rank: 870, group: "template", operational: false, tail: true };
+  if (isTemplate) return { rank: 890, group: "template_other", operational: false, tail: true };
+  if (name === RFF_BASE_TEMPLATE_NAME) return { rank: 900, group: "base_template", operational: false, tail: true, forceHidden: true };
+
+  return { rank: 190, group: "other", operational: false, tail: false };
+}
+
 function getGlobalSheetSortRankByName_(sheetName) {
-  sheetName = String(sheetName || "").trim();
-
-  // 1. Index is absolute first.
-  if (sheetName === INDEX_SHEET) return 5;
-
-  // 2. Demo P is locked as absolute second.
-  if (sheetName === SHEET_TYPE.DEMO_P || sheetName === DEMO_P_PREFIX) return 10;
-
-  // 3. Core Active Workspace Sequence.
-  if (sheetName.indexOf(MONTHLY_CHANGE_REPORT_PREFIX) === 0) return 20;
-  if (sheetName.indexOf(MASTER_LIST_PREFIX) === 0) return 30;
-  if (sheetName === DISENROLLED_EXCLUSION_SHEET || /^Disenrolled\b/i.test(sheetName)) return 40;
-
-  // 4. Archive slot trails directly behind active Disenrolled Exclusion.
-  if (sheetName === DEMO_P_ARCHIVE_SHEET || sheetName.indexOf("Archive - Demo P") === 0) return 45;
-
-  // 5. Formatted Monthly Production Imports Block.
-  if (sheetName.indexOf("Raw Data ") === 0 && sheetName.indexOf("Raw Data - ") === -1) return 50;
-  if (sheetName.indexOf(BANNER_PREFIX) === 0 || sheetName.indexOf(BANNER_REPORT_ALT_PREFIX) === 0) return 60;
-  if (sheetName.indexOf(CARE_PLAN_DUE_PREFIX) === 0 || sheetName.indexOf(CARE_PLAN_DUE_DATE_ALT_PREFIX) === 0) return 70;
-  if (sheetName.indexOf(UNLOCKED_PREFIX) === 0 || sheetName.indexOf("Unlocked Care Plan") === 0) return 80;
-
-  // 6. Unformatted Raw Source Imports Block (RD, B, CD, UC).
-  if (sheetName.indexOf("Raw Data - Banners") === 0 || sheetName.indexOf("Raw Data - Banner Report") === 0) return 90;
-  if (sheetName.indexOf("Raw Data - CP Due") === 0 || sheetName.indexOf("Raw Data - Care Plan Due") === 0) return 100;
-  if (sheetName.indexOf("Raw Data - Unlock CP") === 0 || sheetName.indexOf("Raw Data - Unlocked") === 0) return 110;
-
-  const isSystemOrTemplate = (sheetName === "Framework Timing Report" || sheetName === RFF_TIMING_SHEET ||
-                            sheetName === "Dashboard Quality Report" || sheetName === RFF_TEST_DASHBOARD_SHEET ||
-                            sheetName === RFF_DASHBOARD_SHEET || sheetName === RFF_BASE_TEMPLATE_NAME ||
-                            sheetName.indexOf("Template - ") === 0 || sheetName.indexOf("Template") !== -1);
-  if (!isSystemOrTemplate) return 190;
-
-  // UNYIELDING SYSTEM / TEMPLATE TAIL-BLOCK HOOKS.
-  if (sheetName === "Framework Timing Report" || sheetName === RFF_TIMING_SHEET) return 500;
-  if (sheetName === "Dashboard Quality Report" || sheetName === RFF_TEST_DASHBOARD_SHEET) return 510;
-  if (sheetName === RFF_DASHBOARD_SHEET) return 520;
-  if (sheetName === "Template - Banner Report") return 800;
-  if (sheetName === "Template - Care Plan Due") return 810;
-  if (sheetName === "Template - Unlocked Care Plan") return 820;
-  if (sheetName === "Template - Raw Data") return 830;
-  if (sheetName === "Template - Demo P") return 840;
-  if (sheetName === "Template - Disenrolled Exclusion") return 850;
-  if (sheetName === "Template - Master List") return 860;
-  if (sheetName === "Template - Monthly Change") return 870;
-  if (sheetName === RFF_BASE_TEMPLATE_NAME) return 900;
-  if (sheetName.indexOf("Template - ") === 0 || sheetName.indexOf("Template") !== -1) return 890;
-
-  return 190;
+  return getSheetSortProfileByName_(sheetName).rank;
 }
 
 function isOperationalSheetForSort_(sheetName) {
-  const name = String(sheetName || "").trim();
-  if (!name) return false;
-  if (name === INDEX_SHEET) return true;
-  if (name === SHEET_TYPE.DEMO_P || name.indexOf(DEMO_P_PREFIX) === 0) return true;
-  if (name.indexOf(MASTER_LIST_PREFIX) === 0) return true;
-  if (name.indexOf(MONTHLY_CHANGE_REPORT_PREFIX) === 0) return true;
-  if (name === DISENROLLED_EXCLUSION_SHEET || /^Disenrolled\b/i.test(name) && name.indexOf("Template") === -1) return true;
-  if (name.indexOf("Raw Data") === 0) return true;
-  if (name.indexOf(BANNER_PREFIX) === 0 || name.indexOf(BANNER_REPORT_ALT_PREFIX) === 0) return true;
-  if (name.indexOf(CARE_PLAN_DUE_PREFIX) === 0 || name.indexOf(CARE_PLAN_DUE_DATE_ALT_PREFIX) === 0) return true;
-  if (name.indexOf(UNLOCKED_PREFIX) === 0 || name.indexOf("Unlocked Care Plan") === 0) return true;
-  if (/^B(\b|\s)/i.test(name) || /^CD(\b|\s)/i.test(name) || /^UC(\b|\s)/i.test(name) || /^RD(\b|\s)/i.test(name)) return true;
-  return false;
+  return getSheetSortProfileByName_(sheetName).operational === true;
 }
 
 function getSystemTemplateTailBlockNames_() {
@@ -11702,80 +11706,115 @@ function getSystemTemplateTailBlockNames_() {
   ];
 }
 
-function lockSystemTemplateTailBlockOrder_(ss) {
-  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
-  const tailSheets = getSystemTemplateTailBlockNames_()
-    .map(function(name) { return ss.getSheetByName(name); })
-    .filter(function(sheet) { return !!sheet; });
-  if (!tailSheets.length) return 0;
+function buildSheetSortRecord_(sheet, currentFirst) {
+  const name = String(sheet && sheet.getName ? sheet.getName() : "").trim();
+  const profile = getSheetSortProfileByName_(name);
+  const date = extractFirstDateFromSheetName_(name);
+  const dateMs = date ? date.getTime() : 0;
+  const currentMonthBoost = currentFirst && dateMs === currentFirst.getTime() ? -9999999999999 : 0;
+  return {
+    sheet: sheet,
+    name: name,
+    rank: profile.rank,
+    operational: profile.operational === true,
+    tail: profile.tail === true,
+    forceHidden: profile.forceHidden === true,
+    monthSort: currentMonthBoost || (dateMs ? -dateMs : 0)
+  };
+}
 
-  let moves = 0;
-  tailSheets.forEach(function(sheet, index) {
-    const targetPosition = ss.getSheets().length - tailSheets.length + index + 1;
-    const wasHidden = typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden();
-    try {
-      if (sheet.getIndex() !== targetPosition) {
-        if (wasHidden) sheet.showSheet();
-        ss.setActiveSheet(sheet);
-        ss.moveActiveSheet(targetPosition);
-        moves++;
-      }
-      if (wasHidden && !sheet.isSheetHidden()) sheet.hideSheet();
-    } catch (err) {
-      logBestEffortWarning_("System/template tail-block rank lock skipped for " + sheet.getName() + ": " + err.message);
+function compareSheetSortRecords_(a, b) {
+  const rankDiff = a.rank - b.rank;
+  if (rankDiff !== 0) return rankDiff;
+  const monthDiff = a.monthSort - b.monthSort;
+  if (monthDiff !== 0) return monthDiff;
+  return a.name.localeCompare(b.name);
+}
+
+function getOrderedSheetSortRecords_(ss, monthParts, options) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  options = options || {};
+  const currentParts = monthParts || getMonthDateParts_(new Date());
+  const currentFirst = currentParts && currentParts.firstDay ? currentParts.firstDay : null;
+  return ss.getSheets()
+    .map(function(sheet) { return buildSheetSortRecord_(sheet, currentFirst); })
+    .filter(function(record) {
+      if (options.operationalOnly && !record.operational) return false;
+      if (options.visibleOnly && typeof record.sheet.isSheetHidden === "function" && record.sheet.isSheetHidden()) return false;
+      return true;
+    })
+    .sort(compareSheetSortRecords_);
+}
+
+function moveSheetToPositionPreservingVisibility_(ss, record, targetPosition, context) {
+  if (!record || !record.sheet || record.sheet.getIndex() === targetPosition) return false;
+  const sheet = record.sheet;
+  const wasHidden = typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden();
+  try {
+    if (wasHidden) sheet.showSheet();
+    ss.setActiveSheet(sheet);
+    ss.moveActiveSheet(Math.max(1, Math.min(targetPosition, ss.getNumSheets())));
+    return true;
+  } catch (err) {
+    logBestEffortWarning_((context || "Sheet sort") + " skipped for " + record.name + ": " + err.message);
+    return false;
+  } finally {
+    if (wasHidden) {
       try {
-        if (wasHidden && !sheet.isSheetHidden()) sheet.hideSheet();
+        if (!sheet.isSheetHidden()) sheet.hideSheet();
       } catch (hideErr) {
-        logBestEffortWarning_("System/template tail-block visibility restore skipped for " + sheet.getName() + ": " + hideErr.message);
+        logBestEffortWarning_((context || "Sheet sort") + " visibility restore skipped for " + record.name + ": " + hideErr.message);
       }
+    }
+  }
+}
+
+function applySheetSortRecords_(ss, records, startPosition, context) {
+  let moves = 0;
+  let position = startPosition || 1;
+  (records || []).forEach(function(record) {
+    if (moveSheetToPositionPreservingVisibility_(ss, record, position, context)) moves++;
+    position++;
+  });
+  clearMonthlySheetLookupCache_();
+  return moves;
+}
+
+function enforceSystemTemplateTailBlockOrder_(ss) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const recordsByName = {};
+  getOrderedSheetSortRecords_(ss).forEach(function(record) {
+    if (record.tail) recordsByName[record.name] = record;
+  });
+  const tailRecords = getSystemTemplateTailBlockNames_()
+    .map(function(name) { return recordsByName[String(name || "").trim()]; })
+    .filter(function(record) { return !!record; });
+  if (!tailRecords.length) return 0;
+  const startPosition = Math.max(1, ss.getNumSheets() - tailRecords.length + 1);
+  const moves = applySheetSortRecords_(ss, tailRecords, startPosition, "System/template tail-block sort");
+  tailRecords.forEach(function(record) {
+    if (!record.forceHidden) return;
+    try {
+      if (!record.sheet.isSheetHidden()) record.sheet.hideSheet();
+    } catch (err) {
+      logBestEffortWarning_("System/template tail-block hide enforcement skipped for " + record.name + ": " + err.message);
     }
   });
   return moves;
 }
 
+function lockSystemTemplateTailBlockOrder_(ss) {
+  return enforceSystemTemplateTailBlockOrder_(ss);
+}
+
 function lockFrameworkTimingReportAsFinalSheet_(ss) {
-  return lockSystemTemplateTailBlockOrder_(ss) > 0;
+  return enforceSystemTemplateTailBlockOrder_(ss) > 0;
 }
 
 function enforceOperationalSheetSortOrder_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const currentParts = monthParts || getMonthDateParts_(new Date());
-  const currentFirst = currentParts && currentParts.firstDay ? currentParts.firstDay : null;
-
-  function name_(sheet) {
-    return String(sheet.getName() || "").trim();
-  }
-
-  function dateRank_(sheet) {
-    const date = extractFirstDateFromSheetName_(name_(sheet));
-    if (!date) return 0;
-    if (currentFirst && date.getTime() === currentFirst.getTime()) return -9999999999999;
-    return -date.getTime();
-  }
-
-  const orderedSheets = ss.getSheets().filter(function(sheet) {
-    return isOperationalSheetForSort_(name_(sheet)) && !(typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden());
-  }).sort(function(a, b) {
-    const rankDiff = getGlobalSheetSortRankByName_(name_(a)) - getGlobalSheetSortRankByName_(name_(b));
-    if (rankDiff !== 0) return rankDiff;
-    const dateDiff = dateRank_(a) - dateRank_(b);
-    if (dateDiff !== 0) return dateDiff;
-    return name_(a).localeCompare(name_(b));
-  });
-
-  let moves = 0;
-  orderedSheets.forEach(function(sheet, idx) {
-    const targetPosition = idx + 1;
-    try {
-      if (sheet.getIndex() !== targetPosition) {
-        ss.setActiveSheet(sheet);
-        ss.moveActiveSheet(targetPosition);
-        moves++;
-      }
-    } catch (err) {
-      logBestEffortWarning_("Operational sheet sort skipped for " + name_(sheet) + ": " + err.message);
-    }
-  });
+  const records = getOrderedSheetSortRecords_(ss, monthParts, { operationalOnly: true, visibleOnly: true });
+  const moves = applySheetSortRecords_(ss, records, 1, "Operational sheet sort");
   try {
     const archiveTarget = ss.getSheetByName(DEMO_P_ARCHIVE_SHEET) || ss.getSheetByName("Archive - Demo P");
     if (archiveTarget && typeof archiveTarget.isSheetHidden === "function" && !archiveTarget.isSheetHidden()) {
@@ -11784,114 +11823,29 @@ function enforceOperationalSheetSortOrder_(monthParts) {
   } catch (err) {
     logBestEffortWarning_("Archive tab structural visibility suppression skipped: " + err.message);
   }
-
-  if (lockFrameworkTimingReportAsFinalSheet_(ss)) moves++;
-  clearMonthlySheetLookupCache_();
-  return moves;
+  return moves + enforceSystemTemplateTailBlockOrder_(ss);
 }
 
 function enforceGlobalSheetSortOrder_(monthParts) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const currentParts = monthParts || getMonthDateParts_(new Date());
-  const currentFirst = currentParts && currentParts.firstDay ? currentParts.firstDay : null;
-
-  function name_(sheet) {
-    return String(sheet.getName() || "").trim();
-  }
-
-  function rank_(sheet) {
-    return getGlobalSheetSortRankByName_(name_(sheet));
-  }
-
-  function dateRank_(sheet) {
-    const date = extractFirstDateFromSheetName_(name_(sheet));
-    if (!date) return 0;
-    if (currentFirst && date.getTime() === currentFirst.getTime()) return -9999999999999;
-    return -date.getTime();
-  }
-
-  const visibilityByName = {};
-  ss.getSheets().forEach(function(sheet) {
-    visibilityByName[name_(sheet)] = typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden();
-  });
-
-  const orderedSheets = ss.getSheets().slice().sort(function(a, b) {
-    const aRank = rank_(a);
-    const bRank = rank_(b);
-    const aImportOrUnformatted = isImportOrUnformattedSheetRank_(aRank);
-    const bImportOrUnformatted = isImportOrUnformattedSheetRank_(bRank);
-    if (aImportOrUnformatted && bImportOrUnformatted) {
-      const dateDiffForImportGroup = dateRank_(a) - dateRank_(b);
-      if (dateDiffForImportGroup !== 0) return dateDiffForImportGroup;
-    }
-    const rankDiff = aRank - bRank;
-    if (rankDiff !== 0) return rankDiff;
-    const dateDiff = dateRank_(a) - dateRank_(b);
-    if (dateDiff !== 0) return dateDiff;
-    return name_(a).localeCompare(name_(b));
-  });
-
-  const currentOrderNames = ss.getSheets().map(name_).join("|");
-  const desiredOrderNames = orderedSheets.map(name_).join("|");
-  if (currentOrderNames === desiredOrderNames) {
-    return lockFrameworkTimingReportAsFinalSheet_(ss) ? 1 : 0;
-  }
-
-  let position = 1;
-  let moves = 0;
-  const hiddenSheetsShownForMove = [];
-  orderedSheets.forEach(function(sheet) {
-    const sheetName = name_(sheet);
-    try {
-      if (sheet.getIndex() !== position) {
-        const wasHidden = typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden();
-        if (wasHidden) {
-          sheet.showSheet();
-          hiddenSheetsShownForMove.push(sheet);
-        }
-        ss.setActiveSheet(sheet);
-        ss.moveActiveSheet(position);
-        moves++;
-      }
-      position++;
-    } catch (err) {
-      logBestEffortWarning_("Global sheet sort skipped for " + sheetName + ": " + err.message);
-    }
-  });
-
-  hiddenSheetsShownForMove.forEach(function(sheet) {
-    const sheetName = name_(sheet);
-    try {
-      if (visibilityByName[sheetName] === true && !sheet.isSheetHidden()) sheet.hideSheet();
-    } catch (err) {
-      logBestEffortWarning_("Global sheet sort visibility restore skipped for " + sheetName + ": " + err.message);
-    }
-  });
-
-  if (lockFrameworkTimingReportAsFinalSheet_(ss)) moves++;
-  clearMonthlySheetLookupCache_();
-  return moves;
+  const records = getOrderedSheetSortRecords_(ss, monthParts);
+  return applySheetSortRecords_(ss, records, 1, "Global sheet sort") + enforceSystemTemplateTailBlockOrder_(ss);
 }
 
 function positionSheetInGlobalSortOrder_(sheet) {
   if (!sheet) return false;
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const targetName = String(sheet.getName() || "").trim();
-  const orderedNames = ss.getSheets()
-    .map(function(candidate) { return candidate.getName(); })
-    .sort(compareSheetNamesByGlobalOrder_);
-  const targetPosition = orderedNames.indexOf(targetName) + 1;
-  if (targetPosition <= 0 || sheet.getIndex() === targetPosition) return false;
-  if (typeof sheet.isSheetHidden === "function" && sheet.isSheetHidden()) return false;
-  try {
-    ss.setActiveSheet(sheet);
-    ss.moveActiveSheet(targetPosition);
-    clearMonthlySheetLookupCache_();
-    return true;
-  } catch (err) {
-    logBestEffortWarning_("Sheet positioning skipped for " + targetName + ": " + err.message);
-    return false;
-  }
+  const targetId = sheet.getSheetId();
+  const records = getOrderedSheetSortRecords_(ss);
+  const targetIndex = records.findIndex(function(record) {
+    return record.sheet && record.sheet.getSheetId && record.sheet.getSheetId() === targetId;
+  });
+  if (targetIndex === -1) return false;
+  const targetRecord = records[targetIndex];
+  if (typeof targetRecord.sheet.isSheetHidden === "function" && targetRecord.sheet.isSheetHidden()) return false;
+  const moved = moveSheetToPositionPreservingVisibility_(ss, targetRecord, targetIndex + 1, "Single-sheet positioning");
+  if (moved) clearMonthlySheetLookupCache_();
+  return moved;
 }
 
 
