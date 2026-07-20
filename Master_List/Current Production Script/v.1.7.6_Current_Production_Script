@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.7.6.5";
+const MASTER_LIST_MERGE_ML_VERSION = "1.7.6.7";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -9989,11 +9989,8 @@ function buildMonthlyChangeReportForMonth_(monthParts, timing) {
 
   const reportName = buildMonthlySheetName_(MONTHLY_CHANGE_REPORT_PREFIX, monthParts.firstDay, monthParts.lastDay);
   let reportSheet = ss.getSheetByName(reportName);
-
-
   if (reportSheet) {
-    deleteSheetSafely_(ss, reportSheet, "Monthly Change report rebuild");
-    markRuntimeStep_(timing, "Monthly Change detail - existing report sheet deleted: " + reportName);
+    markRuntimeStep_(timing, "Monthly Change detail - existing report retained; creating unique monthly report name: " + reportName);
   }
 
 

@@ -20,7 +20,7 @@ This correction addresses workbook issues found after `v1.7.6.4` testing: genera
 - Bumped production version from `1.7.6.4` to `1.7.6.5`.
 - Added an active-sheet handoff before hiding a sheet so Apps Script is not asked to hide the currently active tab.
 - Updated output visibility enforcement to use the existing dashboard fallback path for CP Due and Unlocked individual formatters instead of referencing an undefined `dashboard` variable.
-- Included `Raw Data` in the `Hide Monthly Import Sheets` menu workflow.
+- Kept `Raw Data` governed by active-sheet visibility handling rather than the import-sheet hiding workflow.
 - Expanded Index unformatted-import detection to include `Raw Data - Banners`, `Raw Data - CP Due`, and `Raw Data - Unlocked` naming patterns.
 - Added hidden-sheet snapshot/restore around the manual global sort so previously hidden monthly imports are re-hidden after tab moves.
 - Kept the centralized creation-order model and added placement after key rename/promote paths for Demo P, Raw Data, Master List, archive restore, and system sheets.
