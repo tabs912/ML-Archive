@@ -1,0 +1,48 @@
+function getSheetSortProfileByName_(name) {
+  const isTemplate = name.indexOf("Template") !== -1 || name === "RFF_BASE_TEMPLATE";
+
+  // 1. Core Infrastructure
+  if (name === "Index") return { rank: 5, group: "index", operational: true, tail: false };
+  if (name === "Disenrolled Exclusion" || (/^Disenrolled\b/i.test(name) && !isTemplate)) return { rank: 10, group: "disenrolled", operational: true, tail: false };
+  if (name === "Demo P") return { rank: 15, group: "demo_p", operational: true, tail: false };
+
+  // --- Helper: Extract Month (1-12) from sheet name (e.g., "Banners 05.26") ---
+  let month = 0;
+  const monthMatch = name.match(/(?:^|\s|-)(\d{1,2})\.(?:\d{2}|\d{4})(?:\s|$|\()/);
+  if (monthMatch) month = Number(monthMatch[1]);
+
+  // 2. Active Sheets (Grouped by Month, then Alphabetical)
+  if (name.indexOf("Master List") === 0 || name.indexOf("Monthly Change") === 0 || (name.indexOf("Raw Data ") === 0 && name.indexOf("Raw Data - ") === -1)) {
+    let rank = 250; // Fallback if no date is found
+    if (month >= 1 && month <= 12) rank = 105 - (month * 7); // Dec=21 to Jan=98
+    return { rank: rank, group: "active_monthly", operational: true, tail: false };
+  }
+
+  // 3. Monthly Import Sheets (Grouped by Month, then Alphabetical)
+  if (name.indexOf("Banner") === 0 || name.indexOf("CP Due") === 0 || name.indexOf("Unlocked") === 0) {
+    let rank = 250; // Fallback if no date is found
+    if (month >= 1 && month <= 12) rank = 199 - (month * 7); // Dec=115 to Jan=192
+    return { rank: rank, group: "import_monthly", operational: true, tail: false };
+  }
+
+  // 4. Temporary Imports & Archives
+  if (name.indexOf("Raw Data - Banners") === 0) return { rank: 210, group: "raw_banner", operational: true, tail: false };
+  if (name.indexOf("Raw Data - CP Due") === 0) return { rank: 220, group: "raw_cp", operational: true, tail: false };
+  if (name.indexOf("Raw Data - Unlock CP") === 0) return { rank: 220, group: "raw_unlock", operational: true, tail: false };
+  if (/^(B\s|CD\s|UC\s|RD\s)/.test(name)) return { rank: 230, group: "short_import", operational: true, tail: false };
+  if (name.indexOf("Archive - Demo P") === 0) return { rank: 240, group: "archive_demo", operational: true, tail: false };
+
+  // 6. System Sheets & Templates (Tail Block)
+  if (name === "Framework Timing Report") return { rank: 500, group: "framework_timing", operational: false, tail: true };
+  if (name === "Dashboard Quality Report") return { rank: 510, group: "dashboard_quality", operational: false, tail: true };
+  if (name === "Format Dashboard") return { rank: 520, group: "format_dashboard", operational: false, tail: true };
+  
+  if (isTemplate) {
+    if (name.indexOf("Template - Banner Report") !== -1) return { rank: 800, group: "template_banner", operational: false, tail: true };
+    if (name === "RFF_BASE_TEMPLATE") return { rank: 900, group: "base_template", operational: false, tail: true };
+    return { rank: 850, group: "template_other", operational: false, tail: true }; // All other hidden templates
+  }
+
+  // 5. New Sheets / Catch-All
+  return { rank: 250, group: "other", operational: true, tail: false };
+}
