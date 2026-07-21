@@ -1,0 +1,40 @@
+function getConfiguredSheetCreationIndex_(ss, sheetName, ignoreSheetId) {
+  ss = ss || SpreadsheetApp.getActiveSpreadsheet();
+  const targetName = String(sheetName || "").trim();
+  const targetRecord = { name: targetName };
+  const targetProfile = getSheetSortProfileByName_(targetName);
+  targetRecord.rank = targetProfile.rank;
+  targetRecord.tail = targetProfile.tail === true;
+  const targetDate = extractFirstDateFromSheetName_(targetName);
+  targetRecord.monthSort = targetDate ? -targetDate.getTime() : 0;
+
+  const sheets = ss.getSheets().filter(function(sheet) {
+    return !ignoreSheetId || sheet.getSheetId() !== ignoreSheetId;
+  });
+  const sheetRecords = sheets.map(function(sheet) { return buildSheetSortRecord_(sheet); });
+  const tailRecords = sheetRecords.filter(function(record) { return record.tail; });
+  const firstTailIndex = tailRecords.reduce(function(minIndex, record) {
+    return Math.min(minIndex, record.sheet.getIndex());
+  }, ss.getNumSheets() + 1);
+
+  if (!targetRecord.tail) {
+    // FIX: Start searching from Tab 1 instead of the Template boundary
+    let targetIndex = 1; 
+    
+    sheetRecords.forEach(function(record) {
+      if (record.tail) return;
+      if (compareSheetSortRecords_(record, targetRecord) <= 0) {
+        targetIndex = Math.max(targetIndex, record.sheet.getIndex() + 1);
+      }
+    });
+    return Math.max(1, Math.min(targetIndex, firstTailIndex));
+  }
+
+  let targetTailIndex = sheets.length + 1;
+  tailRecords.forEach(function(record) {
+    if (compareSheetSortRecords_(targetRecord, record) < 0) {
+      targetTailIndex = Math.min(targetTailIndex, record.sheet.getIndex());
+    }
+  });
+  return Math.max(1, Math.min(targetTailIndex, sheets.length + 1));
+}

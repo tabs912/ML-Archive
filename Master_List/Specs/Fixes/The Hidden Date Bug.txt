@@ -1,0 +1,31 @@
+function extractFirstDateFromSheetName_(sheetName) {
+  const text = String(sheetName || "").trim();
+  
+  // 1. First, check for full MM.DD.YY dates (e.g., 05.01.26)
+  let match = text.match(/(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})/);
+  if (match) {
+    const month = Number(match[1]);
+    const day = Number(match[2]);
+    let year = Number(match[3]);
+    if (year < 100) year += 2000;
+    const date = createLocalDateOnly_(year, month - 1, day);
+    if (date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day) {
+      return date;
+    }
+  }
+
+  // 2. FIX: Check for standard MM.YY monthly formats (e.g., Banners 05.26)
+  const monthMatch = text.match(/(?:^|\s|-)(\d{1,2})\.(\d{2}|\d{4})(?:\s|$|\()/);
+  if (monthMatch) {
+    const month = Number(monthMatch[1]);
+    let year = Number(monthMatch[2]);
+    if (year < 100) year += 2000;
+    const date = createLocalDateOnly_(year, month - 1, 1);
+    // Ensure the month is mathematically valid
+    if (date.getFullYear() === year && date.getMonth() === month - 1) {
+      return date;
+    }
+  }
+
+  return null;
+}
