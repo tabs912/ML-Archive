@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.7.8.4";
+const MASTER_LIST_MERGE_ML_VERSION = "1.7.8.5";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -11738,10 +11738,12 @@ function getSheetSortProfileByName_(sheetName) {
   const monthDate = extractFirstDateFromSheetName_(name);
   const month = monthDate ? monthDate.getMonth() + 1 : 0;
 
-  if (name === INDEX_SHEET) return { rank: 503, group: "index", operational: false, tail: true };
+  // 1. Core Infrastructure (Index must remain the left-most operational sheet, not part of the tail block.)
+  if (name === INDEX_SHEET) return { rank: 5, group: "index", operational: true, tail: false };
   if (name === DISENROLLED_EXCLUSION_SHEET || (/^Disenrolled\b/i.test(name) && !isTemplate)) return { rank: 10, group: "disenrolled", operational: true, tail: false };
   if (name === SHEET_TYPE.DEMO_P || name === DEMO_P_PREFIX) return { rank: 15, group: "demo_p", operational: true, tail: false };
 
+  // 2. Active Sheets
   if (
     name.indexOf(MASTER_LIST_PREFIX) === 0 ||
     name.indexOf(MONTHLY_CHANGE_REPORT_PREFIX) === 0 ||
@@ -11751,6 +11753,7 @@ function getSheetSortProfileByName_(sheetName) {
     return { rank: rank, group: "active_monthly", operational: true, tail: false };
   }
 
+  // 3. Monthly Import Sheets
   if (
     name.indexOf("Banner") === 0 ||
     name.indexOf(CARE_PLAN_DUE_PREFIX) === 0 ||
@@ -11762,22 +11765,26 @@ function getSheetSortProfileByName_(sheetName) {
     return { rank: rank, group: "import_monthly", operational: true, tail: false };
   }
 
+  // 4. Temporary Imports & Archives
   if (name.indexOf("Raw Data - Banners") === 0 || name.indexOf("Raw Data - Banner Report") === 0) return { rank: 210, group: "raw_banner", operational: true, tail: false };
   if (name.indexOf("Raw Data - CP Due") === 0 || name.indexOf("Raw Data - Care Plan Due") === 0) return { rank: 220, group: "raw_cp", operational: true, tail: false };
   if (name.indexOf("Raw Data - Unlock CP") === 0 || name.indexOf("Raw Data - Unlocked") === 0) return { rank: 220, group: "raw_unlock", operational: true, tail: false };
   if (/^(B\s|CD\s|UC\s|RD\s)/i.test(name)) return { rank: 230, group: "short_import", operational: true, tail: false };
   if (name.indexOf("Archive - Demo P") === 0) return { rank: 240, group: "archive_demo", operational: true, tail: false, forceHidden: true };
 
+  // 6. System Sheets
   if (name === RFF_DASHBOARD_SHEET || name === "Format Dashboard") return { rank: 500, group: "format_dashboard", operational: false, tail: true };
   if (name === RFF_TEST_DASHBOARD_SHEET || name === "Dashboard Quality Report") return { rank: 501, group: "dashboard_quality", operational: false, tail: true };
   if (name === RFF_TIMING_SHEET || name === "Framework Timing Report") return { rank: 502, group: "framework_timing", operational: false, tail: true };
 
+  // 7. Templates
   if (isTemplate) {
     if (name === "Template - Banner Report") return { rank: 800, group: "template_banner", operational: false, tail: true };
     if (name === RFF_BASE_TEMPLATE_NAME) return { rank: 504, group: "base_template", operational: false, tail: true, forceHidden: true };
     return { rank: 850, group: "template_other", operational: false, tail: true };
   }
 
+  // 5. Catch-All
   return { rank: 250, group: "other", operational: true, tail: false };
 }
 
