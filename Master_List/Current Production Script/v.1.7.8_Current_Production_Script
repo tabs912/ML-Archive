@@ -3513,7 +3513,7 @@ function getDefaultSystemSurfaceRows_() {
     ["Dashboard Quality Report", "Dashboard Quality Report", 501, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified quality report surface"],
     ["Framework Timing Report", "Framework Timing Report", 502, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified timing report surface"],
     [DEMO_P_ARCHIVE_SHEET, DEMO_P_ARCHIVE_SHEET, 75, "HIDDEN", "#657FCC", "#000000", true, "Hidden Demo P row archive"],
-    [RFF_BASE_TEMPLATE_NAME, RFF_BASE_TEMPLATE_NAME, 900, "HIDDEN", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Hidden framework base template"]
+    [RFF_BASE_TEMPLATE_NAME, RFF_BASE_TEMPLATE_NAME, 504, "HIDDEN", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Hidden framework base template"]
   ];
 }
 
@@ -11780,7 +11780,7 @@ function getSheetSortProfileByName_(sheetName) {
   // 7. Templates
   if (isTemplate) {
     if (name === "Template - Banner Report") return { rank: 800, group: "template_banner", operational: false, tail: true };
-    if (name === RFF_BASE_TEMPLATE_NAME) return { rank: 900, group: "base_template", operational: false, tail: true, forceHidden: true };
+    if (name === RFF_BASE_TEMPLATE_NAME) return { rank: 504, group: "base_template", operational: false, tail: true, forceHidden: true };
     return { rank: 850, group: "template_other", operational: false, tail: true };
   }
 
