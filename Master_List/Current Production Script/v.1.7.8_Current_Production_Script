@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.7.8.3";
+const MASTER_LIST_MERGE_ML_VERSION = "1.7.8.4";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
@@ -11791,7 +11791,6 @@ function getSystemTemplateTailBlockNames_() {
     RFF_DASHBOARD_SHEET,
     RFF_TEST_DASHBOARD_SHEET,
     RFF_TIMING_SHEET,
-    INDEX_SHEET,
     RFF_BASE_TEMPLATE_NAME,
     "Template - Banner Report",
     "Template - Care Plan Due",
