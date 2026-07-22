@@ -645,19 +645,20 @@ function getDefaultSheetDefinitionByType_(sheetType) {
     if (normalizeDashboardSheetTypeKey_(row[0]) !== normalized) continue;
     return {
       sheetType: normalized,
-      reportTitle: String(row[1] || row[0] || "").trim(),
-      templateName: String(row[2] || ("Template - " + row[0])).trim(),
-      outputNamingPattern: String(row[3] || "").trim(),
-      baseColor: normalizeHex_(row[4] || "#65A9CC"),
-      usePromptDate: parseBoolean_(row[5]),
-      endDateSource: String(row[6] || "").trim(),
-      templateRowCount: numberOrDefault_(row[7], RFF_DEFAULTS.templateRows),
-      templateColumnCount: numberOrDefault_(row[8], 0),
-      templateRowMode: String(row[9] || "FIXED").trim().toUpperCase(),
-      minimumRows: numberOrDefault_(row[10], numberOrDefault_(row[7], RFF_DEFAULTS.templateRows)),
-      bufferRows: numberOrDefault_(row[11], 100),
-      testRows: numberOrDefault_(row[12], 100),
-      useTestRows: parseBoolean_(row[13])
+      monthlySheetType: String(row[1] || "").trim(),
+      reportTitle: String(row[2] || row[0] || "").trim(),
+      templateName: String(row[3] || ("Template - " + row[0])).trim(),
+      outputNamingPattern: String(row[4] || "").trim(),
+      baseColor: normalizeHex_(row[5] || "#65A9CC"),
+      usePromptDate: parseBoolean_(row[6]),
+      endDateSource: String(row[7] || "").trim(),
+      templateRowCount: numberOrDefault_(row[8], RFF_DEFAULTS.templateRows),
+      templateColumnCount: numberOrDefault_(row[9], 0),
+      templateRowMode: String(row[10] || "FIXED").trim().toUpperCase(),
+      minimumRows: numberOrDefault_(row[11], numberOrDefault_(row[8], RFF_DEFAULTS.templateRows)),
+      bufferRows: numberOrDefault_(row[12], 100),
+      testRows: numberOrDefault_(row[13], 100),
+      useTestRows: parseBoolean_(row[14])
     };
   }
   throw new Error("Default sheet definition not found: " + sheetType);
@@ -5579,12 +5580,13 @@ function getDefaultBehaviorForSheetType_(sheetType) {
     const row = rows[i];
     if (normalizeDashboardSheetTypeKey_(row[0]) !== normalized) continue;
     return {
-      usesTitleRows: parseBoolean_(row[1]),
-      usesFilter: parseBoolean_(row[2]),
-      usesAlternatingColors: parseBoolean_(row[3]),
-      usesSubheaders: parseBoolean_(row[4]),
-      hiddenTemplate: parseBoolean_(row[5]),
-      outputVisibility: String(row[6] || "VISIBLE").trim().toUpperCase()
+      sortOrder: String(row[1] || "").trim(),
+      usesTitleRows: parseBoolean_(row[2]),
+      usesFilter: parseBoolean_(row[3]),
+      usesAlternatingColors: parseBoolean_(row[4]),
+      usesSubheaders: parseBoolean_(row[5]),
+      hiddenTemplate: parseBoolean_(row[6]),
+      outputVisibility: String(row[7] || "VISIBLE").trim().toUpperCase()
     };
   }
   return getDefaultBehavior_();
@@ -13661,10 +13663,40 @@ function collectFormatDashboardTitleRowsVerificationRows_(dashboardSheet) {
   return appendDashboardVerificationPassIfNoIssues_(rows, "Title Rows", "Format Dashboard Section B title row records are present and valid.");
 }
 
+function appendDashboardSectionHeaderPositionIssues_(rows, dashboardSheet, sectionTitle, expectedHeaders, sectionLabel) {
+  let actualHeaders = [];
+  try {
+    actualHeaders = getFormatDashboardSectionHeaderForChangelog_(dashboardSheet, sectionTitle);
+  } catch (err) {
+    rows.push([sectionLabel, "FAIL", "Header Location Check Failed", err.message]);
+    return;
+  }
+
+  expectedHeaders.forEach(function(expected, index) {
+    const actual = String(actualHeaders[index] || "").trim();
+    if (actual !== expected) {
+      rows.push([
+        sectionLabel + " Column " + (index + 1),
+        "FAIL",
+        "Header Misaligned",
+        "Expected '" + expected + "' in column " + (index + 1) + " but found '" + (actual || "(blank)") + "'."
+      ]);
+    }
+  });
+}
+
+function isStrictDashboardBooleanCell_(value) {
+  const text = String(value === null || value === undefined ? "" : value).trim().toUpperCase();
+  return text === "TRUE" || text === "FALSE" || value === true || value === false;
+}
+
 function collectFormatDashboardSheetDefinitionVerificationRows_(dashboardSheet) {
   const rows = [["Sheet", "Status", "Issue", "Quality Notes"]];
+  const expectedHeaders = ["Sheet Type", "Monthly Sheet Type", "Report Title", "Template Name", "Output Naming Pattern", "Base Color", "Use Prompt Date", "End Date Source", "Template Row Count", "Template Column Count", "Template Row Mode", "Minimum Rows", "Buffer Rows", "Test Rows", "Use Test Rows"];
+  const validMonthlyTypes = { "MONTHLY IMPORT": true, "MONTHLY ACTIVE": true, "ONGOING OPERATIONAL": true };
   let sectionRows = [];
   try {
+    appendDashboardSectionHeaderPositionIssues_(rows, dashboardSheet, RFF_SECTION_SHEETS, expectedHeaders, "Section C Sheet Definitions");
     sectionRows = readDashboardSectionRows_(dashboardSheet, RFF_SECTION_SHEETS);
   } catch (err) {
     rows.push([RFF_SECTION_SHEETS, "FAIL", "Missing Section", err.message]);
@@ -13676,24 +13708,34 @@ function collectFormatDashboardSheetDefinitionVerificationRows_(dashboardSheet) 
     return rows;
   }
 
-  const width = getDashboardSectionHeaderWidth_(sectionRows);
+  const width = expectedHeaders.length;
   const seen = {};
   sectionRows.forEach(function(row, index) {
     const sheetType = String(row[0] || "").trim();
-    if (!sheetType) rows.push(["Row " + (index + 1), "FAIL", "Blank Sheet", "Format Dashboard Section C contains a blank sheet type."]);
+    const label = sheetType || "Row " + (index + 1);
+    if (!sheetType) rows.push([label, "FAIL", "Blank Sheet", "Format Dashboard Section C column 1 must contain Sheet Type."]);
     if (sheetType && seen[sheetType]) rows.push([sheetType, "WARNING", "Duplicate Sheet", "Format Dashboard Section C contains this sheet type more than once."]);
     if (sheetType) seen[sheetType] = true;
+    if (!validMonthlyTypes[String(row[1] || "").trim().toUpperCase()]) rows.push([label, "FAIL", "Monthly Sheet Type Misaligned", "Column 2 must contain Monthly Import, Monthly Active, or Ongoing Operational."]);
+    if (!String(row[2] || "").trim()) rows.push([label, "FAIL", "Report Title Misaligned", "Column 3 must contain Report Title."]);
+    if (String(row[3] || "").indexOf("Template - ") !== 0) rows.push([label, "FAIL", "Template Name Misaligned", "Column 4 must contain a Template - ... name."]);
+    if (!/^#[0-9A-F]{6}$/i.test(String(row[5] || "").trim())) rows.push([label, "FAIL", "Base Color Misaligned", "Column 6 must contain a hex color such as #65CC99."]);
+    if (!isStrictDashboardBooleanCell_(row[6])) rows.push([label, "FAIL", "Use Prompt Date Misaligned", "Column 7 must contain TRUE or FALSE."]);
+    if (numberOrDefault_(row[8], 0) <= 0) rows.push([label, "FAIL", "Template Row Count Misaligned", "Column 9 must contain a positive row count."]);
+    if (numberOrDefault_(row[9], 0) <= 0) rows.push([label, "FAIL", "Template Column Count Misaligned", "Column 10 must contain a positive generated column count."]);
     const blanks = collectBlankDashboardCells_(row, width, "Column ");
-    if (sheetType && blanks.length) rows.push([sheetType, "WARNING", "Blank Configuration", blanks.join(", ") + " are blank in Format Dashboard Section C."]);
+    if (sheetType && blanks.length) rows.push([label, "WARNING", "Blank Configuration", blanks.join(", ") + " are blank in Format Dashboard Section C."]);
   });
 
-  return appendDashboardVerificationPassIfNoIssues_(rows, "Sheet Definitions", "Format Dashboard Section C sheet definitions are populated.");
+  return appendDashboardVerificationPassIfNoIssues_(rows, "Sheet Definitions", "Format Dashboard Section C sheet definitions are populated and in the expected column locations.");
 }
 
 function collectFormatDashboardSheetHeaderVerificationRows_(dashboardSheet) {
   const rows = [["Header", "Status", "Issue", "Quality Notes"]];
+  const expectedHeaders = ["Sheet Type", "Column Order", "Header", "Source of Data"];
   let sectionRows = [];
   try {
+    appendDashboardSectionHeaderPositionIssues_(rows, dashboardSheet, RFF_SECTION_HEADERS, expectedHeaders, "Section G Sheet Headers");
     sectionRows = readDashboardSectionRows_(dashboardSheet, RFF_SECTION_HEADERS);
   } catch (err) {
     rows.push([RFF_SECTION_HEADERS, "FAIL", "Missing Section", err.message]);
@@ -13711,8 +13753,9 @@ function collectFormatDashboardSheetHeaderVerificationRows_(dashboardSheet) {
     const sheetType = String(row[0] || "").trim();
     const header = String(row[2] || row[1] || "").trim();
     const label = sheetType && header ? sheetType + " - " + header : "Row " + (index + 1);
-    if (!sheetType) rows.push([label, "FAIL", "Blank Sheet Type", "Format Dashboard Section G row has no sheet type."]);
-    if (!header) rows.push([label, "FAIL", "Blank Header", "Format Dashboard Section G row has no header name."]);
+    if (!sheetType) rows.push([label, "FAIL", "Blank Sheet Type", "Format Dashboard Section G column 1 must contain Sheet Type."]);
+    if (numberOrDefault_(row[1], 0) <= 0) rows.push([label, "FAIL", "Column Order Misaligned", "Format Dashboard Section G column 2 must contain a positive numeric Column Order."]);
+    if (!header) rows.push([label, "FAIL", "Blank Header", "Format Dashboard Section G column 3 must contain Header."]);
     if (!sheetType || !header) return;
     counts[sheetType] = (counts[sheetType] || 0) + 1;
     const key = sheetType + "||" + header;
@@ -13729,8 +13772,10 @@ function collectFormatDashboardSheetHeaderVerificationRows_(dashboardSheet) {
 
 function collectFormatDashboardColumnDefinitionVerificationRows_(dashboardSheet) {
   const rows = [["Column", "Status", "Issue", "Quality Notes"]];
+  const expectedHeaders = ["Header", "Width", "Header Font Size", "Date Column", "Hide Column", "Data Wrap", "Horizontal Alignment", "Vertical Alignment", "Number Format"];
   let columnRows = [];
   try {
+    appendDashboardSectionHeaderPositionIssues_(rows, dashboardSheet, RFF_SECTION_COLUMNS, expectedHeaders, "Section F Column Definitions");
     columnRows = readDashboardSectionRows_(dashboardSheet, RFF_SECTION_COLUMNS);
   } catch (err) {
     rows.push([RFF_SECTION_COLUMNS, "FAIL", "Missing Section", err.message]);
@@ -13747,7 +13792,9 @@ function collectFormatDashboardColumnDefinitionVerificationRows_(dashboardSheet)
     const header = String(row[0] || "").trim();
     const width = row[1];
     const label = header || "Row " + (index + 1);
-    if (!header) rows.push([label, "FAIL", "Blank Column", "Format Dashboard Section F row has no column/header name."]);
+    if (!header) rows.push([label, "FAIL", "Blank Column", "Format Dashboard Section F column 1 must contain Header."]);
+    if (!isStrictDashboardBooleanCell_(row[3])) rows.push([label, "FAIL", "Date Column Misaligned", "Format Dashboard Section F column 4 must contain TRUE or FALSE."]);
+    if (!isStrictDashboardBooleanCell_(row[4])) rows.push([label, "FAIL", "Hide Column Misaligned", "Format Dashboard Section F column 5 must contain TRUE or FALSE."]);
     if (!header) return;
     if (seen[header]) rows.push([label, "WARNING", "Duplicate Column Definition", "Column definition is duplicated for this header."]);
     if (!isBlankCell_(width) && numberOrDefault_(width, 0) <= 0) rows.push([label, "WARNING", "Invalid Width", "Column width override must be greater than zero when populated. Blank width inherits Default Column Width."]);
@@ -13759,8 +13806,10 @@ function collectFormatDashboardColumnDefinitionVerificationRows_(dashboardSheet)
 
 function collectFormatDashboardSheetBehaviorVerificationRows_(dashboardSheet) {
   const rows = [["Behavior", "Status", "Issue", "Quality Notes"]];
+  const expectedHeaders = ["Sheet Type", "Sort Order", "Uses Title Rows", "Uses Filter", "Uses Alternating Colors", "Uses Subheaders", "Hidden Template", "Output Visibility"];
   let behaviorRows = [];
   try {
+    appendDashboardSectionHeaderPositionIssues_(rows, dashboardSheet, RFF_SECTION_BEHAVIORS, expectedHeaders, "Section D Sheet Behaviors");
     behaviorRows = readDashboardSectionRows_(dashboardSheet, RFF_SECTION_BEHAVIORS);
   } catch (err) {
     rows.push([RFF_SECTION_BEHAVIORS, "FAIL", "Missing Section", err.message]);
@@ -13772,18 +13821,20 @@ function collectFormatDashboardSheetBehaviorVerificationRows_(dashboardSheet) {
     return rows;
   }
 
-  const width = 6;
+  const validVisibility = { "VISIBLE": true, "HIDDEN": true };
   behaviorRows.forEach(function(row, index) {
     const sheetType = String(row[0] || "").trim();
-    const behavior = String(row[1] || "").trim();
-    const label = sheetType && behavior ? sheetType + " - " + behavior : "Row " + (index + 1);
-    if (!sheetType) rows.push([label, "FAIL", "Blank Sheet Type", "Format Dashboard Section D row has no sheet type."]);
-    if (!behavior) rows.push([label, "FAIL", "Blank Behavior", "Format Dashboard Section D row has no behavior setting."]);
-    const blanks = collectBlankDashboardCells_(row, width, "Column ");
-    if ((sheetType || behavior) && blanks.length) rows.push([label, "WARNING", "Blank Behavior Configuration", blanks.join(", ") + " are blank in Format Dashboard Section D."]);
+    const sortOrder = String(row[1] || "").trim();
+    const label = sheetType || "Row " + (index + 1);
+    if (!sheetType) rows.push([label, "FAIL", "Blank Sheet Type", "Format Dashboard Section D column 1 must contain Sheet Type."]);
+    if (!sortOrder) rows.push([label, "FAIL", "Sort Order Misaligned", "Format Dashboard Section D column 2 must contain the visual sort order reference."]);
+    for (let col = 2; col <= 6; col++) {
+      if (!isStrictDashboardBooleanCell_(row[col])) rows.push([label, "FAIL", "Boolean Misaligned", "Format Dashboard Section D column " + (col + 1) + " must contain TRUE or FALSE."]);
+    }
+    if (!validVisibility[String(row[7] || "").trim().toUpperCase()]) rows.push([label, "FAIL", "Output Visibility Misaligned", "Format Dashboard Section D column 8 must contain VISIBLE or HIDDEN."]);
   });
 
-  return appendDashboardVerificationPassIfNoIssues_(rows, "Sheet Behaviors", "Format Dashboard Section D sheet behavior rows are populated.");
+  return appendDashboardVerificationPassIfNoIssues_(rows, "Sheet Behaviors", "Format Dashboard Section D sheet behavior rows are populated and in the expected column locations.");
 }
 
 function runDashboardQualitySectionIfDue_(sectionKey, stepName, fn, timing) {
