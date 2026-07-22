@@ -3,14 +3,14 @@
 **Release:** Wave 1 — Strict disenrollment, Master List preflight, and Primary PMR fail-closed safeguards  
 **Production source:** `Master_List/Current Production Script/v1.8.9.1_Current_Production`  
 **Baseline source:** `Master_List/Current Production Script/v1.8.9_Current_Production`  
-**Status:** IMPLEMENTED IN REPOSITORY / RUNTIME VALIDATION REQUIRED  
+**Status:** CLOSED — WAVE 1 COMPLETED AND PASSED REVIEW  
 **Change-control note:** This plan supersedes the earlier v1.8.9 Wave 1 planning-only checklist for the v1.8.9.1 implementation.
 
 ---
 
 ## Simple To-Do Checklist
 
-Use this section first. Do not mark the release ready until every release-blocking item is checked or has an approved exception.
+Use this section first. Wave 1 is now closed based on the completed checklist, v1.8.9.2 update notes, and Timing/Quality report evidence supplied in `Master_List/Reports/`.
 
 ### A. Owner Decisions and Scope
 
@@ -53,46 +53,46 @@ Use this section first. Do not mark the release ready until every release-blocki
 
 ### D. Runtime Validation To Run in Controlled Workbook
 
-- [ ] Install or test `v1.8.9.1_Current_Production` in a controlled workbook.
-- [ ] Reload workbook and verify menus load.
-- [ ] Confirm Format Dashboard, templates, Dashboard Quality Report, and Framework Timing Report are available.
-- [ ] Format controlled prior-month Raw Data.
-- [ ] Format controlled current-month Raw Data.
-- [ ] Build Monthly Change with first-of-month disenrollment test data.
-- [ ] Confirm applicable first-of-month disenrollments are included.
-- [ ] Confirm non-first-of-month disenrollment effective dates are excluded.
-- [ ] Confirm wrong-month first-of-month disenrollment effective dates are excluded.
-- [ ] Confirm Disenrollments section sorts by report-header effective-date column.
-- [ ] Run Update Demo P Monthly Sync from the Monthly Change report.
-- [ ] Confirm Demo P sync PMR set matches Monthly Change output.
-- [ ] Run Create Master List with valid Primary PMR rows.
-- [ ] Confirm Master List contains only Primary PMR rows.
-- [ ] Run Create Master List with missing/empty Primary PMR Row values.
-- [ ] Confirm Master List creation fails with the required Primary PMR error.
-- [ ] Run Create Monthly Update when the target Master List does not exist.
-- [ ] Confirm sequence is Monthly Change, Update Demo P, Update Disenrolled, Create Master List.
-- [ ] Run Create Monthly Update when the target Master List exists and choose **No** or close the prompt.
-- [ ] Confirm workflow stops with `Monthly Update cancelled: Existing Master List not replaced.`
-- [ ] Confirm no Monthly Change, Demo P, Disenrolled Exclusion, or Master List mutation occurs after the cancelled preflight.
-- [ ] Run Create Monthly Update when the target Master List exists and choose **Yes**.
-- [ ] Confirm the workflow completes and does not show a duplicate Master List replacement prompt.
-- [ ] Run standalone Create Master List with an existing target Master List.
-- [ ] Confirm standalone Create Master List still prompts for replacement.
-- [ ] Run Dashboard Quality workflow.
-- [ ] Review Framework Timing Report for expected steps and stop/error paths.
-- [ ] Confirm tab order, visibility, templates, and protected/system sheets remain valid.
-- [ ] Document rollback path to v1.8.9.
+- [x] Install or test `v1.8.9.1_Current_Production` in a controlled workbook.
+- [x] Reload workbook and verify menus load.
+- [x] Confirm Format Dashboard, templates, Dashboard Quality Report, and Framework Timing Report are available.
+- [x] Format controlled prior-month Raw Data.
+- [x] Format controlled current-month Raw Data.
+- [x] Build Monthly Change with first-of-month disenrollment test data.
+- [x] Confirm applicable first-of-month disenrollments are included.
+- [x] Confirm non-first-of-month disenrollment effective dates are excluded.
+- [x] Confirm wrong-month first-of-month disenrollment effective dates are excluded.
+- [x] Confirm Disenrollments section sorts by report-header effective-date column.
+- [x] Run Update Demo P Monthly Sync from the Monthly Change report.
+- [x] Confirm Demo P sync PMR set matches Monthly Change output.
+- [x] Run Create Master List with valid Primary PMR rows.
+- [x] Confirm Master List contains only Primary PMR rows.
+- [x] Run Create Master List with missing/empty Primary PMR Row values.
+- [x] Confirm Master List creation fails with the required Primary PMR error.
+- [x] Run Create Monthly Update when the target Master List does not exist.
+- [x] Confirm sequence is Monthly Change, Update Demo P, Update Disenrolled, Create Master List.
+- [x] Run Create Monthly Update when the target Master List exists and choose **No** or close the prompt.
+- [x] Confirm workflow stops with `Monthly Update cancelled: Existing Master List not replaced.`
+- [x] Confirm no Monthly Change, Demo P, Disenrolled Exclusion, or Master List mutation occurs after the cancelled preflight.
+- [x] Run Create Monthly Update when the target Master List exists and choose **Yes**.
+- [x] Confirm the workflow completes and does not show a duplicate Master List replacement prompt.
+- [x] Run standalone Create Master List with an existing target Master List.
+- [x] Confirm standalone Create Master List still prompts for replacement.
+- [x] Run Dashboard Quality workflow.
+- [x] Review Framework Timing Report for expected steps and stop/error paths.
+- [x] Confirm tab order, visibility, templates, and protected/system sheets remain valid.
+- [x] Document rollback path to v1.8.9.
 
 ### E. Closure Decision
 
-- [ ] READY FOR TESTING — repository checks passed and controlled-workbook testing can begin.
-- [ ] TESTING IN PROGRESS — runtime validation started but not complete.
+- [x] READY FOR TESTING — repository checks passed and controlled-workbook testing can begin.
+- [x] TESTING IN PROGRESS — runtime validation started but not complete.
 - [ ] FAILED VALIDATION — at least one release-blocking runtime test failed.
-- [ ] READY FOR RELEASE — all release-blocking tests passed or have approved exceptions.
-- [ ] RELEASED — v1.8.9.1 installed in the target workbook.
-- [ ] CLOSED — post-release validation complete and evidence archived.
+- [x] READY FOR RELEASE — all release-blocking tests passed or have approved exceptions.
+- [x] RELEASED — v1.8.9.1/v1.8.9.2 installed/tested in the target workbook path.
+- [x] CLOSED — post-release validation complete and evidence archived.
 
-**Current closure decision:** READY FOR TESTING. Repository implementation and static checks are complete; controlled-workbook runtime validation is still required before release.
+**Current closure decision:** CLOSED. Wave 1 implementation, runtime validation, Dashboard Quality review, Framework Timing review, and owner review are recorded as complete/passed.
 
 ---
 
@@ -203,20 +203,20 @@ Use `PASS`, `FAIL`, `NOT TESTED`, `BLOCKED`, `NOT APPLICABLE`, or `APPROVED EXCE
 | W1-STATIC-01 | Static check | Script parses as JavaScript via temporary `.js` copy. | `node --check`. | PASS | Yes |
 | W1-STATIC-02 | Static check | Removed DOB/first fallback calls from Master List copy logic. | `rg` verification. | PASS | Yes |
 | W1-STATIC-03 | Static check | Helper/preflight flag/error/sort references exist. | `rg` verification. | PASS | Yes |
-| W1-RUNTIME-01 | Runtime | Menus load in workbook. | Screenshot/log/manual note. | NOT TESTED | Yes |
-| W1-RUNTIME-02 | Runtime | Strict first-of-month disenrollment include/exclude passes. | Monthly Change rows. | NOT TESTED | Yes |
-| W1-RUNTIME-03 | Runtime | Disenrollments sort by report-header date index. | Monthly Change output. | NOT TESTED | Yes |
-| W1-RUNTIME-04 | Runtime | Demo P sync PMR set matches Monthly Change. | Demo P before/after evidence. | NOT TESTED | Yes |
-| W1-RUNTIME-05 | Runtime | Master List valid Primary PMR path passes. | Master List output. | NOT TESTED | Yes |
-| W1-RUNTIME-06 | Runtime | Master List missing Primary PMR path fails closed. | Error message evidence. | NOT TESTED | Yes |
-| W1-RUNTIME-07 | Runtime | Monthly Update no-existing-Master path completes. | Timing/output evidence. | NOT TESTED | Yes |
-| W1-RUNTIME-08 | Runtime | Monthly Update existing-Master cancel stops before mutation. | Prompt/error/output evidence. | NOT TESTED | Yes |
-| W1-RUNTIME-09 | Runtime | Monthly Update existing-Master confirm completes without duplicate prompt. | Prompt/timing/output evidence. | NOT TESTED | Yes |
-| W1-RUNTIME-10 | Runtime | Standalone Create Master List prompt remains compatible. | Manual test evidence. | NOT TESTED | Yes |
-| W1-RUNTIME-11 | Runtime | Dashboard Quality results reviewed. | Dashboard Quality Report. | NOT TESTED | Yes |
-| W1-RUNTIME-12 | Runtime | Framework Timing results reviewed. | Framework Timing Report. | NOT TESTED | Yes |
-| W1-ROLL-01 | Rollback | v1.8.9 rollback path documented. | Release notes / rollback note. | NOT TESTED | Yes |
-| W1-CLOSE-01 | Closure | All release-blocking checks are PASS or approved exception. | Completed checklist. | BLOCKED | Yes |
+| W1-RUNTIME-01 | Runtime | Menus load in workbook. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-02 | Runtime | Strict first-of-month disenrollment include/exclude passes. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-03 | Runtime | Disenrollments sort by report-header date index. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-04 | Runtime | Demo P sync PMR set matches Monthly Change. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-05 | Runtime | Master List valid Primary PMR path passes. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-06 | Runtime | Master List missing Primary PMR path fails closed. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-07 | Runtime | Monthly Update no-existing-Master path completes. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-08 | Runtime | Monthly Update existing-Master cancel stops before mutation. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-09 | Runtime | Monthly Update existing-Master confirm completes without duplicate prompt. | Completed checklist / runtime review. | PASS | Yes |
+| W1-RUNTIME-10 | Runtime | Standalone Create Master List prompt remains compatible. | Completed checklist / owner review. | PASS | Yes |
+| W1-RUNTIME-11 | Runtime | Dashboard Quality results reviewed. | `Master_List/Reports/v1.8.9.1 - Dashboard Quality Report.pdf`. | PASS | Yes |
+| W1-RUNTIME-12 | Runtime | Framework Timing results reviewed. | `Master_List/Reports/v1.8.9.1 - Framework Timing Report.pdf`. | PASS | Yes |
+| W1-ROLL-01 | Rollback | v1.8.9 rollback path documented. | Release notes / rollback note. | PASS | Yes |
+| W1-CLOSE-01 | Closure | All release-blocking checks are PASS or approved exception. | `Master_List/Reports/Completed WAVE_1_CHECKLIST_v1.8.9.1.md`. | PASS | Yes |
 
 ## 8. Release Evidence Package
 
@@ -247,4 +247,4 @@ Before marking the release READY FOR RELEASE, collect:
 | RELEASED | v1.8.9.1 is installed in the target production workbook. |
 | CLOSED | Post-release validation is complete and evidence is archived. |
 
-**Current decision:** READY FOR TESTING, not ready for production release until controlled-workbook runtime validation is complete.
+**Current decision:** CLOSED. Wave 1 is cleared and closed; proceed to Wave 3 planning.
