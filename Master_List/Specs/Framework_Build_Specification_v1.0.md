@@ -1141,3 +1141,23 @@ The audit summary integration pass is complete for documentation purposes. Close
 | Safe deletion protections | Protected sheet set and `RFF_` guard | Prevents accidental loss of framework-owned sheets. | Never weaken without explicit governance approval and tests. |
 | Formatting standards | Template-first, dashboard-governed, batch formatting | Maintains consistency and performance. | Update templates/dashboard/defaults/validators together. |
 | Validation fail-fast rules | Required dependency/header/source checks | Prevents corrupt governed output. | Do not downgrade blocking validation to warning without approval. |
+
+### Appendix T — Formatting Compliance Pass for Google Docs Build
+
+This appendix records the formatting compliance pass against **Master_List/Specs/Framework_Spec_Formatting_Requirements**. The specification is intended to remain Markdown as the editable source and to be converted into a Google Docs document or DOCX build artifact by the documentation builder.
+
+| Requirement | Compliance Rule Applied | Google Docs Build Handling |
+|---|---|---|
+| File names and file paths | Written as bold body text, not code spans. | Builder should render as Cambria 11 bold. |
+| Sheet names | Written as bold body text when referenced as workbook sheets. | Builder should render as Cambria 11 bold. |
+| Template names | Written as bold body text. | Builder should render as Cambria 11 bold. |
+| Dashboard section names | Written as bold body text where treated as section titles. | Builder should render as Cambria 11 bold. |
+| Menu commands | Written as bold body text when referenced as user-facing menu commands. | Builder should render as Cambria 11 bold. |
+| Apps Script functions | Written as code identifiers, such as `runMonthlyUpdate` or `createMasterList`. | Builder should render as Consolas 10.5 or 11. |
+| Constants | Written as code identifiers, such as `MASTER_LIST_MERGE_ML_VERSION` and `HEADER_ROW`. | Builder should render as Consolas. |
+| Document-property keys | Written as code identifiers, such as `RFF_ARCHIVE_SPREADSHEET_ID` and `ML_INDEX_RESTORE_WEB_APP_URL`. | Builder should render as Consolas. |
+| Tables | Kept as Markdown pipe tables in the source. | Google Docs/DOCX builder should convert to native tables, repeat header rows, apply grid borders, and use the required header styling. |
+| Lists | Kept as Markdown lists in the source. | Builder should apply 0.25 inch left indent with matching hanging indent. |
+| Code fences | Used only for actual diagrams or code-like examples. | Builder should preserve or convert fenced blocks according to the document build pipeline. |
+
+Compliance result: the framework specification follows the required context-aware classification model. Any generated Google Docs output should be produced from this Markdown source by the documentation builder rather than by manually editing a generated document.
