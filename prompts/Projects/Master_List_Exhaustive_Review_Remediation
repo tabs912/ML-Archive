@@ -13,7 +13,6 @@ Supporting Reports:
 Master_List/Audit Summary
 
 Supporting Reports:
-
 Master_List/v2_Framework_Reference
 
 Follow:
@@ -37,7 +36,7 @@ PRIMARY OBJECTIVE
 
 Work systematically through the completed exhaustive code review.
 
-Validate every finding against the current production code and current reports, then create a safe, prioritized remediation plan.
+Validate every finding against the current production code and current reports, then create a safe, prioritized remediation and Wave Release plan.
 
 Do not assume every finding is still valid.
 
@@ -52,6 +51,10 @@ Some findings may be:
 - Dependent on missing evidence
 - A recommendation rather than a defect
 - Unsafe to implement without further approval
+
+This task is limited to review validation, dependency analysis, finding consolidation, prioritization, remediation planning, Wave Release planning, and implementation-readiness assessment.
+
+Do not implement code changes during this task.
 
 PHASE 1 — REVIEW RESULT INVENTORY
 
@@ -89,6 +92,10 @@ For each finding record:
 - Breaking-change risk
 - Required testing
 
+Preserve the original finding IDs and terminology.
+
+Do not merge, rename, or discard findings during the initial inventory.
+
 PHASE 2 — CURRENT-STATE VALIDATION
 
 Validate every finding against the current production source.
@@ -110,6 +117,23 @@ For every validated finding, cite the exact current file, function, and relevant
 
 Do not rely only on the wording of the exhaustive review.
 
+For each finding:
+
+1. Locate the cited file and function in the current production source.
+2. Confirm whether the cited implementation still exists.
+3. Confirm whether the cited code path is reachable.
+4. Confirm whether the behavior remains possible under current configuration.
+5. Check whether a later correction already resolved the issue.
+6. Check whether the finding depends on obsolete architecture or workflow assumptions.
+7. Check whether the finding requires runtime or spreadsheet evidence.
+8. Check whether the finding describes a correctness defect, performance issue, design recommendation, or documentation issue.
+9. Record the current evidence supporting the validated status.
+10. Reassess severity and confidence using the current implementation.
+
+Do not claim a finding is corrected unless the current production source provides direct supporting evidence.
+
+Do not claim a finding is confirmed when the required runtime behavior cannot be established through static review alone.
+
 PHASE 3 — DEPENDENCY AND IMPACT ANALYSIS
 
 For every confirmed or partially confirmed finding:
@@ -126,8 +150,42 @@ For every confirmed or partially confirmed finding:
 10. Identify regression risks.
 11. Identify required report or validation updates.
 12. Identify whether multiple findings should be corrected together.
+13. Identify affected templates and system sheets.
+14. Identify affected dashboard definitions, mappings, or validation rules.
+15. Identify affected archives, indexes, hidden-sheet rules, and tab-order behavior.
+16. Identify affected timing, audit, and diagnostic reports.
+17. Identify expected failure modes if the finding remains unresolved.
+18. Identify whether the correction changes approved business logic.
 
-Do not recommend removing any function until direct, indirect, dynamic, trigger, menu, HTML, library, and external-consumer references have been checked.
+Do not recommend removing any function until the following reference types have been checked:
+
+- Direct calls
+- Indirect calls
+- Dynamic calls
+- Callback references
+- Trigger references
+- Menu references
+- HTML references
+- Client-side references
+- Library references
+- Host-sheet references
+- External consumer references
+- String-based dispatch references
+- Configuration-driven references
+- Test and diagnostic references
+
+Do not classify a function as dead, orphaned, obsolete, or removable based only on the absence of a direct static caller.
+
+For every proposed correction, document:
+
+- Upstream dependencies
+- Downstream dependencies
+- Shared helpers
+- Shared configuration
+- Shared data structures
+- Shared public interfaces
+- Potential side effects
+- Rollback considerations
 
 PHASE 4 — FINDING CONSOLIDATION
 
@@ -140,10 +198,34 @@ Examples:
 - Multiple validation failures caused by one incorrect header map
 - Multiple trigger risks caused by one shared entry point
 - Multiple duplicate-code findings caused by obsolete compatibility logic
+- Multiple tab-order defects caused by one incorrect ranking configuration
+- Multiple visibility defects caused by one shared hide-state helper
+- Multiple report discrepancies caused by one outdated dashboard definition
 
 For each consolidated remediation item, list all original finding IDs it resolves.
 
 Do not create separate code changes when one coordinated correction is safer.
+
+For every consolidated item record:
+
+- Root-cause ID
+- Related original finding IDs
+- Root cause
+- Current evidence
+- Affected workflows
+- Affected files
+- Affected functions
+- Shared dependencies
+- Proposed correction
+- Required sequencing
+- Data-integrity risk
+- Breaking-change risk
+- Required testing
+- Recommended remediation wave
+
+Preserve traceability from every original finding ID to the consolidated root cause.
+
+Do not close an original finding solely because it was consolidated.
 
 PHASE 5 — PRIORITIZATION
 
@@ -171,6 +253,24 @@ Clearly distinguish:
 - Requires user approval
 - No action required
 
+For each confirmed or partially confirmed finding, determine:
+
+- Current severity
+- Current confidence
+- Production impact
+- Probability of occurrence
+- Detectability
+- Data-integrity impact
+- Workflow impact
+- Public compatibility impact
+- Performance impact
+- User-visible impact
+- Whether the issue is release-blocking
+- Whether the issue may be corrected independently
+- Whether the correction must be coordinated with other findings
+
+Do not prioritize cleanup or simplification ahead of correctness, data safety, runtime stability, or compatibility.
+
 PHASE 6 — REMEDIATION WAVES
 
 Build an implementation plan divided into safe remediation waves.
@@ -191,19 +291,45 @@ Wave 6 — Maintainability, diagnostics, and documentation
 
 For each wave include:
 
+- Wave identifier
+- Wave title
 - Objective
 - Finding IDs resolved
+- Root-cause IDs resolved
 - Files affected
 - Functions affected
 - Dependencies affected
+- Public entry points affected
+- Menus affected
+- Triggers affected
+- Library or host consumers affected
+- Sheets affected
+- Ranges affected
+- Properties affected
+- Services affected
+- Templates affected
+- Dashboard definitions affected
+- Reports affected
 - Exact proposed changes
 - Business-logic impact
 - Breaking-change risk
 - Data-integrity risk
+- Destructive-operation risk
+- Regression risk
 - Required tests
 - Recommended version increment
 - Whether the wave can be implemented independently
+- Dependencies on earlier waves
 - Required user decisions
+- Release blockers
+- Rollback considerations
+- Expected completion criteria
+
+Do not place unrelated findings into the same wave solely for convenience.
+
+Do not separate findings that require a coordinated correction.
+
+Do not recommend implementing a later wave before any required prerequisite wave.
 
 PHASE 7 — IMPLEMENTATION READINESS
 
@@ -212,22 +338,380 @@ Before proposing implementation, confirm:
 - The current production source is complete.
 - Required reports are visible.
 - Required project documentation is visible.
+- The exhaustive review and findings register are complete.
 - Every critical and high finding has current evidence.
-- Findings based on outdated code have been removed.
+- Findings based on outdated code have been removed from active remediation.
 - Duplicate findings have been consolidated.
 - Dependencies and callers have been traced.
 - Public API compatibility has been evaluated.
+- Trigger and menu compatibility has been evaluated.
+- Library and host-sheet compatibility has been evaluated.
 - Destructive operations have been reviewed.
+- Data-integrity risks have been reviewed.
 - Required tests have been identified.
+- Required user decisions have been identified.
+- Proposed version increments have been evaluated.
 - No proposed correction unintentionally changes approved business logic.
+- No proposed correction creates a new architecture without approval.
+- Every proposed wave has a clear implementation boundary.
+- Every proposed wave has a rollback strategy or rollback limitation.
+- Every original finding remains traceable.
 
 If essential artifacts are missing, stop and report exactly what is missing.
 
+Do not infer missing evidence.
+
+Do not proceed to implementation planning for a finding that cannot be validated against the governing production source.
+
+PHASE 8 — WAVE RELEASE AND CLOSURE PLANNING
+
+For every remediation wave, create a defined Wave Release package and closure checklist.
+
+A remediation wave is not complete merely because code changes have been proposed or implemented.
+
+A Wave Release may be considered released and closed only after all required implementation, validation, regression testing, documentation, reporting, and production-readiness checks have passed.
+
+For each remediation wave, define:
+
+- Wave Release identifier
+- Wave title
+- Production version
+- Governing source version
+- Release objective
+- Original finding IDs resolved
+- Consolidated root-cause IDs resolved
+- Files changed
+- Functions changed
+- Public entry points affected
+- Menus affected
+- Triggers affected
+- Libraries affected
+- Host consumers affected
+- Configuration dependencies affected
+- Dashboard dependencies affected
+- Templates affected
+- System sheets affected
+- Sheets affected
+- Ranges affected
+- Properties affected
+- Services affected
+- Reports affected
+- Business rules preserved
+- Approved business-rule changes
+- Breaking-change status
+- Data-integrity risk
+- Destructive-operation risk
+- Required migration steps
+- Required setup steps
+- Required template refreshes
+- Required system-sheet refreshes
+- Required dashboard or report updates
+- Required tests
+- Expected validation results
+- Release-blocking failures
+- Rollback requirements
+- Required user approvals
+- Release status
+- Closure status
+
+WAVE RELEASE IDENTIFICATION
+
+Use a consistent release identifier for each wave:
+
+- Wave 1 Release — Critical correctness and data safety
+- Wave 2 Release — Runtime stability and missing dependencies
+- Wave 3 Release — Trigger, concurrency, and public API safety
+- Wave 4 Release — Performance improvements
+- Wave 5 Release — Duplicate, dead, and orphan-code cleanup
+- Wave 6 Release — Maintainability, diagnostics, and documentation
+
+Each Wave Release must identify the recommended production version increment.
+
+Use the following versioning guidance:
+
+- Patch version when the wave corrects defects without changing approved public behavior
+- Minor version when the wave adds approved capabilities, diagnostics, configuration, or backward-compatible workflow changes
+- Major version only when an approved breaking public API, architecture, compatibility, or business-rule change is unavoidable
+
+Do not assign a version increment without evaluating:
+
+- Public API compatibility
+- Menu compatibility
+- Trigger compatibility
+- Library compatibility
+- Host-sheet compatibility
+- Configuration compatibility
+- Template compatibility
+- Existing spreadsheet compatibility
+- Report compatibility
+- Data migration requirements
+- User-visible workflow changes
+- Business-rule changes
+- Rollback feasibility
+
+WAVE RELEASE READINESS CHECKLIST
+
+Before a wave may be approved for implementation, confirm all applicable items.
+
+VERSION AND SOURCE CONTROL
+
+- The governing production source version is identified.
+- The proposed next production version is identified.
+- The wave has a complete and traceable finding list.
+- Every included finding has current-code evidence.
+- Every included root cause has current-code evidence.
+- Findings excluded from the wave are documented.
+- Deferred findings are documented.
+- The current branch is verified.
+- Repository status is verified.
+- The configured remote is verified.
+- The workspace is synchronized.
+- The release does not depend on uncommitted files.
+- The release does not depend on unavailable files.
+- The release does not depend on Archive_To_Move.
+- The release boundary is clearly documented.
+- The rollback point is identified.
+
+SETUP AND DEPENDENCIES
+
+- Required menus are identified.
+- Required public entry points are identified.
+- Required triggers are identified.
+- Required system sheets are identified.
+- Required templates are identified.
+- Required configuration records are identified.
+- Required dashboard definitions are identified.
+- Required mappings are identified.
+- Missing helpers or dependencies are included in the wave.
+- Shared helpers are identified.
+- Library dependencies are documented.
+- Host-sheet dependencies are documented.
+- External-consumer dependencies are documented.
+- Required setup procedures are defined.
+- Required refresh procedures are defined.
+- Required migrations are defined.
+- No dependency removal is proposed without full reference review.
+
+PLACEMENT AND WORKBOOK STRUCTURE
+
+- Expected sheet placement is documented.
+- Expected tab ordering is documented.
+- Index remains in its approved position.
+- Demo P remains in its approved position.
+- Core operational sheets remain in their approved group.
+- Monthly active sheets remain in their approved group.
+- Monthly sub-report sheets remain in their approved group.
+- Source-data sheets remain in their approved group.
+- Archive sheets remain in their approved group.
+- System sheets remain in their approved relative order.
+- Framework Timing Report remains before Dashboard Quality Report where required.
+- Dashboard Quality Report remains before Format Dashboard where required.
+- Templates remain after Format Dashboard where required.
+- Templates remain in their approved relative order.
+- RFF_BASE_TEMPLATE remains in its approved protected position.
+- Dynamic-ranking behavior is validated where applicable.
+- Fixed-rank behavior is validated where applicable.
+- No remediation unintentionally changes approved tab-order governance.
+
+VISIBILITY AND PROTECTION
+
+- Expected hidden states are documented.
+- Expected visible states are documented.
+- Never-hide sheets remain visible.
+- Always-hidden sheets remain hidden.
+- Hide-after-creation rules are preserved.
+- Menu-triggered visibility rules are preserved.
+- Manual tab organization preserves approved hidden states.
+- Protected sheets remain protected.
+- Protected ranges remain protected.
+- Protected local cleanup does not create false workflow failures.
+- Retained protected sheets are handled according to current governance.
+- Archive visibility rules are preserved.
+- Source-data visibility rules are preserved.
+- System-sheet visibility rules are preserved.
+- Template visibility rules are preserved.
+
+WORKFLOW VALIDATION
+
+- Every workflow affected by the wave is identified.
+- Upstream workflows are identified.
+- Downstream workflows are identified.
+- First-run behavior is tested.
+- Repeat-run behavior is tested.
+- Same-period duplicate prevention is tested where applicable.
+- Idempotency is tested where applicable.
+- Existing reports are not unintentionally deleted.
+- Existing reports are not unintentionally replaced.
+- Duplicate sheets such as “(2)” are not created where prohibited.
+- Archive workflows are tested.
+- Index refresh behavior is tested.
+- Archive-side refresh behavior is tested.
+- Error handling produces the expected result.
+- Partial failure does not leave production data in an unsafe state.
+- Recovery behavior is documented.
+- Destructive operations require controlled testing.
+- Workflow ordering remains valid.
+- Approved business rules remain unchanged unless explicitly approved.
+
+DASHBOARD AND DIAGNOSTIC VALIDATION
+
+- Dashboard Quality completes for all affected sections.
+- All required sections populate.
+- No unexpected NOT RUN sections remain.
+- No false-pass results remain.
+- No false-failure results remain.
+- Framework Timing Report is reviewed when performance is affected.
+- Audit Summary is updated when required.
+- Validation reports reflect the changed implementation.
+- Diagnostic output identifies the correct file and function.
+- Diagnostic output distinguishes warnings from production failures.
+- Required report columns remain complete.
+- Required report sections remain complete.
+- Report ordering remains valid.
+- Report evidence can be traced to the implemented correction.
+
+REGRESSION VALIDATION
+
+- Unaffected workflows still pass.
+- Approved business rules remain unchanged.
+- Existing menus continue to work.
+- Existing triggers continue to work.
+- Existing public functions retain compatible signatures.
+- Existing public functions retain compatible behavior.
+- Libraries remain compatible.
+- Host-sheet consumers remain compatible.
+- Existing spreadsheets remain compatible.
+- Existing templates remain compatible.
+- Template-first formatting remains intact where applicable.
+- Dashboard-driven configuration remains intact where applicable.
+- Destructive workflows are tested with controlled data.
+- Existing monthly sheets remain usable.
+- Existing historical sheets remain usable.
+- Existing archive sheets remain usable.
+- Existing reports remain usable.
+- Existing properties remain valid.
+- Existing configuration values remain valid.
+
+RECOMMENDED WAVE TEST ORDER
+
+For each Wave Release, establish an ordered test sequence based on the affected functions and workflows.
+
+The sequence must normally include:
+
+1. Confirm the installed production version.
+2. Confirm the governing production source.
+3. Confirm repository branch, status, and remote.
+4. Reload the workbook and confirm menus.
+5. Confirm required system sheets.
+6. Run Setup System Sheets when required.
+7. Confirm required templates.
+8. Run Create / Refresh All Templates or the affected template refresh when required.
+9. Run the directly affected workflow.
+10. Run required upstream workflows.
+11. Run required downstream workflows.
+12. Repeat workflows that require duplicate-run testing.
+13. Repeat workflows that require idempotency testing.
+14. Test same-period duplicate prevention where applicable.
+15. Test destructive operations with controlled data.
+16. Test archive operations with controlled data.
+17. Test protected-sheet behavior.
+18. Test hidden-state preservation.
+19. Refresh the Index or related system outputs.
+20. Run Organize Tabs.
+21. Confirm approved tab order.
+22. Confirm approved visible and hidden states.
+23. Run the full Dashboard Quality Workflow.
+24. Confirm all affected Dashboard Quality sections populate.
+25. Review the Framework Timing Report when applicable.
+26. Review the Audit Summary.
+27. Review all affected validation and diagnostic reports.
+28. Confirm expected errors occur where required.
+29. Confirm unexpected errors do not occur.
+30. Confirm no duplicate reports or sheets were created.
+31. Confirm no existing production reports were unintentionally deleted.
+32. Confirm no unexpected files, sheets, properties, or reports were created.
+33. Confirm final workbook structure.
+34. Confirm final data state.
+35. Record PASS, FAIL, BLOCKED, or NOT APPLICABLE for every closure criterion.
+
+The exact sequence must be customized for the functions and workflows affected by the wave.
+
+WAVE RELEASE CLOSURE CHECKLIST
+
+A Wave Release may be marked CLOSED only when:
+
+- Every included finding has been corrected or formally dispositioned.
+- Every original finding ID remains traceable.
+- Every consolidated root cause has been addressed.
+- Every deferred finding is documented.
+- Required code review is complete.
+- Required dependency review is complete.
+- Required caller review is complete.
+- Required public API review is complete.
+- Required trigger review is complete.
+- Required menu review is complete.
+- Required library and host-consumer review is complete.
+- Required destructive-operation review is complete.
+- Required regression tests pass.
+- Required destructive-operation tests pass.
+- Required trigger tests pass.
+- Required concurrency tests pass.
+- Required public API compatibility tests pass.
+- Required library compatibility tests pass.
+- Required host compatibility tests pass.
+- Required performance tests pass or have an approved exception.
+- Required spreadsheet integration tests pass.
+- Required dashboard validation passes.
+- Required report validation passes.
+- Required documentation is updated.
+- Required Framework/spec documentation is updated where applicable.
+- Required release notes are complete.
+- Required Audit Summary updates are complete.
+- Required user decisions are documented.
+- Required user approval has been received.
+- No release-blocking defect remains open.
+- The production version has been verified.
+- The final production source matches the approved release.
+- The final repository state is clean.
+- The final repository state is synchronized.
+- The release has a documented rollback point.
+- Post-release validation is complete.
+- The post-release validation result is recorded.
+- The final closure decision is documented.
+
+Use the following closure statuses:
+
+- NOT STARTED
+- PLANNED
+- READY FOR APPROVAL
+- APPROVED FOR IMPLEMENTATION
+- IMPLEMENTATION IN PROGRESS
+- READY FOR TESTING
+- TESTING IN PROGRESS
+- BLOCKED
+- FAILED VALIDATION
+- READY FOR RELEASE
+- RELEASED
+- POST-RELEASE VALIDATION
+- CLOSED
+- DEFERRED
+- CANCELLED
+
+Do not mark a wave CLOSED based only on static code review.
+
+Do not mark a wave RELEASED until the approved production version and required artifacts are verified.
+
+Do not mark a wave READY FOR RELEASE if any required test is failed, unperformed, or dependent on missing evidence unless an explicit approved exception is recorded.
+
+Do not treat implementation completion as release closure.
+
+Do not claim a Wave Release is complete without recorded test evidence.
+
 REQUIRED DELIVERABLES
 
-Produce:
+Produce all of the following.
 
-1. Executive Remediation Summary
+1. EXECUTIVE REMEDIATION SUMMARY
 
 Include:
 
@@ -236,32 +720,47 @@ Include:
 - Number partially confirmed
 - Number already corrected
 - Number outdated
+- Number duplicated
 - Number not confirmed
 - Number requiring runtime evidence
 - Number requiring user decisions
+- Number classified as optimization only
+- Number classified as documentation only
 - Highest-priority risks
+- Highest data-integrity risks
+- Highest workflow risks
+- Highest compatibility risks
 - Recommended first remediation wave
+- Recommended Wave 1 Release objective
 - Recommended next production version
+- Current implementation-readiness conclusion
 
-2. Validated Findings Register
+2. VALIDATED FINDINGS REGISTER
 
 Use a table containing:
 
 - Finding ID
 - Original severity
+- Original confidence
+- Category
 - Validated status
 - Current severity
-- Confidence
+- Current confidence
 - File
 - Function
 - Current evidence
+- Affected workflows
 - Impact
 - Recommended action
+- Root-cause ID
 - Remediation wave
 - Breaking-change risk
+- Data-integrity risk
 - Required tests
+- Required user decision
+- Closure disposition
 
-3. Findings Rejected or Closed
+3. FINDINGS REJECTED OR CLOSED
 
 List findings that are:
 
@@ -269,28 +768,71 @@ List findings that are:
 - Outdated
 - Duplicated
 - Not confirmed
-- Documentation-only
+- Documentation only
+- Optimization only
 - No longer applicable
 
-Explain why each finding should be closed.
+For each finding include:
 
-4. Consolidated Root-Cause Register
+- Finding ID
+- Original description
+- Validated status
+- Current evidence
+- Reason for closure or rejection
+- Whether any documentation update remains required
+- Whether the finding remains traceable through another consolidated item
+
+Do not close a finding without current evidence.
+
+4. CONSOLIDATED ROOT-CAUSE REGISTER
 
 For each root cause include:
 
 - Root-cause ID
 - Related finding IDs
 - Root cause
+- Current evidence
 - Affected workflows
+- Affected files
+- Affected functions
+- Dependencies
 - Proposed correction
-- Risk
-- Test requirements
+- Business-logic impact
+- Breaking-change risk
+- Data-integrity risk
+- Required tests
+- Recommended remediation wave
+- Required user decisions
 
-5. Prioritized Remediation Plan
+5. PRIORITIZED REMEDIATION PLAN
 
 Organize work into remediation waves.
 
-6. User Decision Register
+For each wave include:
+
+- Wave identifier
+- Wave title
+- Objective
+- Findings resolved
+- Root causes resolved
+- Files affected
+- Functions affected
+- Dependencies affected
+- Exact proposed changes
+- Business-logic impact
+- Breaking-change risk
+- Data-integrity risk
+- Destructive-operation risk
+- Regression risk
+- Required tests
+- Recommended version increment
+- Release blockers
+- Required user decisions
+- Rollback considerations
+- Implementation independence
+- Dependencies on other waves
+
+6. USER DECISION REGISTER
 
 List all decisions requiring approval, including:
 
@@ -300,31 +842,211 @@ List all decisions requiring approval, including:
 - Business-rule changes
 - Removal of compatibility functions
 - Trigger changes
+- Menu changes
+- Library compatibility changes
+- Host-sheet compatibility changes
 - Destructive workflow changes
+- Archive behavior changes
+- Visibility changes
+- Tab-order changes
+- Configuration changes
+- Template changes
 - Deferred risks
+- Approved exceptions
+- Versioning decisions
 
-7. Test Plan
+For each decision include:
+
+- Decision ID
+- Related finding IDs
+- Related root-cause IDs
+- Decision required
+- Available options
+- Recommended option
+- Impact of each option
+- Risk of no decision
+- Required approval before implementation
+- Required approval before release
+
+7. TEST PLAN
 
 Include:
 
 - Unit-like tests
 - Spreadsheet integration tests
 - Regression tests
+- Data-integrity tests
 - Destructive-operation tests
+- Archive tests
+- Duplicate-run tests
+- Idempotency tests
 - Trigger tests
-- Library/host compatibility tests
+- Concurrency tests
+- Menu tests
+- Public API tests
+- Library compatibility tests
+- Host compatibility tests
+- Template tests
+- Configuration tests
+- Sheet-order tests
+- Visibility tests
+- Protection tests
 - Performance tests
+- Dashboard Quality tests
+- Framework Timing Report review
+- Audit Summary validation
 - Report-validation tests
+- Rollback tests
+- Post-release validation tests
 
-8. Implementation Recommendation
+For each test include:
 
-End with one of these conclusions:
+- Test ID
+- Related finding IDs
+- Related remediation wave
+- Objective
+- Preconditions
+- Test data
+- Steps
+- Expected result
+- Failure criteria
+- Evidence required
+- Whether the test is release-blocking
+
+8. IMPLEMENTATION RECOMMENDATION
+
+End the remediation-planning portion with one of these conclusions:
 
 - Ready to implement Wave 1
 - Ready to implement all approved waves
 - Implementation blocked by missing artifacts
+- Implementation blocked by required runtime evidence
 - Implementation blocked by required user decisions
+- Implementation blocked by unresolved compatibility risk
 - No code changes required
+- No remediation wave is currently ready for implementation
+
+Explain the evidence supporting the conclusion.
+
+9. WAVE RELEASE REGISTER
+
+For every remediation wave include:
+
+- Wave Release identifier
+- Wave title
+- Governing production version
+- Recommended production version
+- Included finding IDs
+- Included root-cause IDs
+- Release objective
+- Files affected
+- Functions affected
+- Dependencies affected
+- Public APIs affected
+- Menus affected
+- Triggers affected
+- Libraries affected
+- Host consumers affected
+- Sheets affected
+- Templates affected
+- System sheets affected
+- Reports affected
+- Exact approved scope
+- Excluded scope
+- Deferred scope
+- Business-logic impact
+- Breaking-change risk
+- Data-integrity risk
+- Destructive-operation risk
+- Required setup
+- Required migration
+- Required tests
+- Release blockers
+- Required user decisions
+- Rollback requirements
+- Release status
+- Closure status
+
+10. WAVE RELEASE CLOSURE CHECKLIST
+
+Create a separate closure checklist for each proposed remediation wave.
+
+Each checklist must include:
+
+- Wave identifier
+- Wave title
+- Proposed release version
+- Included finding IDs
+- Included root-cause IDs
+- Version and source-control validation
+- Setup and dependency validation
+- Workbook placement validation
+- Visibility and protection validation
+- Workflow validation
+- Archive validation
+- Destructive-operation validation
+- Dashboard validation
+- Diagnostic validation
+- Regression validation
+- Ordered test execution
+- Release approval
+- Post-release validation
+- Final closure decision
+
+Use a table with:
+
+- Check ID
+- Category
+- Closure criterion
+- Required evidence
+- Status
+- Release blocking
+- Notes
+
+Use these status values:
+
+- NOT TESTED
+- PASS
+- FAIL
+- BLOCKED
+- NOT APPLICABLE
+- APPROVED EXCEPTION
+
+End each Wave Release checklist with one of these conclusions:
+
+- Wave not ready for approval
+- Wave ready for implementation approval
+- Wave implementation blocked
+- Wave ready for testing
+- Wave testing failed
+- Wave ready for release
+- Wave released pending post-release validation
+- Wave closed
+
+11. IMPLEMENTATION AND WAVE RELEASE RECOMMENDATION
+
+End the complete report with one of these conclusions:
+
+- Ready to approve Wave 1 implementation
+- Ready to approve multiple remediation waves
+- Ready to prepare the Wave 1 Release package
+- Wave Release blocked by missing artifacts
+- Wave Release blocked by required runtime evidence
+- Wave Release blocked by required user decisions
+- Wave Release blocked by unresolved compatibility risk
+- No code changes required
+- No remediation wave is currently ready for implementation
+
+Explain:
+
+- Why the conclusion was selected
+- What must happen next
+- Which artifacts are required
+- Which user decisions are required
+- Which tests are release-blocking
+- Whether implementation may begin
+- Whether release preparation may begin
+- Whether additional validation is required
 
 CHANGE CONTROL
 
@@ -332,14 +1054,57 @@ During this task:
 
 - Do not modify production code.
 - Do not generate replacement code.
+- Do not create patch code.
 - Do not rename functions.
 - Do not remove functions.
 - Do not change public APIs.
+- Do not change menus.
+- Do not change triggers.
+- Do not change business rules.
 - Do not create a new architecture.
+- Do not reorganize the production source.
+- Do not alter framework configuration.
+- Do not alter templates.
+- Do not alter system sheets.
+- Do not alter reports.
+- Do not use Archive_To_Move.
 - Do not merge findings without preserving traceability to their original IDs.
 - Do not claim a finding is corrected without current-code evidence.
+- Do not claim a finding is confirmed without current evidence.
+- Do not claim runtime behavior without runtime evidence.
+- Do not classify a function as removable without complete dependency review.
 - Do not create or claim a pull request.
+- Do not create or claim a commit.
+- Do not mark a remediation wave released or closed during this planning task.
+- Do not claim tests passed unless supported by actual test evidence.
+- Do not assign a final production version without confirming the governing current version.
+- Do not omit unresolved findings from a Wave Release without recording their disposition.
+- Do not combine findings into a Wave Release without preserving original finding-ID traceability.
+- Do not proceed from remediation planning to implementation without explicit approval.
+- Do not proceed from implementation to release without completing the Wave Release closure checklist.
+- Do not treat implementation completion as release closure.
+- Do not mark a wave READY FOR RELEASE with failed, blocked, or unperformed release-blocking tests.
+- Do not silently change approved business logic.
+- Do not silently close findings due to missing evidence.
+- Do not make assumptions about unavailable files or reports.
 
-This task is for review validation, consolidation, prioritization, and remediation planning only.
+This task is for:
 
-After completing the plan, wait for approval before implementing any remediation wave.
+- Review validation
+- Finding inventory
+- Current-state validation
+- Dependency analysis
+- Impact analysis
+- Finding consolidation
+- Root-cause analysis
+- Prioritization
+- Remediation-wave planning
+- Wave Release planning
+- Test planning
+- Implementation-readiness assessment
+- Release-readiness criteria
+- Closure-checklist preparation
+
+This task is not for implementation.
+
+After completing the plan, stop and wait for explicit approval before implementing any remediation wave.
