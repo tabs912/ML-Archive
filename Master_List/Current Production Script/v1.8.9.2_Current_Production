@@ -2,7 +2,7 @@
 // CONFIGURATION
 // ============================================================================
 
-const MASTER_LIST_MERGE_ML_VERSION = "1.8.9.1";
+const MASTER_LIST_MERGE_ML_VERSION = "1.8.9.2";
 
 const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
