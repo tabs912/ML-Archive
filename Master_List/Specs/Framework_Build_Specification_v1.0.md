@@ -929,3 +929,52 @@ This appendix consolidates the largest current v2 draft materials into the v2.2 
 | Draft-only appendix placeholders requiring current dashboard exports | Deferred to future appendix expansion because exact row-level live workbook exports were not supplied. |
 
 Consolidation result: the largest v2 drafts have been compared against the v2.2 specification. Detailed governance language that remains consistent with v1.8.9 has been incorporated into the main sections or mapped above. Draft content that conflicts with v1.8.9 is explicitly replaced, retired, or deferred to appendix expansion.
+
+### Appendix K — Audit Summary Integration Pass
+
+This appendix integrates current v1.8.9 audit evidence from **Master_List/Audit Summary/PRODUCTION_EXTRACTION_PASS_v1.8.9.md**, **Master_List/Audit Summary/FUNCTION_INVENTORY_REVIEW_v1.8.9.md**, **Master_List/Audit Summary/FUNCTION_INVENTORY_v1.8.9.csv**, and **Master_List/Audit Summary/EXHAUSTIVE_ENGINEERING_CODE_REVIEW_v1.8.9.md**. Audit evidence is incorporated only where it describes implemented behavior or current governance risk. Recommended remediations are not treated as completed unless the production script implements them.
+
+| Audit Source | Incorporated Evidence | Spec Location |
+|---|---|---|
+| Production extraction pass | v1.8.9 version, line count, function count, public/internal split, dashboard section inventory, Dashboard Quality A-R, constants, sheet definitions, tab organization, workflow order. | Current Production Baseline; Configuration Framework; Sheet Architecture; Dashboard Architecture; Function Organization. |
+| Function inventory review | 679 total functions, 64 public entry points, 615 internal helpers, 0 duplicate declarations, 0 confirmed missing menu callbacks, 0 confirmed undefined top-level dependencies, 107 no-static-caller candidates, 2 high-complexity functions, 1 circular dependency group. | Current Production Baseline; Function Organization; Framework Governance; Maintenance Workflow. |
+| Exhaustive engineering review | Production-usable conditional status, high-risk workflow areas, bottlenecks, maintainability concerns, and open findings ML189-001 through ML189-008. | Quality Assurance Framework; Error Handling Framework; Performance Framework; Framework Maintenance; Risk Notes below. |
+
+#### Closed / Implemented Decisions Incorporated
+
+| Decision / Evidence | Integration |
+|---|---|
+| No duplicate top-level function declarations were found in v1.8.9. | Function Organization treats duplicate declarations as closed for the current baseline. |
+| No confirmed missing menu callbacks were found in v1.8.9 static review. | Public entry-point governance preserves current callback surfaces rather than treating them as broken. |
+| No confirmed undefined top-level dependencies were found in v1.8.9 static review. | Validation and maintenance guidance focuses on safe-change review rather than dependency emergency remediation. |
+| Single-file Apps Script architecture remains production-approved. | Protected Design Principles and Framework Architecture preserve single-file architecture. |
+| Dashboard-governed, template-first formatting remains implemented. | Configuration, Template, Dashboard, and Performance sections preserve dashboard/template-first governance. |
+| Format Dashboard Sections A-H are implemented in v1.8.9. | Dashboard section ownership is updated to A-H, including Section F Tab Organization & Index. |
+| Dashboard Quality Sections A-R are implemented in v1.8.9. | Dashboard Quality governance is updated to A-R, including Section R Signoff. |
+| Current tab organization/rank model is implemented in v1.8.9. | Sheet Architecture includes the category/rank lifecycle model. |
+
+#### Current Risk Notes Not Marked Complete
+
+| Finding | Status in this Specification | Documentation Treatment |
+|---|---|---|
+| ML189-001 Monthly Change disenrollment detection date rule | Open risk, not completed. | Monthly Change rules document current implemented dependency and require future remediation before declaring broader date-window behavior complete. |
+| ML189-002 Create Monthly Update can mutate Demo P / Disenrolled Exclusion before Master List replacement confirmation | Open risk, not completed. | Workflow Architecture documents current order and Quality Assurance requires release validation for destructive workflow safety. |
+| ML189-003 Master List fallback from Primary PMR Row to DOB/first row | Open risk, not completed. | Primary PMR remains protected; the spec does not declare fallback behavior as approved architecture. |
+| ML189-004 Long-running mutating workflows need workflow-level lock/busy guard audit | Open risk, not completed. | Concurrency Controls document the required governance and future audit need. |
+| ML189-005 Disenrollment sort uses source-column index against report rows | Open risk, not completed. | Monthly Change remains a high-review area under Validation and Maintenance. |
+| ML189-006 Monthly Change full-range clear/format performance target | Open cleanup/performance item. | Performance Framework lists Monthly Change as a high-complexity timing-review area. |
+| ML189-007 System sheet menu callbacks use underscore callback names | Open maintainability item. | Function Organization and Safe-Change Requirements preserve callback compatibility until approved cleanup. |
+| ML189-008 Project documentation authority text stale relative to v1.8.9 | Partially addressed by this spec only. | This spec updates authority to v1.8.9, but other project README/spec authority text may still need separate cleanup. |
+
+#### Function Inventory Risk Integration
+
+| Inventory Signal | Governance Response |
+|---|---|
+| 107 no-static-caller candidates | Not treated as deletion-safe. They may be public, dynamic, menu, trigger, macro, web-app, or compatibility surfaces. |
+| Two oversized/high-complexity functions | `getDefaultHeaderSets_` and `compareRawDemoPForSectionReport_` remain focused-review targets before related changes. |
+| One circular dependency group | `loadDashboardConfig_` and `loadGlobalSettings_` are documented as a maintainability signal, not a current runtime blocker. |
+| Public/internal boundaries blurred for some wrappers | Public compatibility is preserved until menu callbacks and wrappers are deliberately migrated. |
+
+#### Audit Integration Result
+
+The audit summary integration pass is complete for documentation purposes. Closed/implemented audit evidence has been incorporated as current framework governance. Open findings from the exhaustive v1.8.9 review are intentionally documented as current risk notes rather than marked complete. Future production remediation must update this specification only after the production script implements the change and validation evidence confirms closure.
