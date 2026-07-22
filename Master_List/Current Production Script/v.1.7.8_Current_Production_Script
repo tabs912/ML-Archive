@@ -3507,11 +3507,11 @@ function getDefaultBehaviorRows_() {
 
 function getDefaultSystemSurfaceRows_() {
   return [
-    [RFF_DASHBOARD_SHEET, "Format Dashboard", 500, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Dashboard configuration surface"],
-    ["Dashboard Quality Report", "Dashboard Quality Report", 501, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified quality report surface"],
-    [RFF_DASHBOARD_SHEET, "Format Dashboard", 502, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Dashboard configuration surface"],
-    [DEMO_P_ARCHIVE_SHEET, DEMO_P_ARCHIVE_SHEET, 350, "HIDDEN", "#657FCC", "#000000", true, "Hidden Demo P row archive"],
-    [RFF_BASE_TEMPLATE_NAME, RFF_BASE_TEMPLATE_NAME, 809, "HIDDEN", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Hidden framework base template"]
+    ["Framework Timing Report", "Framework Timing Report", 500, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified timing report surface"],
+    ["Dashboard Quality Report", "Dashboard Quality Report", 510, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Unified quality report surface"],
+    [RFF_DASHBOARD_SHEET, "Format Dashboard", 520, "VISIBLE", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Dashboard configuration surface"],
+    [DEMO_P_ARCHIVE_SHEET, DEMO_P_ARCHIVE_SHEET, 75, "HIDDEN", "#657FCC", "#000000", true, "Hidden Demo P row archive"],
+    [RFF_BASE_TEMPLATE_NAME, RFF_BASE_TEMPLATE_NAME, 900, "HIDDEN", RFF_SYSTEM_SHEET_TITLE_COLOR, "#000000", true, "Hidden framework base template"]
   ];
 }
 
@@ -11743,12 +11743,12 @@ function getSheetSortProfileByName_(sheetName) {
   const monthDate = extractFirstDateFromSheetName_(name);
   const month = monthDate ? monthDate.getMonth() + 1 : 0;
 
-  // 1. Core / Ongoing Operational
-  if (name === INDEX_SHEET) return { rank: 1, group: "index", operational: true, tail: false };
-  if (name === SHEET_TYPE.DEMO_P || name === DEMO_P_PREFIX) return { rank: 2, group: "ongoing_operational", operational: true, tail: false };
-  if (name === DISENROLLED_EXCLUSION_SHEET || (/^Disenrolled\b/i.test(name) && !isTemplate)) return { rank: 10, group: "ongoing_operational", operational: true, tail: false };
+  // 1. Core Infrastructure (Index must remain the left-most operational sheet, not part of the tail block.)
+  if (name === INDEX_SHEET) return { rank: 5, group: "index", operational: true, tail: false };
+  if (name === DISENROLLED_EXCLUSION_SHEET || (/^Disenrolled\b/i.test(name) && !isTemplate)) return { rank: 10, group: "disenrolled", operational: true, tail: false };
+  if (name === SHEET_TYPE.DEMO_P || name === DEMO_P_PREFIX) return { rank: 15, group: "demo_p", operational: true, tail: false };
 
-  // 2. Active Monthly Sheets (Ranks 21-98)
+  // 2. Active Sheets
   if (
     name.indexOf(MASTER_LIST_PREFIX) === 0 ||
     name.indexOf(MONTHLY_CHANGE_REPORT_PREFIX) === 0 ||
@@ -11758,7 +11758,7 @@ function getSheetSortProfileByName_(sheetName) {
     return { rank: rank, group: "active_monthly", operational: true, tail: false };
   }
 
-  // 3. Monthly Import Sheets (Ranks 115-192)
+  // 3. Monthly Import Sheets
   if (
     name.indexOf("Banner") === 0 ||
     name.indexOf(CARE_PLAN_DUE_PREFIX) === 0 ||
@@ -11770,27 +11770,19 @@ function getSheetSortProfileByName_(sheetName) {
     return { rank: rank, group: "import_monthly", operational: true, tail: false };
   }
 
-  // 4. Raw Data Imports (Ranks 210-287)
-  if (
-    name.indexOf("Raw Data - Banner") === 0 ||
-    name.indexOf("Raw Data - CP Due") === 0 ||
-    name.indexOf("Raw Data - Care Plan Due") === 0 ||
-    name.indexOf("Raw Data - Unlock") === 0
-  ) {
-    const rank = month >= 1 && month <= 12 ? 294 - (month * 7) : 600;
-    return { rank: rank, group: "raw_import_monthly", operational: true, tail: false };
-  }
+  // 4. Temporary Imports & Archives
+  if (name.indexOf("Raw Data - Banners") === 0 || name.indexOf("Raw Data - Banner Report") === 0) return { rank: 210, group: "raw_banner", operational: true, tail: false };
+  if (name.indexOf("Raw Data - CP Due") === 0 || name.indexOf("Raw Data - Care Plan Due") === 0) return { rank: 220, group: "raw_cp", operational: true, tail: false };
+  if (name.indexOf("Raw Data - Unlock CP") === 0 || name.indexOf("Raw Data - Unlocked") === 0) return { rank: 220, group: "raw_unlock", operational: true, tail: false };
+  if (/^(B\s|CD\s|UC\s|RD\s)/i.test(name)) return { rank: 230, group: "short_import", operational: true, tail: false };
+  if (name.indexOf("Archive - Demo P") === 0) return { rank: 240, group: "archive_demo", operational: true, tail: false, forceHidden: true };
 
-  // 5. Temporary Short Imports & Archives
-  if (/^(B\s|CD\s|UC\s|RD\s)/i.test(name)) return { rank: 300, group: "short_import", operational: true, tail: false };
-  if (name.indexOf("Archive - Demo P") === 0) return { rank: 350, group: "archive_demo", operational: true, tail: false, forceHidden: true };
+  // 6. System Sheets
+  if (name === RFF_TIMING_SHEET || name === "Framework Timing Report") return { rank: 500, group: "framework_timing", operational: false, tail: true };
+  if (name === RFF_TEST_DASHBOARD_SHEET || name === "Dashboard Quality Report") return { rank: 510, group: "dashboard_quality", operational: false, tail: true };
+  if (name === RFF_DASHBOARD_SHEET || name === "Format Dashboard") return { rank: 520, group: "format_dashboard", operational: false, tail: true };
 
-  // 6. System Sheets (Strict Sequential Order)
-  if (name === "Framework Timing Report" || name === RFF_TIMING_SHEET) return { rank: 500, group: "framework_timing", operational: false, tail: true };
-  if (name === "Dashboard Quality Report" || name === RFF_TEST_DASHBOARD_SHEET) return { rank: 501, group: "dashboard_quality", operational: false, tail: true };
-  if (name === "Format Dashboard" || name === RFF_DASHBOARD_SHEET) return { rank: 502, group: "format_dashboard", operational: false, tail: true };
-
-  // 7. Templates (Strict Sequential Order)
+  // 7. Templates
   if (isTemplate) {
     if (name === "Template - Banner Report") return { rank: 801, group: "template_banner", operational: false, tail: true };
     if (name === "Template - Care Plan Due") return { rank: 802, group: "template_care_plan", operational: false, tail: true };
@@ -11805,8 +11797,8 @@ function getSheetSortProfileByName_(sheetName) {
     return { rank: 850, group: "template_other", operational: false, tail: true };
   }
 
-  // 8. Catch-All
-  return { rank: 600, group: "other", operational: true, tail: false };
+  // 5. Catch-All
+  return { rank: 250, group: "other", operational: true, tail: false };
 }
 
 function getGlobalSheetSortRankByName_(sheetName) {
@@ -11817,8 +11809,6 @@ function getGlobalSheetSortRankByName_(sheetName) {
 function getSystemTemplateTailBlockNames_() {
   return [
     RFF_DASHBOARD_SHEET,
-    RFF_TEST_DASHBOARD_SHEET,
-    RFF_TIMING_SHEET,
     RFF_BASE_TEMPLATE_NAME,
     "Template - Banner Report",
     "Template - Care Plan Due",
