@@ -87,31 +87,33 @@ The complete authoritative inventory is recorded in `Master_List/Audit Summary/F
 
 ## 4. Complete Findings Register
 
-### ML189-001 — Monthly Change disenrollment detection only accepts the report/month first day
+### ML189-001 — Owner-clarified: Monthly Change disenrollment date rule is strict first-of-month
 
-- **Severity:** High
+- **Severity:** Low after owner clarification
 - **Confidence:** High
-- **Category:** Business logic / data correctness
+- **Category:** Business logic clarification / maintainability
 - **Function or workflow:** `buildMonthlyChangeReportForMonth_` → `compareRawDemoPForSectionReport_` → `buildMonthlyChangeSectionRows_`
-- **Description:** v1.8.9 still classifies disenrollments only when `Disenrollment Effective Date` equals `monthParts.firstDay`. The Monthly Change user-facing no-change message still describes a broader range rule: disenrollments effective between the previous month first day and the report date. A `disenrollmentEffectiveRange` branch exists in the row builder, but the active section spec still uses the strict same-day row mode.
-- **Code evidence / execution path:** Disenrollment PMR classification uses `isSameDate_(effectiveDate, monthParts.firstDay)`. The Disenrollments section spec uses `rowMode: "strictDisenrollmentEffectiveDate"`; the row builder again requires the same date rather than the available inclusive range branch.
-- **Operational impact:** Disenrolled participants with effective dates inside the intended reporting window but not exactly on the report/month first day can be omitted from Monthly Change, Demo P sync PMR collection, and downstream Master List/disenrollment processing.
-- **Recommended correction:** Add one helper for the approved Monthly Change disenrollment date rule and call it from both PMR classification and row inclusion. If the approved rule is actually same-day only, revise the message and remove/deprecate the unused range branch.
-- **Breaking-change risk:** Medium; row counts and Demo P sync scope can change for affected months.
-- **Focused testing needed after correction:** Effective dates before previous-first, on previous-first, mid-range, on report date, on month first day, and after report date.
+- **Owner clarification:** `Disenrollment Effective Date` is always the first day of the month.
+- **Updated description:** v1.8.9 classifies disenrollments when `Disenrollment Effective Date` equals `monthParts.firstDay`. That strict first-of-month behavior is aligned with the clarified business rule and should not be broadened.
+- **Code evidence / execution path:** Disenrollment PMR classification uses `isSameDate_(effectiveDate, monthParts.firstDay)`. The Disenrollments section spec uses `rowMode: "strictDisenrollmentEffectiveDate"`; the row builder again requires the same date.
+- **Operational impact:** The prior broader-window concern is superseded. The remaining risk is maintainability/confusing audit or range-branch text that could lead a future implementer to broaden the rule incorrectly.
+- **Recommended correction:** Preserve strict first-of-month selection. Centralize or clean up wording/range-branch ambiguity only if behavior remains unchanged.
+- **Breaking-change risk:** Low if behavior is preserved.
+- **Focused testing needed after correction:** First-of-month dates for the applicable month are included; non-first-of-month and wrong-month dates are excluded.
 
-### ML189-002 — Create Monthly Update can mutate Demo P and Disenrolled Exclusion before Master List replacement is confirmed
+### ML189-002 — Owner-clarified: Create Monthly Update order is correct
 
-- **Severity:** High
+- **Severity:** Low after owner clarification
 - **Confidence:** High
-- **Category:** Data-flow / workflow safety
+- **Category:** Workflow clarification
 - **Function or workflow:** `runMonthlyUpdate` → `updateDemoPMonthlySyncForMonth_` → `createDisenrolledListForMonth_` → `createMasterListForMonth_`
-- **Description:** v1.8.9 monthly-update preflight validates current Raw Data, previous Raw Data, and Demo P, but it does not preflight target Master List replacement/cancel intent before mutation. The existing-Master-List replacement prompt occurs inside `createMasterListForMonth_`, after Monthly Change creation, Demo P monthly replacement, Archive - Demo P append, and Disenrolled Exclusion mutation.
-- **Code evidence / execution path:** `runMonthlyUpdate` performs Monthly Change, Demo P sync, Disenrolled Exclusion processing, and then Master List creation. `createMasterListForMonth_` prompts when the target Master List exists; a user selecting No returns `null` after prior monthly-update mutations are already complete.
-- **Operational impact:** A realistic cancel path can leave the workbook with updated Demo P and Disenrolled Exclusion but no corresponding refreshed Master List for the month.
-- **Recommended correction:** Move Monthly Change/Master List target conflict detection and the Master List replacement decision into preflight before any Demo P or Disenrolled Exclusion mutation.
-- **Breaking-change risk:** Low to medium; workflow order remains intact after preflight.
-- **Focused testing needed after correction:** Existing Monthly Change, existing Master List with cancel, existing Master List with confirm, and no-existing-output paths.
+- **Owner clarification:** The correct `runMonthlyUpdate` path is `Monthly Change -> Update Demo P -> Update Disenrolled -> Create Master List`.
+- **Updated description:** The previously recommended reordering conflicts with the owner-confirmed workflow order. Create Master List should remain the final step of the monthly update path.
+- **Code evidence / execution path:** `runMonthlyUpdate` performs Monthly Change, Demo P sync, Disenrolled Exclusion processing, and then Master List creation.
+- **Operational impact:** Reordering Create Master List or moving its replacement/cancel handling ahead of Demo P or Disenrolled processing would violate the confirmed workflow.
+- **Recommended correction:** Preserve the existing workflow sequence and remove the pre-mutation Master List replacement recommendation from Wave 1.
+- **Breaking-change risk:** Low if sequence is preserved.
+- **Focused testing needed after correction:** Validate the sequence remains Monthly Change, Update Demo P, Update Disenrolled, Create Master List.
 
 ### ML189-003 — Master List silently falls back from Primary PMR Row to DOB/first row
 
@@ -223,7 +225,7 @@ The complete authoritative inventory is recorded in `Master_List/Audit Summary/F
 
 **Strengths:** source preflight exists, Demo P replacement coverage is validated before body clear, Archive - Demo P append happens before Demo P body replacement, Master List replacement uses a staged sheet, and protected sheet deletion guards exist.
 
-**Realistic risks:** Monthly Change disenrollment date mismatch, late Master List cancel after earlier monthly mutations, Primary PMR fallback masking upstream assignment failure, and possible overlap of destructive workflows.
+**Realistic risks after owner clarification:** Primary PMR fallback masking upstream assignment failure, possible overlap of destructive workflows, Disenrollments sort/index behavior under header changes, and confusing date-window/workflow-order audit language if left uncorrected.
 
 ## 9. Trigger and Concurrency Report
 
@@ -231,22 +233,22 @@ The complete authoritative inventory is recorded in `Master_List/Audit Summary/F
 
 ## 10. Error Handling and Logging Review
 
-Core workflows generally mark timing and rethrow schema-critical errors. Best-effort formatting warnings are usually handled proportionately. The main error-handling weakness remains late cancellation after monthly-update mutations. Avoid adding broad evidence logging unless tied to a specific remediation.
+Core workflows generally mark timing and rethrow schema-critical errors. Best-effort formatting warnings are usually handled proportionately. After owner clarification, do not treat final-step Master List replacement timing as an error-handling defect. Avoid adding broad evidence logging unless tied to a specific remediation.
 
 ## 11. Maintainability and Architecture Review
 
-v1.8.9 remains aligned with the approved single-file architecture. The Monthly Sub-Reports naming and tab-organization updates are reasonable terminology/order changes and do not justify a framework rebuild. Maintainability work should focus on centralizing Monthly Change date rules, documenting public/compatibility wrappers, and updating stale authority references.
+v1.8.9 remains aligned with the approved single-file architecture. The Monthly Sub-Reports naming and tab-organization updates are reasonable terminology/order changes and do not justify a framework rebuild. Maintainability work should focus on preserving the strict first-of-month Monthly Change date rule, documenting public/compatibility wrappers, and updating stale authority references.
 
 ## 12. Prioritized Remediation Plan
 
 ### Phase A — Confirmed correctness defects
 
-1. Centralize and fix the Monthly Change disenrollment effective-date rule.
-2. Add boundary tests for the approved disenrollment window.
+1. Preserve and test the strict first-of-month Monthly Change disenrollment rule.
+2. Remove or reword any broadened-window remediation language that conflicts with owner clarification.
 
-### Phase B — Runtime stability and partial-mutation prevention
+### Phase B — Runtime stability and confirmed workflow preservation
 
-1. Move output-conflict and replacement-cancel decisions into monthly-update preflight.
+1. Preserve the owner-confirmed monthly-update sequence: Monthly Change, Update Demo P, Update Disenrolled, Create Master List.
 2. Audit/apply the existing busy-flag or lock pattern to long destructive public workflows.
 
 ### Phase C — Material performance improvements
@@ -266,13 +268,13 @@ v1.8.9 remains aligned with the approved single-file architecture. The Monthly S
 
 ## 13. Focused Regression Test Plan
 
-1. Monthly Change disenrollment date boundaries.
-2. Demo P sync PMR collection from Monthly Change after the date-rule fix.
-3. Create Monthly Update with existing target Monthly Change and Master List outputs.
+1. Monthly Change strict first-of-month disenrollment boundaries.
+2. Demo P sync PMR collection from Monthly Change after strict-rule verification.
+3. Create Monthly Update order verification: Monthly Change, Update Demo P, Update Disenrolled, Create Master List.
 4. Master List Primary PMR Row enforcement and fallback behavior.
 5. Workflow busy/lock behavior on repeated invocations.
 6. Monthly Change output formatting bounds on oversized template grids.
 
 ## 14. Final Conclusion
 
-**Conditional approval.** v1.8.9 is production-usable for the current small-user workbook and improves naming/tab organization versus v1.8.8, but full approval should wait for the Monthly Change disenrollment rule and Create Monthly Update partial-mutation risk to be remediated. No critical defect, duplicate top-level function declaration, or confirmed undefined top-level dependency was found.
+**Conditional approval after owner clarification.** v1.8.9 is production-usable for the current small-user workbook and improves naming/tab organization versus v1.8.8. The prior broadened disenrollment-window and monthly-update reordering recommendations are superseded by owner clarification; remaining remediation should focus on still-valid items such as Primary PMR fallback behavior, Disenrollments sort/index validation, concurrency coverage, and deferred maintainability items. No critical defect, duplicate top-level function declaration, or confirmed undefined top-level dependency was found.

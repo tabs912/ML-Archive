@@ -2,7 +2,7 @@
 
 Wave 1 can be considered ready for implementation, testing, release, and closure only when the applicable items below are checked off with supporting evidence.
 
-**Current status:** PLANNED / BLOCKED FOR APPROVAL  
+**Current status:** PLANNED / REVISION REQUIRED AFTER OWNER CLARIFICATION  
 **Governing source:** `Master_List/Current Production Script/v1.8.9_Current_Production`  
 **Planned release version:** `v1.8.9.1`  
 **Wave 1 findings:** `ML189-001`, `ML189-002`, `ML189-003`, `ML189-005`  
@@ -10,8 +10,8 @@ Wave 1 can be considered ready for implementation, testing, release, and closure
 
 ## Approval To-Do
 
-- [ ] `UD-001` approved — Monthly Change disenrollment effective-date window is confirmed.
-- [ ] `UD-002` approved — fail-closed behavior for Master List replacement timing and Primary PMR fallback is confirmed.
+- [x] `UD-001` answered — `Disenrollment Effective Date` is always the first of the month; do not broaden the date window.
+- [x] `UD-002` answered for workflow order — preserve `Monthly Change -> Update Demo P -> Update Disenrolled -> Create Master List`.
 - [ ] Approved Wave 1 scope is limited to `ML189-001`, `ML189-002`, `ML189-003`, and `ML189-005`.
 - [ ] Deferred findings remain deferred: `ML189-004` Wave 3, `ML189-006` Wave 4, `ML189-007`/`ML189-008` Wave 6.
 
@@ -29,12 +29,12 @@ Wave 1 can be considered ready for implementation, testing, release, and closure
 
 ## Wave 1 Code To-Do
 
-- [ ] Add one centralized helper for the approved Monthly Change disenrollment date rule.
-- [ ] Update Monthly Change PMR classification to use the centralized helper.
-- [ ] Update Monthly Change Disenrollments row inclusion to use the centralized helper.
+- [ ] Preserve strict first-of-month Monthly Change disenrollment date behavior; add helper only if it centralizes without changing outputs.
+- [ ] Verify Monthly Change PMR classification continues to require first-of-month `Disenrollment Effective Date`.
+- [ ] Verify Monthly Change Disenrollments row inclusion continues to require first-of-month `Disenrollment Effective Date`.
 - [ ] Update Monthly Change Disenrollments sort to use the report-header effective-date index.
-- [ ] Add Create Monthly Update preflight checks for existing Monthly Change and Master List outputs.
-- [ ] Capture Master List replacement/cancel decision before Demo P or Disenrolled Exclusion mutation.
+- [ ] Do not reorder Create Monthly Update; preserve Monthly Change, Update Demo P, Update Disenrolled, Create Master List.
+- [ ] Remove/revise any Wave 1 item that requires Master List replacement/cancel before Demo P or Disenrolled Exclusion mutation.
 - [ ] Preserve standalone Create Master List prompt behavior unless explicitly approved otherwise.
 - [ ] Stop silent Master List fallback to DOB/first row, or add the approved compatibility warning/override.
 - [ ] Preserve public function names and menu labels unless explicitly approved otherwise.
@@ -71,9 +71,9 @@ Wave 1 can be considered ready for implementation, testing, release, and closure
 - [ ] Same-month rerun errors or stops as expected.
 - [ ] Same-month rerun does not create a `(2)` duplicate report.
 - [ ] Existing Monthly Change report is not deleted unexpectedly.
-- [ ] Disenrollment effective dates before the approved window are excluded.
-- [ ] Disenrollment effective dates inside the approved window are included.
-- [ ] Disenrollment effective dates after the approved window are excluded.
+- [ ] Non-first-of-month disenrollment effective dates are excluded.
+- [ ] First-of-month disenrollment effective dates for the applicable month are included.
+- [ ] First-of-month dates outside the applicable month are excluded.
 - [ ] Disenrollments section sorts by effective date using the report header index.
 - [ ] Monthly Change output remains template-first and dashboard-governed.
 
@@ -87,12 +87,12 @@ Wave 1 can be considered ready for implementation, testing, release, and closure
 
 ## Master List
 
-- [ ] Existing Master List replacement/cancel decision happens before Demo P or Disenrolled mutation in Create Monthly Update.
-- [ ] Canceling Master List replacement leaves Demo P unchanged.
-- [ ] Canceling Master List replacement leaves Disenrolled Exclusion unchanged.
+- [ ] Existing Create Monthly Update workflow order is preserved.
+- [ ] Create Monthly Update runs Monthly Change, then Update Demo P, then Update Disenrolled, then Create Master List.
+- [ ] Master List replacement/cancel behavior is tested in the approved final workflow position.
 - [ ] Confirming Master List replacement completes the monthly update path.
 - [ ] Master List copies only approved Primary PMR rows when valid Primary PMR data exists.
-- [ ] Missing or empty Primary PMR Row state fails or warns according to the approved `UD-002` decision.
+- [ ] Missing or empty Primary PMR Row state is handled only after a separate fallback decision if behavior will change.
 - [ ] No silent DOB/first-row fallback occurs unless explicitly approved.
 
 ## Disenrolled Exclusion
@@ -131,14 +131,14 @@ Run the tests in this order:
 4. Run Create / Refresh All Templates if needed.
 5. Confirm Format Dashboard is present.
 6. Format Raw Data for controlled current/prior months.
-7. Build Monthly Change once with date-window test data.
+7. Build Monthly Change once with first-of-month disenrollment test data.
 8. Build Monthly Change again for the same month and confirm expected duplicate-run stop.
 9. Run Update Demo P Monthly Sync against the corrected Monthly Change report.
 10. Run Create Master List with valid Primary PMR Row data.
 11. Run Create Master List with missing/empty Primary PMR Row data and confirm approved stop/warning behavior.
-12. Run Create Monthly Update with existing Monthly Change output.
-13. Run Create Monthly Update with existing Master List output and cancel replacement.
-14. Run Create Monthly Update with existing Master List output and confirm replacement.
+12. Run Create Monthly Update and verify the approved sequence: Monthly Change, Update Demo P, Update Disenrolled, Create Master List.
+13. Run Create Monthly Update with existing Master List output and cancel replacement at the approved final step.
+14. Run Create Monthly Update with existing Master List output and confirm replacement at the approved final step.
 15. Refresh Index.
 16. Run Organize Tabs.
 17. Run full Dashboard Quality Workflow.
@@ -171,4 +171,4 @@ Run the tests in this order:
 - [ ] Wave released pending post-release validation.
 - [ ] Wave closed.
 
-**Current closure decision:** Wave implementation blocked until `UD-001` and `UD-002` are approved. Runtime validation has not been performed.
+**Current closure decision:** Wave plan revision required. `UD-001` and the workflow-order portion of `UD-002` are answered, but Wave 1 scope must be narrowed before implementation. Runtime validation has not been performed.
