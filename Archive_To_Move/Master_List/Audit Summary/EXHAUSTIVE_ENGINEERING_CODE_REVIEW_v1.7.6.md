@@ -23,7 +23,7 @@
 
 The v1.7.6 framework continues to follow the approved single-file, dashboard-driven, template-first architecture. The code uses centralized constants, header helpers, month helpers, dashboard loaders, runtime timing, and document locks. The review found no confirmed duplicate top-level function declarations, no missing menu callbacks, and no confirmed undefined top-level internal helper calls after accounting for nested local helper functions and Apps Script built-ins.
 
-The most important remediation is modest: align Index-refresh trigger/deferred-refresh architecture with actual code behavior, avoid deleting an existing Monthly Change report before the replacement sheet is fully built, and review probable orphan/internal functions before future removals. A rebuild is not recommended.
+The most important remediation is modest: align Index-refresh trigger/deferred-refresh architecture with actual code behavior, validate additive Monthly Change report-history behavior, and review probable orphan/internal functions before future removals. A rebuild is not recommended.
 
 ## 2. Repository and File Inventory
 
@@ -68,7 +68,7 @@ Dependency review notes:
 | Finding ID | Severity | Confidence | Category | Function or workflow | Description | Code evidence or execution path | Operational impact | Recommended correction | Breaking-change risk | Focused testing needed after correction |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | MLF-001 | Medium | High | Trigger/dependency architecture | Index refresh / deferred refresh | Deferred Index-refresh infrastructure exists, but no current code path sets `ML_INDEX_REFRESH_DEFERRED_KEY`, and no `newTrigger`/trigger setup function exists in v1.7.6. | `ML_INDEX_REFRESH_DEFERRED_KEY` is declared and consumed by `runDeferredIndexRefreshIfNeeded_()`, but static search found no setter for that key and no trigger-creation call. | Users may expect automatic/deferred Index refresh after sheet changes, but current behavior depends on explicit `createIndexSheet()` calls in workflows. This can leave Index stale after manual sheet additions/removals. | Either remove the inert deferred-refresh concept from current architecture documentation or add the smallest safe setter/trigger path for realistic sheet insert/remove cases. | Low if documentation-only; Medium if adding trigger behavior because trigger churn must be tested. | Create/delete a non-critical sheet, run the intended trigger/menu path, confirm Index refreshes once and no duplicate trigger is created. |
-| MLF-002 | Medium | High | Data-flow integrity | `buildMonthlyChangeReportForMonth_` | Existing Monthly Change report is deleted before the replacement template is loaded, copied, populated, and formatted. | Execution path deletes `reportSheet` with `deleteSheetSafely_()` before `loadDashboardConfig_()`, template lookup, template copy, layout build, row population, and formatting. | If template/config/formatting fails after deletion, the previous generated Monthly Change report is missing until the workflow is rerun. This is recreatable data, so severity is Medium, not Critical. | Mirror the Master List staged-swap pattern at a smaller scale: build replacement under a temporary name, validate minimum structure, then delete/rename. | Low to Medium; report name and Index behavior must remain stable. | Run Monthly Change with existing report; simulate missing template/config failure; confirm old report remains or failure is clear. |
+| MLF-002 | Low | High | Data-flow integrity | `buildMonthlyChangeReportForMonth_` | Superseded by clarified workflow: Monthly Change reports are additive monthly outputs and previous reports should not be deleted. | Current implementation logs that an existing report is retained and uses `setUniqueSheetName_()` after template copy so same-month reruns receive unique names. | Prior report history is preserved; same-month reruns create additional report tabs. | No staged replacement is required. Validate same-month rerun behavior and Index listing. | Low; report names may receive an existing unique suffix on rerun. | Run Monthly Change twice for the same month; confirm the first report remains, a unique second report appears, and Index refresh includes both. |
 | MLF-003 | Medium | Medium | Maintainability / orphan risk | Suspected no-static-path internal functions | Static inventory identifies 51 internal functions with no deterministic static caller. Some may be dynamic, diagnostic, compatibility, or obsolete. | Current function inventory lists candidates such as `c_`, raw-data fast canvas helpers, several Dashboard Quality section functions, and merge-audit helpers. | Increases dependency-review cost and raises risk that future edits accidentally preserve obsolete code or remove dynamically used code. | Classify each candidate as retained compatibility, dynamic/uncertain, probable orphan, or confirmed orphan before removal. Do not delete solely from static analysis. | Low if classification-only; Medium if removals occur. | For each candidate, run targeted `rg` string/callback/property/menu searches and execute affected workflow smoke paths after any cleanup. |
 | MLF-004 | Medium | High | Maintainability / architecture | Template and validation formatter section | The template section owns template lifecycle, validation, source/report formatting, archive behavior, and smoke-validation helpers. | Section spans lines 3835-8200 and carries multiple logical submodules. | Maintainers must reason across a very broad section when making template or formatter changes, increasing regression risk. | Add submodule ownership comments or a v1.7.6 module map; avoid source splitting unless explicitly requested. | Low; documentation/comment-only cleanup. | Review template build, validate templates, Raw Data formatting, Banner formatting, and archive-local-cleanup paths after any future internal extraction. |
 | MLF-005 | Medium | High | Maintainability / architecture | Master List section | Master List section also owns Index generation, archive restore, web-app restore route, global tab sorting, and visibility wrappers. | Section spans lines 10883-12674 with both production report and navigation/archive responsibilities. | Future Master List edits may unintentionally affect Index/archive/web-app restore behavior. | Document Index/archive restore as a logical submodule and keep dependency review mandatory before moving or renaming functions. | Low for documentation; Medium for code movement. | Test Master List creation, Index build, archive restore from menu, web-app `doGet` restore route, and tab ordering. |
@@ -140,7 +140,7 @@ No deletion is recommended solely from static analysis.
 | 2 | Dashboard Quality full workflow | Cross-checks dashboard, templates, timing, health, Master List, sync, workflow, summary, and signoff surfaces. | Moderate to high for full quality run; acceptable as diagnostic workflow. | Keep full run explicit; avoid running as implicit dependency of routine workflows. | Low. | Yes. |
 | 3 | Index rebuild | Full sheet inventory, archive index generation, formatting, link formula generation. | Moderate overhead when called after multiple workflows. | Resolve MLF-001 before coalescing Index refreshes; avoid duplicate refreshes during batches. | Medium; stale Index possible. | Yes. |
 | 4 | Formatting helpers | Repeated range style operations, row heights, column widths, borders, hides/shows. | Moderate but mostly bounded by sheet count/width. | Keep current batch/range-list patterns; optimize only measured hotspots. | Low to Medium. | Yes. |
-| 5 | Row deletion/cleanup paths | Batches are generally used, but destructive workflows still require careful ordering. | Low to moderate; data correctness matters more than speed. | Preserve validation-before-delete patterns; prefer staged replacement for Monthly Change. | Low. | Yes. |
+| 5 | Row deletion/cleanup paths | Batches are generally used, but destructive workflows still require careful ordering. | Low to moderate; data correctness matters more than speed. | Preserve validation-before-delete patterns; validate additive Monthly Change report history. | Low. | Yes. |
 
 No performance issue was found that justifies increasing architectural complexity for the current one-to-three-user workbook model.
 
@@ -156,7 +156,7 @@ No performance issue was found that justifies increasing architectural complexit
 
 ### Realistic risks
 
-- Monthly Change report replacement deletes the old generated report before the replacement is complete. This is the only meaningful replacement-order issue found.
+- Monthly Change report history is additive under the clarified workflow; same-month reruns should retain the old generated report and create a unique new report.
 - Header/schema changes remain high-impact because Raw Data, Demo P, sync, Master List, Monthly Change, and Disenrollment all depend on shared header names and PMR normalization.
 - Index can become stale after manual sheet changes if no explicit workflow rebuilds it and the inert deferred-refresh path remains unresolved.
 
@@ -181,7 +181,7 @@ Findings are limited to Index refresh behavior: the code contains deferred Index
 ### Weaknesses
 
 - Some cleanup catch blocks intentionally suppress secondary failures. This is acceptable for harmless cleanup, but diagnostic quality is uneven.
-- Monthly Change deletion-before-rebuild reduces failure resilience compared with the Master List staged replacement pattern.
+- Monthly Change same-month reruns should be validated to confirm previous reports are retained and unique names are assigned.
 - Inert deferred Index-refresh state makes concurrency/timing cleanup harder to reason about than necessary.
 
 No broad logging expansion is recommended.
@@ -204,7 +204,7 @@ Do not split the production script into multiple files. Use inventories, ownersh
 
 ### Phase A — Confirmed correctness defects
 
-No Critical or High correctness defect was confirmed. Address MLF-002 if preserving the previous generated Monthly Change report during failed rebuilds is desired.
+No Critical or High correctness defect was confirmed. MLF-002 is superseded by the clarified additive Monthly Change report-history rule.
 
 ### Phase B — Broken dependencies and runtime stability
 
@@ -234,7 +234,7 @@ Run only when the related remediation is implemented:
 | Remediation | Focused tests |
 | --- | --- |
 | MLF-001 Index refresh path | Create/delete a non-critical sheet, run the intended trigger or deferred path, confirm one Index rebuild, verify no duplicate trigger behavior. |
-| MLF-002 Monthly Change staged replacement | Run Monthly Change when an existing report exists; force missing template/config failure; confirm old report remains or failure is clearly reported. |
+| MLF-002 Monthly Change additive history | Run Monthly Change twice for the same month; confirm the first report remains, a unique second report appears, and Index refresh includes both. |
 | Orphan cleanup | For each removed function, run targeted menu/workflow/dashboard search plus the workflow that previously owned the candidate. |
 | Menu callback wrapper alignment | Open workbook, verify menu construction, run Hide/Show System Sheets, confirm no callback missing error. |
 | Configuration ownership changes | Verify archive ID prompt, Index restore URL prompt, template signatures, timing toggle, and dashboard defaults still read/write expected storage. |
@@ -243,4 +243,4 @@ Run only when the related remediation is implemented:
 
 **Approved with minor remediation.**
 
-The review found no Critical or High defect in v1.7.6 for the stated private, low-user-count operating model. The framework remains production-ready with minor remediation recommended for Index refresh/deferred-trigger consistency, Monthly Change rebuild resilience, and dependency-reviewed orphan/maintainability cleanup. No rebuild, enterprise assurance expansion, broad security hardening, or production-script modularization is recommended.
+The review found no Critical or High defect in v1.7.6 for the stated private, low-user-count operating model. The framework remains production-ready with minor remediation recommended for Index refresh/deferred-trigger consistency, additive Monthly Change history validation, and dependency-reviewed orphan/maintainability cleanup. No rebuild, enterprise assurance expansion, broad security hardening, or production-script modularization is recommended.
