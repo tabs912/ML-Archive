@@ -1,0 +1,75 @@
+FRAMEWORK SPECIFICATION REVIEW
+
+Review the current Master List Framework Specification against the current production script.
+
+The objective is to verify that the governing framework documentation accurately represents the implemented framework.
+
+The current production script is the implementation source of truth.
+
+Review:
+
+• Overall framework architecture
+• Processing workflow
+• Module organization
+• Dashboard architecture
+• Template architecture
+• Configuration architecture
+• Sheet definitions
+• Sheet lifecycle
+• Mapping definitions
+• Column definitions
+• Header definitions
+• Data ownership
+• Processing ownership
+• Synchronization rules
+• Data flow
+• Validation workflow
+• Quality Assurance workflow
+• Error handling strategy
+• Logging strategy
+• Template governance
+• Dashboard governance
+• Protected standards
+• Naming conventions
+• Configuration standards
+
+Verify that the specification accurately documents:
+
+• Entry points
+• Workflow order
+• Processing sequence
+• Business rules
+• Data transformations
+• Synchronization behavior
+• Dashboard behavior
+• Template behavior
+• Report generation
+• Validation logic
+• Framework governance decisions
+• Module responsibilities
+• Public interfaces
+
+Identify:
+
+• Missing documentation
+• Outdated specifications
+• Deprecated architecture
+• Removed features still documented
+• New features not documented
+• Incorrect workflow descriptions
+• Incorrect mapping definitions
+• Incorrect sheet definitions
+• Incorrect processing descriptions
+• Specification inconsistencies
+• Documentation conflicts
+• Governance conflicts
+
+Recommend updates only where the specification no longer reflects the implemented framework.
+
+Do not recommend architectural redesign unless a true architectural defect exists.
+
+Do not recommend changes solely for stylistic consistency.
+
+Preserve all approved business rules and framework governance.
+
+The goal is to ensure that the Framework Specification accurately documents the current production framework and serves as the governing technical reference for future development.
