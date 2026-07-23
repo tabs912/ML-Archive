@@ -2822,13 +2822,16 @@ const ML_MENU_CALLBACKS = Object.freeze({
   quickStart: Object.freeze([
     "quickSystemSetup",
     "quickBuildAllTemplates",
-    "runDashboardQualityFull",
+    "runDashboardQualityWorkflow",
     "runFrameworkSmokeValidation"
   ]),
   maintenanceRebuild: Object.freeze([
     "runDashboardQualityStartUp",
     "runDashboardQualityValidateTemplates",
-    "runDashboardQualityFull",
+    "runDashboardQualityWorkflow",
+    "runFrameworkSmokeValidation",
+    "runFullQualityCheck",
+    "runFormatDashboardUpdates",
     "formatBannerReport",
     "formatCarePlanDueReport",
     "formatUnlockedCarePlanReport",
@@ -2912,14 +2915,16 @@ function onOpen() {
   const quickStartMenu = ui.createMenu("🚀 Quick Start-up")
     .addItem("🏗️ System Set up", "quickSystemSetup")
     .addItem("🖼️ Build Templates + Validate Templates", "quickBuildAllTemplates")
-    .addItem("✅ Dashboard Quality Workflow", "runDashboardQualityFull");
+    .addItem("✅ Dashboard Quality Workflow", "runDashboardQualityWorkflow");
 
   // 4. Maintenance/Rebuild Menu
   const qualityMenu = ui.createMenu("👌 Quality")
     .addItem("Dashboard Quality Start up", "runDashboardQualityStartUp")
     .addItem("Dashboard Quality Validate Templates", "runDashboardQualityValidateTemplates")
-    .addItem("Dashboard Quality Workflow", "runDashboardQualityFull")
-    .addItem("Framework Smoke Validation", "runFrameworkSmokeValidation");
+    .addItem("Dashboard Quality Workflow", "runDashboardQualityWorkflow")
+    .addItem("Framework Smoke Validation", "runFrameworkSmokeValidation")
+    .addItem("Full Quality Check", "runFullQualityCheck")
+    .addItem("Format Dashboard Updates", "runFormatDashboardUpdates");
 
   const formatSheetsMenu = ui.createMenu("📝 Format Sheets")
     .addItem("Banner", "formatBannerReport")
@@ -13381,7 +13386,13 @@ function formatMonthlyChangeReportSectionSheet_(reportSheet, sourceHeaders) {
 function runDashboardQualityStartUp() {
   return runFrameworkTimed_("Dashboard Quality Start Up", function(timing) {
     clearDashboardConfigCache_();
-    runDashboardQualityTemplateAndFormatSections_(true, false, timing);
+    const qualitySheet = ensureDashboardQualityReportSheet_();
+    ensureDashboardQualitySheetShellForWorkflow_(qualitySheet, loadDashboardConfig_(true), timing);
+
+    runDashboardQualityConfigVerificationSections_(timing, qualitySheet);
+    runDashboardQualitySectionIfDue_(RFF_HEALTH_CHECK_SHEET, "Section I Framework Health Check", runFrameworkHealthCheck, timing);
+
+    flushStagedDashboardQualitySectionsRows_(qualitySheet, timing);
     return true;
   });
 }
@@ -13524,7 +13535,11 @@ function highlightFormatDashboardChangesFromChangelog_(dashboard, timing) {
   }
 }
 
-function runDashboardQualityDashboardVerificationSections_(timing, qualitySheet) {
+// ============================================================================
+// MODULAR DASHBOARD QUALITY RUNNERS
+// ============================================================================
+
+function runDashboardQualityConfigVerificationSections_(timing, qualitySheet) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const quality = qualitySheet || ensureDashboardQualityReportSheet_();
   const dashboard = ss.getSheetByName(RFF_DASHBOARD_SHEET);
@@ -13546,24 +13561,23 @@ function runDashboardQualityDashboardVerificationSections_(timing, qualitySheet)
 
   repairFormatDashboardSectionHeaders_(dashboard, timing);
   const dashboardIndex = buildDashboardSectionIndex_(dashboard);
-  const changelogUpdated = updateFormatDashboardChangelog_(dashboard, timing);
 
   const sectionPayloads = [
-    { key: RFF_DASHBOARD_VERIFY_GLOBAL_KEY, rows: collectFormatDashboardGlobalInputVerificationRows_(dashboardIndex), label: "Section A Global Inputs and Section B Title Rows verified" },
-    { key: RFF_DASHBOARD_VERIFY_SHEETS_KEY, rows: collectFormatDashboardSheetDefinitionVerificationRows_(dashboardIndex), label: "Section C Sheet Definitions verified" },
-    { key: RFF_DASHBOARD_VERIFY_BEHAVIORS_KEY, rows: collectFormatDashboardSheetBehaviorVerificationRows_(dashboardIndex), label: "Section D Sheet Behaviors verified" },
+    { key: RFF_DASHBOARD_VERIFY_GLOBAL_KEY, rows: collectFormatDashboardGlobalInputVerificationRows_(dashboardIndex), label: "Section A Global Inputs verified" },
+    { key: RFF_DASHBOARD_VERIFY_SHEETS_KEY, rows: collectFormatDashboardSheetDefinitionVerificationRows_(dashboardIndex), label: "Section B Sheet Definitions verified" },
+    { key: RFF_DASHBOARD_VERIFY_BEHAVIORS_KEY, rows: collectFormatDashboardSheetBehaviorVerificationRows_(dashboardIndex), label: "Section C Sheet Behaviors verified" },
     { key: RFF_DASHBOARD_VERIFY_TAB_ORGANIZATION_KEY, rows: collectFormatDashboardTabOrganizationVerificationRows_(dashboardIndex), label: "Section F Tab Organization verified" },
-    { key: RFF_DASHBOARD_VERIFY_COLUMNS_KEY, rows: collectFormatDashboardColumnDefinitionVerificationRows_(dashboardIndex), label: "Section G Column Definitions verified" },
-    { key: RFF_DASHBOARD_VERIFY_HEADERS_KEY, rows: collectFormatDashboardSheetHeaderVerificationRows_(dashboardIndex), label: "Section H Sheet Headers verified" },
-    { key: RFF_DASHBOARD_CHANGELOG_KEY, rows: getDashboardQualitySectionRows_(RFF_DASHBOARD_CHANGELOG_KEY), label: "Section H Format Dashboard Changelog verified" }
+    { key: RFF_DASHBOARD_VERIFY_COLUMNS_KEY, rows: collectFormatDashboardColumnDefinitionVerificationRows_(dashboardIndex), label: "Section D Column Definitions verified" },
+    { key: RFF_DASHBOARD_VERIFY_HEADERS_KEY, rows: collectFormatDashboardSheetHeaderVerificationRows_(dashboardIndex), label: "Section E Sheet Headers verified" }
   ];
 
   const sectionWrites = [];
   sectionPayloads.forEach(function(item) {
     const previousRows = getDashboardQualitySectionRows_(item.key);
-    const changed = !dashboardQualityRowsEqualValues_(previousRows, item.rows) || (item.key === RFF_DASHBOARD_CHANGELOG_KEY && changelogUpdated);
+    const changed = !dashboardQualityRowsEqualValues_(previousRows, item.rows);
     saveDashboardQualitySectionRows_(item.key, item.rows, { deferSheetWrite: true });
     markFrameworkStep_(timing, item.label + (changed ? "" : " skipped - unchanged"));
+
     if (changed) {
       sectionWrites.push({
         title: getDashboardQualitySectionTitleForKey_(item.key),
@@ -13574,14 +13588,52 @@ function runDashboardQualityDashboardVerificationSections_(timing, qualitySheet)
 
   if (sectionWrites.length) {
     replaceDashboardQualitySectionsRows_(quality, sectionWrites);
-    markFrameworkStep_(timing, "Dashboard Quality Sections A-H batch written");
+    markFrameworkStep_(timing, "Dashboard Quality Config Sections (A-F) batch written");
   } else {
-    markFrameworkStep_(timing, "Dashboard Quality Sections A-H sheet write skipped - unchanged");
+    markFrameworkStep_(timing, "Dashboard Quality Config Sections (A-F) sheet write skipped - unchanged");
   }
 
-  highlightFormatDashboardChangesFromChangelog_(dashboard, timing);
   return true;
 }
+
+function runDashboardQualityTemplateValidationSection_(timing, qualitySheet, dashboard) {
+  const previousValidationRows = getDashboardQualitySectionRows_(RFF_VALIDATION_SHEET);
+  validateReportTemplatesCore_(dashboard, timing, { deferDashboardWrite: true });
+  const validationRows = getDashboardQualitySectionRows_(RFF_VALIDATION_SHEET);
+
+  if (!dashboardQualityRowsEqualValues_(previousValidationRows, validationRows)) {
+    replaceDashboardQualitySectionsRows_(qualitySheet, [{
+      title: getDashboardQualitySectionTitleForKey_(RFF_VALIDATION_SHEET),
+      rows: buildTimestampedDashboardQualitySectionRows_(RFF_VALIDATION_SHEET, validationRows)
+    }]);
+    markFrameworkStep_(timing, "Dashboard Quality Section G written");
+  } else {
+    markFrameworkStep_(timing, "Dashboard Quality Section G sheet write skipped - unchanged");
+  }
+
+  return validationRows;
+}
+
+function runDashboardQualityChangelogSection_(timing, qualitySheet, dashboardSheet) {
+  if (!dashboardSheet) return false;
+  const previousChangelogRows = getDashboardQualitySectionRows_(RFF_DASHBOARD_CHANGELOG_KEY);
+  const changelogUpdated = updateFormatDashboardChangelog_(dashboardSheet, timing);
+  const changelogRows = getDashboardQualitySectionRows_(RFF_DASHBOARD_CHANGELOG_KEY);
+
+  if (!dashboardQualityRowsEqualValues_(previousChangelogRows, changelogRows) || changelogUpdated) {
+    replaceDashboardQualitySectionsRows_(qualitySheet, [{
+      title: getDashboardQualitySectionTitleForKey_(RFF_DASHBOARD_CHANGELOG_KEY),
+      rows: buildTimestampedDashboardQualitySectionRows_(RFF_DASHBOARD_CHANGELOG_KEY, changelogRows)
+    }]);
+    markFrameworkStep_(timing, "Dashboard Quality Section H written");
+  } else {
+    markFrameworkStep_(timing, "Dashboard Quality Section H sheet write skipped - unchanged");
+  }
+
+  highlightFormatDashboardChangesFromChangelog_(dashboardSheet, timing);
+  return changelogRows;
+}
+
 
 function getDashboardVerificationPassRow_(headers, item, notes) {
   const width = Math.max((headers || []).length, 4);
@@ -13918,8 +13970,13 @@ function runDashboardQualityQuick() {
 
 function runDashboardQualityValidateTemplates() {
   return runFrameworkTimed_("Dashboard Quality Validate Templates", function(timing) {
-    runDashboardQualityTemplateAndFormatSections_(false, false, timing);
-    markFrameworkStep_(timing, "Dashboard Quality Section G-H template and changelog sections updated");
+    const dashboard = loadDashboardConfig_(true);
+    const qualitySheet = ensureDashboardQualityReportSheet_();
+    ensureDashboardQualitySheetShellForWorkflow_(qualitySheet, dashboard, timing);
+
+    runDashboardQualityTemplateValidationSection_(timing, qualitySheet, dashboard);
+
+    flushStagedDashboardQualitySectionsRows_(qualitySheet, timing);
     return true;
   });
 }
@@ -13969,55 +14026,7 @@ function ensureDashboardQualitySheetShellForWorkflow_(sheet, dashboard, timing) 
   return sheet;
 }
 
-function runDashboardQualityTemplateAndFormatSections_(includeDashboardAudit, includeHealthAndSignoff, timing) {
-  const dashboard = loadDashboardConfig_(true);
-  const qualitySheet = ensureDashboardQualityReportSheet_();
-  showSheetIfNeeded_(qualitySheet, timing, "Dashboard Quality surface verified");
 
-  ensureDashboardQualitySheetShellForWorkflow_(qualitySheet, dashboard, timing);
-
-  const previousValidationRows = getDashboardQualitySectionRows_(RFF_VALIDATION_SHEET);
-  const previousChangelogRows = getDashboardQualitySectionRows_(RFF_DASHBOARD_CHANGELOG_KEY);
-  const stagedSectionWrites = [];
-
-  validateReportTemplatesCore_(dashboard, timing, { deferDashboardWrite: true });
-  const changelogUpdated = updateFormatDashboardChangelog_(dashboard.sectionIndex.sheet, timing);
-  const changelogRows = getDashboardQualitySectionRows_(RFF_DASHBOARD_CHANGELOG_KEY);
-  const validationRows = getDashboardQualitySectionRows_(RFF_VALIDATION_SHEET);
-  if (!dashboardQualityRowsEqualValues_(previousValidationRows, validationRows)) {
-    stagedSectionWrites.push({
-      title: getDashboardQualitySectionTitleForKey_(RFF_VALIDATION_SHEET),
-      rows: buildTimestampedDashboardQualitySectionRows_(RFF_VALIDATION_SHEET, validationRows)
-    });
-  }
-
-  if (!dashboardQualityRowsEqualValues_(previousChangelogRows, changelogRows) || changelogUpdated) {
-    stagedSectionWrites.push({
-      title: getDashboardQualitySectionTitleForKey_(RFF_DASHBOARD_CHANGELOG_KEY),
-      rows: buildTimestampedDashboardQualitySectionRows_(RFF_DASHBOARD_CHANGELOG_KEY, changelogRows)
-    });
-  }
-
-  if (stagedSectionWrites.length) {
-    replaceDashboardQualitySectionsRows_(qualitySheet, stagedSectionWrites);
-    markFrameworkStep_(timing, "Dashboard Quality Sections G-H batch written");
-  } else {
-    markFrameworkStep_(timing, "Dashboard Quality Sections G-H sheet write skipped - unchanged");
-  }
-
-  if (includeDashboardAudit) {
-    runDashboardQualityDashboardVerificationSections_(timing, qualitySheet);
-  }
-
-  if (includeHealthAndSignoff) {
-    runDashboardQualitySectionIfDue_(RFF_HEALTH_CHECK_SHEET, "Section I Framework Health Check", runFrameworkHealthCheck, timing);
-    runDashboardQualitySectionIfDue_("Summary", "Section Q Summary", updateDashboardQualitySummarySection_, timing);
-    runDashboardQualitySectionIfDue_("Signoff", "Section R Signoff", updateDashboardQualitySignoffSection_, timing);
-  }
-
-  flushStagedDashboardQualitySectionsRows_(qualitySheet, timing);
-  return qualitySheet;
-}
 
 function collectDashboardQualityPerformanceSummaryRows_() {
   const sheet = ensureFrameworkTimingReport_();
@@ -14305,18 +14314,60 @@ function runOperationalDataPipelineValidations_(timing, qualitySheet) {
   if (qualitySheet && timing) markFrameworkStep_(timing, "Dashboard Quality operational data validations staged");
 }
 
-function runDashboardQualityFull() {
+function runDashboardQualityWorkflow() {
   return runFrameworkTimed_("Dashboard Quality Workflow", function(timing) {
-    clearDashboardConfigCache_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dashboardSheet = ss.getSheetByName(RFF_DASHBOARD_SHEET);
+    const qualitySheet = ensureDashboardQualityReportSheet_();
 
-    // Wave 1 closure path: full workflow populates health, summary, and signoff sections.
-    const qualitySheet = runDashboardQualityTemplateAndFormatSections_(true, true, timing) || ensureDashboardQualityReportSheet_();
+    runDashboardQualityChangelogSection_(timing, qualitySheet, dashboardSheet);
+    runDashboardQualitySectionIfDue_(RFF_HEALTH_CHECK_SHEET, "Section I Framework Health Check", runFrameworkHealthCheck, timing);
     runOperationalDataPipelineValidations_(timing, qualitySheet);
+    runDashboardQualitySectionIfDue_("Summary", "Section Q Summary", updateDashboardQualitySummarySection_, timing);
+    runDashboardQualitySectionIfDue_("Signoff", "Section R Signoff", updateDashboardQualitySignoffSection_, timing);
+
     flushStagedDashboardQualitySectionsRows_(qualitySheet, timing);
     writeCombinedFrameworkTimingReport_();
     return true;
   });
 }
+
+function runFullQualityCheck() {
+  return runFrameworkTimed_("Full Quality Check", function(timing) {
+    clearDashboardConfigCache_();
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dashboardSheet = ss.getSheetByName(RFF_DASHBOARD_SHEET);
+    const dashboard = loadDashboardConfig_(true);
+    const qualitySheet = ensureDashboardQualityReportSheet_();
+    ensureDashboardQualitySheetShellForWorkflow_(qualitySheet, dashboard, timing);
+
+    runDashboardQualityConfigVerificationSections_(timing, qualitySheet);
+    runDashboardQualityTemplateValidationSection_(timing, qualitySheet, dashboard);
+    runDashboardQualityChangelogSection_(timing, qualitySheet, dashboardSheet);
+    runDashboardQualitySectionIfDue_(RFF_HEALTH_CHECK_SHEET, "Section I Framework Health Check", runFrameworkHealthCheck, timing);
+    runOperationalDataPipelineValidations_(timing, qualitySheet);
+    runDashboardQualitySectionIfDue_("Summary", "Section Q Summary", updateDashboardQualitySummarySection_, timing);
+    runDashboardQualitySectionIfDue_("Signoff", "Section R Signoff", updateDashboardQualitySignoffSection_, timing);
+
+    flushStagedDashboardQualitySectionsRows_(qualitySheet, timing);
+    writeCombinedFrameworkTimingReport_();
+    return true;
+  });
+}
+
+function runFormatDashboardUpdates() {
+  return runFrameworkTimed_("Format Dashboard Updates", function(timing) {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const dashboardSheet = ss.getSheetByName(RFF_DASHBOARD_SHEET);
+    const qualitySheet = ensureDashboardQualityReportSheet_();
+
+    runDashboardQualityChangelogSection_(timing, qualitySheet, dashboardSheet);
+
+    flushStagedDashboardQualitySectionsRows_(qualitySheet, timing);
+    return true;
+  });
+}
+
 
 function updateDashboardQualityTimestampsOnly_(sheet, sectionTitles) {
   if (!sheet || !sectionTitles || !sectionTitles.length) return;
@@ -14337,7 +14388,7 @@ function runAllFrameworkTestsAndBuildDashboard() {
   return runFrameworkTimed_("Run All Framework Tests + Dashboard", function(timing) {
     runDashboardQualityQuick();
     markFrameworkStep_(timing, "Dashboard Quality Quick complete");
-    runDashboardQualityFull();
+    runDashboardQualityWorkflow();
     markFrameworkStep_(timing, "Dashboard Quality Workflow complete");
   });
 }
@@ -15616,8 +15667,10 @@ function getRequiredMenuFunctionNames_() {
     "runDashboardQualityQuick",
     "runDashboardQualityStartUp",
     "runDashboardQualityValidateTemplates",
-    "runDashboardQualityFull",
+    "runDashboardQualityWorkflow",
     "runFrameworkSmokeValidation",
+    "runFullQualityCheck",
+    "runFormatDashboardUpdates",
     "createIndexSheet",
     "restoreSheetFromActiveIndexRow",
     "configureIndexRestoreWebAppUrl",
