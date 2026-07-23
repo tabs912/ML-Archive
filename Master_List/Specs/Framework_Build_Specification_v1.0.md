@@ -955,7 +955,7 @@ This appendix integrates current v1.8.9 audit evidence from **Master_List/Audit 
 | Dashboard-governed, template-first formatting remains implemented. | Configuration, Template, Dashboard, and Performance sections preserve dashboard/template-first governance. |
 | Format Dashboard Sections A-H are implemented in v1.8.9.2. | Dashboard section ownership is updated to A-H, including Section F Tab Organization & Index. |
 | Dashboard Quality Sections A-R are implemented in v1.8.9.2. | Dashboard Quality governance is updated to A-R, including Section R Signoff. |
-| Current tab organization/rank model is implemented in v1.8.9.2.2. | Sheet Architecture includes the category/rank lifecycle model. |
+| Current tab organization/rank model is implemented in v1.8.9.2. | Sheet Architecture includes the category/rank lifecycle model. |
 
 #### Current Risk Notes Not Marked Complete
 
@@ -1200,3 +1200,25 @@ Wave 1 is CLOSED / PASSED for the documented scope: strict first-of-month disenr
 #### Current Production Governance Statement
 
 As of v1.8.9.2, the framework specification treats Wave 1 as closed for documentation purposes and uses **Master_List/Current Production Script/v1.8.9.2_Current_Production** as the implementation source of truth. Future code changes must create a new versioned production source and must not overwrite v1.8.9.2.
+
+### Appendix V — v1.8.9.2 Reference Inventory Update Plan
+
+The legacy files in **Master_List/v2_Framework_Reference** remain supporting reference material. They should not be edited in place to appear current when their names identify older baselines such as v1.6.29. If detailed current inventories are needed, create new v1.8.9.2 inventory files and keep the older files as historical traceability inputs.
+
+| Priority | New v1.8.9.2 Inventory | Replaces / Supersedes Historical Reference | Why Update |
+|---|---|---|---|
+| Required | **ARCHITECTURE_INVENTORY_v1.8.9.2.md** | **ARCHITECTURE_INVENTORY_v1.6.29.md** and current production architecture notes | Captures the active single-file module architecture, workflow layers, dashboard/template ownership, Index/archive/restore surfaces, and Wave 1 production closure state. |
+| Required | **CONFIGURATION_INVENTORY_v1.8.9.2.md** | **CONFIGURATION_INVENTORY_v1.6.29.md** | Captures current constants, document properties, feature flags, dashboard-loaded settings, cache invalidation surfaces, and v1.8.9.2 authority values. |
+| Required | **DASHBOARD_INVENTORY_v1.8.9.2.md** | **DASHBOARD_INVENTORY_v1.6.29.md** and **DASHBOARD_INVENTORY_v1.6.29-2.md** | Captures Format Dashboard Sections A-H, including Section F Tab Organization & Index, Section G Column Definitions, and Section H Sheet Headers. |
+| Required | **WORKSHEET_INVENTORY_v1.8.9.2.md** | **WORKSHEET_INVENTORY_v1.6.29.md** | Captures current system, template, operational, monthly, source, archive, and hidden-sheet lifecycle definitions. |
+| Required | **TEMPLATE_INVENTORY_v1.8.9.2.md** | **TEMPLATE_INVENTORY_v1.6.29.md** | Captures current template names, output patterns, dimensions, signatures, hidden state, validation rules, and template-first generation governance. |
+| Required | **VALIDATION_CATALOG_v1.8.9.2.md** | **VALIDATION_CATALOG_v1.6.29.md** and **VALIDATION_CATALOG_v1.6.29-2.md** | Captures current fail-fast rules, Dashboard Quality Sections A-R, workflow preflights, template validation, health checks, and Wave 1 closed/open validation findings. |
+| Required | **FUNCTION_INVENTORY_v1.8.9.2.md** | **HELPER_CATALOG_v1.6.29.md**, **WRAPPER_INVENTORY_v1.6.29.md**, **WRAPPER_INVENTORY_v1.6.29-2.md**, and function portions of v2.0 governance references | Captures 681 declared functions, 64 public entry points, 617 internal helpers, menu/trigger/web surfaces, dynamic callback risks, and open ML189-007 wrapper/callback governance. |
+| Required | **FUNCTION_CALL_GRAPH_v1.8.9.2.md** | **FUNCTION_CALL_GRAPH_v1.6.29.md** | Supports safe-change review for callers, indirect callers, workflow sequencing, menu callbacks, triggers, web routes, dynamic invocation, and high-complexity functions. |
+| Required | **PRODUCTION_DATA_FLOW_v1.8.9.2.md** | **PRODUCTION_DATA_FLOW_v1.6.29.md** | Captures current source-to-output flow for monthly formatting, Demo P, Monthly Change, Disenrolled Exclusion, Master List, Dashboard Quality, Index, archive, and restore. |
+| Recommended | **CACHE_INVENTORY_v1.8.9.2.md** | **CACHE_INVENTORY_v1.6.29.md** | Useful because cache invalidation is a protected performance/safety surface, especially after dashboard, template, sheet, header, Index, timing, and quality mutations. |
+| Recommended | **ENGINEERING_GOVERNANCE_REFERENCE_v1.8.9.2.md** | **ENGINEERING_GOVERNANCE_REFERENCE_v1.6.29.md**, **ENGINEERING_GOVERNANCE_REFERENCE_PART_VI_v1.6.29.md**, and v2.0 governance reference files | Useful only if a separate governance reference is still desired; otherwise the framework specification remains the active governing document. |
+| Optional | **FRAMEWORK_RULES_CATALOG_v1.8.9.2.md** | **FRAMEWORK_RULES_CATALOG_v1.6.29.md** | Useful if maintainers need a standalone rules checklist extracted from the framework spec. |
+| Optional | **TRACEABILITY_MATRIX_v1.8.9.2.md** | **ENGINEERING_GOVERNANCE_REFERENCE_v2.0_TIER_4_IMPLEMENTATION_TRACEABILITY_MATRIX.md** | Useful if future reviews require a separate source-to-spec-to-test traceability artifact. |
+
+Minimum current-inventory package: architecture, configuration, dashboard, worksheet, template, validation, function inventory, function call graph, and production data flow. Cache and governance inventories are recommended when future work touches performance, triggers, concurrency, wrappers, public interfaces, dashboard loading, or template refresh behavior. Older v1.6.29 and v2.0 files should remain historical unless an archive index explicitly moves them.
