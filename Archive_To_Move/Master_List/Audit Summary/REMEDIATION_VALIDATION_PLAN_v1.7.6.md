@@ -44,13 +44,13 @@
 
 ### Highest-priority risks
 
-1. **Monthly Change replacement ordering:** existing generated Monthly Change report is deleted before the new report is completely built.
+1. **Monthly Change history validation:** the clarified workflow is additive; previous Monthly Change reports are retained and same-month reruns receive unique names.
 2. **Index refresh architecture decision:** deferred Index refresh state is consumed but no current setter/trigger path exists.
 3. **Orphan cleanup risk:** 51 no-static-path function candidates must not be removed without dynamic dependency review.
 
 ### Recommended first remediation wave
 
-**Wave 1 — Data safety and replacement resilience** should address MLF-002 only, if the user approves changing the Monthly Change rebuild sequence. This is the only reviewed item with a realistic generated-output loss/failure-resilience path.
+**Wave 1 — Creation-order and visibility stabilization** should validate the v1.7.6.7 behavior in a safe workbook copy: additive Monthly Change creation, configured sheet placement, output visibility, Index/Archive Index sections, and manual Organize Tabs hidden-state preservation.
 
 ### Recommended next production version
 
@@ -61,7 +61,7 @@ Use **v1.7.6.1** for a small documentation-only or single-defect remediation rel
 | Finding ID | Original severity | Validated status | Current severity | Confidence | File | Function | Current evidence | Impact | Recommended action | Remediation wave | Breaking-change risk | Required tests |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | MLF-001 | Medium | REQUIRES USER DECISION | Medium if automatic Index refresh is expected; Documentation-only if explicit/manual Index refresh is intended | High | `Master_List/Current Production Script/v.1.7.6_Current_Production_Script` | `runDeferredIndexRefreshIfNeeded_`, `createIndexSheet` | `ML_INDEX_REFRESH_DEFERRED_KEY` is declared; `runDeferredIndexRefreshIfNeeded_()` consumes/deletes the key and calls `createIndexSheet()`. Targeted search found no `setProperty(ML_INDEX_REFRESH_DEFERRED_KEY...)`, no `newTrigger`, and no installable trigger setup path. | Index can become stale after manual sheet insert/delete if automatic refresh was expected. If explicit menu/workflow Index rebuild is intended, this is documentation cleanup only. | User must decide whether automatic/deferred Index refresh is still approved. If yes, add narrow trigger/deferred setter with duplicate prevention. If no, remove/document inert deferred path. | Wave 3 | Low for documentation; Medium for trigger behavior | Create/delete non-critical sheet; verify Index refresh behavior; verify no duplicate triggers; verify long workflow does not churn Index. |
-| MLF-002 | Medium | CONFIRMED | Medium | High | `Master_List/Current Production Script/v.1.7.6_Current_Production_Script` | `buildMonthlyChangeReportForMonth_` | Existing report is resolved and deleted with `deleteSheetSafely_()` before dashboard load, template lookup, template copy, layout, population, and formatting. | If a later step fails, the prior generated Monthly Change report is unavailable until rerun. Data is recreatable, so this is not Critical. | Build replacement under staged/temp name, validate minimum structure, then delete old report and rename replacement. Preserve report name and Index behavior. | Wave 1 | Low to Medium | Existing-report rebuild success; missing-template failure; formatting failure simulation; Index after successful rebuild. |
+| MLF-002 | Medium | ALREADY CORRECTED | Low | High | `Master_List/Current Production Script/v.1.7.6_Current_Production_Script` | `buildMonthlyChangeReportForMonth_` | Current workflow retains an existing report and creates a unique report name instead of deleting the previous report. | Monthly Change history is preserved; reruns can create uniquely named reports. | No staged replacement needed under the clarified additive-report workflow. Validate same-month rerun behavior and Index listing. | Wave 1 validation | Low | Same-month rerun; previous report remains; unique report appears; Index refresh. |
 | MLF-003 | Medium | PARTIALLY CONFIRMED | Medium | Medium | `Master_List/Audit Summary/FUNCTION_INVENTORY_REVIEW_v1.7.6.md`; production source | 51 no-static-path candidates | Function inventory identifies 51 candidates, but static absence of callers is not proof of orphan status. | Cleanup could either remove genuinely obsolete code or accidentally break dynamic/diagnostic/compatibility paths. | Run dependency review for each candidate; classify as supported public/dynamic, retained compatibility, probable orphan, or confirmed orphan before removal. | Wave 5 | Medium if removals are made | Targeted `rg` string/property/menu searches; affected workflow smoke tests; no public callback missing. |
 | MLF-004 | Medium | DOCUMENTATION ONLY | Low/Medium maintainability | High | `Master_List/Current Production Script/v.1.7.6_Current_Production_Script` | Template section | Template section begins at line 3835 and includes template refresh, validation, source/report formatting, archive behavior, and Index refresh after template creation. | Maintainer comprehension risk; no immediate runtime defect. | Add submodule ownership map/comments before future template edits. No source movement without approval. | Wave 6 | Low | Documentation review; if future code extraction occurs, run template build, validate templates, Raw Data, Banner, archive-local-cleanup tests. |
 | MLF-005 | Medium | DOCUMENTATION ONLY | Low/Medium maintainability | High | `Master_List/Current Production Script/v.1.7.6_Current_Production_Script` | Master List section | Master List section includes create/update flow plus staged promotion, Index restore URL, Index sheet creation, archive restore, `doGet`, sorting, and visibility wrappers. | Maintainer comprehension risk; no immediate runtime defect. | Document Index/archive restore as logical submodule. Do not move/rename without dependency review. | Wave 6 | Low | Documentation review; if future code movement occurs, test Master List, Index, archive restore, `doGet`, tab order. |
@@ -81,7 +81,7 @@ Use **v1.7.6.1** for a small documentation-only or single-defect remediation rel
 | Root-cause ID | Related findings | Root cause | Affected workflows | Proposed correction | Risk | Test requirements |
 | --- | --- | --- | --- | --- | --- | --- |
 | RC-001 | MLF-001, MLF-007 | Index refresh behavior is split between explicit workflow calls and an unused deferred-refresh mechanism. | Template refresh, setup, Monthly Change, Master List, archive restore, manual sheet changes. | Decide whether Index refresh is explicit-only or automatic/deferred. Implement/document one model consistently. | Medium if trigger behavior changes; Low if documentation-only. | Sheet add/delete; no duplicate triggers; Index current after batch workflows; timing comparison if coalescing. |
-| RC-002 | MLF-002 | Monthly Change rebuild lacks staged replacement despite multi-step build process after deleting old report. | Monthly Change report rebuild. | Build replacement under temp/staged name, validate, swap only after success. | Low to Medium. | Existing report preservation on forced failure; successful rebuild; Index refresh. |
+| RC-002 | MLF-002 | Monthly Change recommendation superseded by clarified additive report-history rule. | Monthly Change report creation. | Retain existing reports and allow `setUniqueSheetName_()` to create a unique same-month rerun name. | Low. | Same-month rerun; previous report remains; unique report appears; Index refresh. |
 | RC-003 | MLF-003, MLF-006 | Public/dynamic/internal boundaries require formal dependency review before cleanup. | Menu callbacks, dashboard diagnostics, compatibility wrappers, uncertain helpers. | Classify no-static-path functions; preserve callbacks; only remove confirmed orphans. | Medium if removals occur. | Callback search; workflow smoke tests by owner; no missing functions. |
 | RC-004 | MLF-004, MLF-005, MLF-009 | Large single-file sections and split configuration ownership increase maintenance cost. | Template, Master List, Dashboard Quality, helpers, configuration. | Add ownership maps/inventories; avoid code movement without approval. | Low. | Documentation review; targeted tests only after future code movement. |
 | RC-005 | MLF-008 | Best-effort diagnostics are intentionally lightweight but uneven in cleanup edge cases. | Formatting/styling cleanup, lock release, failed staged cleanup. | Improve only local diagnostic warnings when touching affected paths. | Low. | Confirm warnings do not convert harmless formatting failures into workflow failures. |
@@ -97,14 +97,14 @@ Use **v1.7.6.1** for a small documentation-only or single-defect remediation rel
 | Files affected | `Master_List/Current Production Script/v.1.7.6_Current_Production_Script` |
 | Functions affected | `buildMonthlyChangeReportForMonth_`, likely sheet naming/safe delete helpers. |
 | Dependencies affected | `MONTHLY_CHANGE_REPORT_PREFIX`, `SHEET_TYPE.MONTHLY_CHANGE`, template lookup, `deleteSheetSafely_`, `setUniqueSheetName_`, `createIndexSheet`. |
-| Exact proposed changes | Create a staged Monthly Change report sheet first; populate/format/validate minimum structure; only then delete existing report and rename staged report to final name. Cleanup staged sheet on failure. |
+| Exact proposed changes | Superseded: retain previous Monthly Change reports and create a unique report name on same-month reruns. |
 | Business-logic impact | None intended; output content and report name should remain unchanged. |
 | Breaking-change risk | Low to Medium. |
 | Data-integrity risk | Lower than current behavior if implemented correctly. |
 | Required tests | Rebuild with existing report; missing template failure; successful report content; Index refresh. |
 | Recommended version increment | v1.7.6.1 |
 | Independently implementable | Yes. |
-| Required user decisions | Approve staged replacement for recreatable Monthly Change generated output. |
+| Required user decisions | None for deletion/replacement; the clarified rule is to retain previous Monthly Change reports. |
 
 ### Wave 2 — Runtime stability and missing dependencies
 
@@ -186,7 +186,7 @@ No confirmed undefined helper, missing menu callback, or broken dependency chain
 
 | Decision ID | Decision required | Related findings | Options | Recommended option |
 | --- | --- | --- | --- | --- |
-| UD-001 | Should Monthly Change use staged replacement? | MLF-002 | Keep current delete/rebuild behavior for recreatable reports; or implement staged replacement. | Implement staged replacement if preserving last generated report during failed rebuild matters. |
+| UD-001 | Should Monthly Change replace prior reports? | MLF-002 | Closed by user clarification: Monthly Change reports are created monthly and previous reports are not deleted. | Retain previous reports and create unique same-month rerun names. |
 | UD-002 | Should Index refresh be explicit/manual or automatic/deferred? | MLF-001, MLF-007 | Document explicit-only behavior; or implement narrow automatic/deferred trigger path. | Use explicit-only unless user regularly manually creates/deletes sheets and expects automatic Index freshness. |
 | UD-003 | Should no-static-path functions be removed after classification? | MLF-003 | Classify only; remove confirmed orphans; retain compatibility/dynamic functions. | Classify first, then approve removals one group at a time. |
 | UD-004 | Should menu callbacks be renamed to public wrappers? | MLF-006 | Keep stable callbacks; or point menu to public wrappers while retaining old aliases. | Defer unless the naming inconsistency is causing maintenance confusion. |
@@ -199,7 +199,7 @@ No confirmed undefined helper, missing menu callback, or broken dependency chain
 | Unit-like static checks | Verify all `.addItem()` callbacks resolve; verify no duplicate top-level functions; verify no `ML_INDEX_REFRESH_DEFERRED_KEY` setter is introduced without matching consumer tests. |
 | Spreadsheet integration tests | Run `createOrRefreshAllReportTemplates`, `validateReportTemplates`, `formatRawData`, `buildDemoPFromScratch`, `updateDemoPMonthlySync`, `createMasterList`, `buildMonthlyChangeReport`, `createDisenrolledList`, and `createIndexSheet` in a controlled workbook copy when affected by a wave. |
 | Regression tests | Confirm Header Row 4/Data Row 5, Primary PMR Row assignment, Raw Data to Demo P, sync into Master List, Monthly Change sections, Disenrolled Exclusion updates, and Index navigation remain unchanged. |
-| Destructive-operation tests | For Monthly Change staged replacement, verify the previous report remains after forced template/config failure; for archive/local cleanup, verify local raw data is not deleted when archive copy fails. |
+| Destructive-operation tests | For Monthly Change same-month reruns, verify the previous report remains and the new report receives a unique name; for archive/local cleanup, verify local raw data is not deleted when archive copy fails. |
 | Trigger tests | If automatic Index refresh is approved, verify one installable trigger, no duplicates, no trigger loop/churn, and safe behavior during busy workflows. |
 | Library/host compatibility tests | Not a public library; limit compatibility testing to Apps Script menu/manual/web-app entry points and any known external Apps Script calls. |
 | Performance tests | Use Framework Timing only for changed paths; compare Index rebuild/template refresh timing before and after approved changes. |
@@ -225,4 +225,4 @@ No confirmed undefined helper, missing menu callback, or broken dependency chain
 
 **Implementation blocked by required user decisions.**
 
-No production code should be changed until the user approves at least one remediation wave. The safest first implementation after approval is **Wave 1 — Monthly Change staged replacement**, followed by an explicit decision on **Wave 3 — Index refresh architecture**. Documentation-only Wave 6 items can be completed independently if the user prefers no behavior changes yet.
+After the v1.7.6.7 clarification, Wave 1 should validate creation-order/visibility behavior and additive Monthly Change history before considering Index architecture or orphan-code cleanup. Documentation-only Wave 6 items can be completed independently if the user prefers no additional behavior changes yet.

@@ -1,0 +1,171 @@
+You are acting as a Senior Software Architect and Technical Documentation Engineer.
+
+OBJECTIVE
+
+Build a complete Framework Specification for the current software framework.
+
+This is not a code review.
+
+This is not API documentation.
+
+This is not function documentation.
+
+This is an engineering specification describing how the framework operates.
+
+The completed document will become the governing technical specification for future development and maintenance.
+
+--------------------------------------------------
+SOURCE OF TRUTH
+--------------------------------------------------
+
+The current production source code is the implementation source of truth.
+
+Supporting documentation may include:
+
+• Architecture documentation
+• Function inventory
+• Mapping documents
+• Configuration documentation
+• Data model documentation
+• Workflow documentation
+• Validation reports
+• Design decisions
+• Technical standards
+
+If documentation conflicts with the implementation, identify the discrepancy and document the implemented behavior.
+
+--------------------------------------------------
+OBJECTIVES
+--------------------------------------------------
+
+Document the framework itself rather than individual source files.
+
+Describe:
+
+• Purpose
+• Scope
+• Architecture
+• Design philosophy
+• Framework organization
+• Data flow
+• Control flow
+• Configuration
+• Dependencies
+• Module responsibilities
+• Business workflows
+• Validation
+• Error handling
+• Performance strategy
+• Governance
+
+Do not document source code line by line.
+
+Document engineering concepts and framework behavior.
+
+--------------------------------------------------
+REQUIRED SECTIONS
+--------------------------------------------------
+
+1. Executive Summary
+
+2. Framework Overview
+
+3. Architecture
+
+4. Module Organization
+
+5. Configuration Framework
+
+6. Workflow Architecture
+
+7. Data Architecture
+
+8. Storage Architecture
+
+9. Integration Architecture
+
+10. Validation Framework
+
+11. Error Handling Framework
+
+12. Logging Framework
+
+13. Security Model (if applicable)
+
+14. Performance Strategy
+
+15. Scalability
+
+16. Framework Standards
+
+17. Public Interfaces
+
+18. Internal Components
+
+19. Maintenance Guidelines
+
+20. Governance
+
+21. Appendices
+
+--------------------------------------------------
+FOR EACH MAJOR COMPONENT
+--------------------------------------------------
+
+Document:
+
+• Purpose
+
+• Responsibilities
+
+• Inputs
+
+• Outputs
+
+• Dependencies
+
+• Relationships
+
+• Configuration
+
+• Constraints
+
+• Failure conditions
+
+• Validation
+
+--------------------------------------------------
+REVIEW
+--------------------------------------------------
+
+Identify:
+
+• Missing documentation
+
+• Outdated documentation
+
+• Architecture inconsistencies
+
+• Missing governance
+
+• Undefined ownership
+
+• Duplicate responsibilities
+
+• Opportunities to simplify the architecture
+
+Do not recommend rebuilding the framework unless a genuine architectural defect exists.
+
+--------------------------------------------------
+OUTPUT
+--------------------------------------------------
+
+Produce a publication-quality engineering specification suitable for long-term maintenance.
+
+Write as a senior software architect.
+
+Avoid historical references unless documenting an approved architectural decision.
+
+Do not summarize.
+
+Produce complete engineering documentation.

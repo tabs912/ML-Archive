@@ -1,0 +1,58 @@
+Update Master List Framework Specification v2.docx to apply formal section and subsection numbering throughout the document.
+
+Apply the following hierarchy:
+
+Document title: Title style; no section number.
+Major framework sections: Heading 1 using sequential numbering: 1., 2., 3.
+Subsections: Heading 2 using numbering: 1.1, 1.2, 1.3
+Lower-level subsections: Heading 3 using numbering: 1.1.1, 1.1.2
+Fourth-level headings, where required: Heading 4 using numbering: 1.1.1.1
+Appendices: Heading 1 using letters: Appendix A, Appendix B, and so forth.
+Appendix subsections: Heading 2 using A.1, A.2, B.1, and so forth.
+
+Requirements:
+
+Determine heading hierarchy from the existing document structure and subject relationships.
+Do not rewrite, summarize, or remove substantive content.
+Preserve all tables, lists, diagrams, identifiers, and appendix content.
+Apply actual Word Heading 1–4 styles—not manually formatted text.
+Use multilevel numbering linked to the heading styles.
+Restart main section numbering at Section 1.
+Restart appendix subsection numbering within each appendix.
+Preserve the existing Title, Subtitle, Cambria body text, heading fonts, colors, spacing, margins, and table formatting.
+Insert or update an automatic Table of Contents based on Heading 1–4.
+Do not number labels such as Build Field Value, table titles, figure titles, notes, or ordinary body paragraphs.
+Produce a new file and do not overwrite the source document.
+
+Before saving, validate that:
+
+no headings were skipped;
+no body paragraphs were incorrectly converted to headings;
+numbering is sequential;
+appendix lettering is sequential;
+every numbered heading appears in the Table of Contents;
+table layouts and page formatting remain intact.
+
+A sensible top-level structure for the current specification would begin approximately as follows:
+
+Framework Overview
+Framework Architecture
+Configuration Framework
+Workflow Architecture
+Data Architecture
+Sheet Architecture
+Column Architecture
+Mapping Architecture
+Template Architecture
+Dashboard Architecture
+Processing Modules
+Reporting Architecture
+Validation Framework
+Quality Assurance Framework
+Error Handling Framework
+Performance Framework
+Framework Governance
+Function Organization
+Framework Maintenance
+
+Then retain the existing appendix sequence beginning with Appendix A — Framework Terminology. This approach would make the specification much easier to navigate and cross-reference without altering its substantive governance.
