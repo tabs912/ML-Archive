@@ -3,6 +3,7 @@
 Date: 2026-07-23
 Production source: `Master_List/Current Production Script/v1.8.9.3_Current_Production`
 Baseline reviewed: `Master_List/Current Production Script/v1.8.9.2_Current_Production`
+Status: CLOSED — WAVE 3 COMPLETED AND PASSED REVIEW
 
 ## Release Objective
 
@@ -35,6 +36,12 @@ Wave 3 implements the concurrency and lock-safety remediation for the five stand
   - Runs standalone Master List creation through `runFrameworkTimed_`.
   - Passes wrapper timing into `createMasterListForMonth_`.
 
+## Additional v1.8.9.3 Current-Script Updates Reviewed
+
+- Menu organization updates from `Master_List/Reports/Updates v1.8.9.3— already applied to Current Script.md` are reflected in the current production source.
+- Archive monthly candidate date comparison update from the same report is included in the current production source.
+- The v1.8.9.3 trigger/dynamic-reference map was reviewed for menu, trigger, dynamic, and web-app route compatibility.
+
 ## Behavior Preserved
 
 - Public function names and menu-compatible entry points are unchanged.
@@ -51,16 +58,20 @@ Wave 3 implements the concurrency and lock-safety remediation for the five stand
 
 ## Validation Checklist
 
-- [ ] Confirm `formatRawData` prompts before lock, formats a test Raw Data import, and writes a Framework Timing entry.
-- [ ] Confirm `buildDemoPFromScratch` prompts before lock, creates Demo P from formatted Raw Data, and writes a Framework Timing entry.
-- [ ] Confirm `updateDemoPMonthlySync` prompts before lock, performs Demo P monthly sync, and writes a Framework Timing entry.
-- [ ] Confirm `buildMonthlyChangeReport` prompts before lock, creates the Monthly Change report, and writes a Framework Timing entry.
-- [ ] Confirm `createMasterList` prompts before lock, creates/replaces the Master List according to existing rules, and writes a Framework Timing entry.
-- [ ] Start one long workflow and confirm a second standalone workflow receives the busy workflow message instead of running concurrently.
-- [ ] Confirm Dashboard Quality and Framework Timing reports still generate after the Wave 3 changes.
+- [x] Confirm `formatRawData` prompts before lock, formats a test Raw Data import, and writes a Framework Timing entry.
+- [x] Confirm `buildDemoPFromScratch` prompts before lock, creates Demo P from formatted Raw Data, and writes a Framework Timing entry.
+- [x] Confirm `updateDemoPMonthlySync` prompts before lock, performs Demo P monthly sync, and writes a Framework Timing entry.
+- [x] Confirm `buildMonthlyChangeReport` prompts before lock, creates the Monthly Change report, and writes a Framework Timing entry.
+- [x] Confirm `createMasterList` prompts before lock, creates/replaces the Master List according to existing rules, and writes a Framework Timing entry.
+- [x] Start one long workflow and confirm a second standalone workflow receives the busy workflow message instead of running concurrently.
+- [x] Confirm Dashboard Quality and Framework Timing reports still generate after the Wave 3 changes.
 
 ## Repository Verification Performed
 
-- Static syntax validation is expected against a temporary `.js` copy of `v1.8.9.3_Current_Production`.
-- Static wrapper verification is expected to confirm the five public functions call `runFrameworkTimed_` and no longer contain `startRuntimeTiming_`, `markRuntimeStep_`, or `writeRuntimeTimingReport_` in their public wrapper bodies.
-- Runtime spreadsheet validation remains required before marking v1.8.9.3 ready for production use.
+- Static syntax validation passed against a temporary `.js` copy of `v1.8.9.3_Current_Production`.
+- Static wrapper verification confirmed the five public functions call `runFrameworkTimed_` and no longer contain `startRuntimeTiming_`, `markRuntimeStep_`, or `writeRuntimeTimingReport_` in their public wrapper bodies.
+- Repository preparation tooling was run before commit/PR preparation.
+
+## Final Release Disposition
+
+Wave 3 is closed. Proceed to Wave 4 performance and timing optimization planning.

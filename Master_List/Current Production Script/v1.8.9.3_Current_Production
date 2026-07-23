@@ -1,10 +1,10 @@
-F// ============================================================================
+// ============================================================================
 // CONFIGURATION
 // ============================================================================
 
 const MASTER_LIST_MERGE_ML_VERSION = "1.8.9.3";
 
-const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";F
+const MASTER_LIST_MERGE_REBUILD_SECTION = "FULL_SCRIPT";
 
 const MASTER_LIST_MERGE_BASELINE_VERSION = "1.6.22.3";
 
@@ -7197,7 +7197,7 @@ function findArchiveMonthlyCandidateSheetsUpToDate_(ss, keywords, cutoffDate) {
   }).filter(Boolean);
   const matches = [];
   const seen = new Set();
-  
+
   // Convert the cutoff date to a stable YYYYMM integer (e.g., 202606)
   const cutoffKey = cutoffDate ? Number(Utilities.formatDate(cutoffDate, Session.getScriptTimeZone(), "yyyyMM")) : 0;
 
@@ -7205,7 +7205,7 @@ function findArchiveMonthlyCandidateSheetsUpToDate_(ss, keywords, cutoffDate) {
     const name = sheet.getName();
     const lowerName = name.toLowerCase();
     if (lowerName.indexOf("template") !== -1) return;
-    
+
     const hasKeyword = keywordList.some(function(keyword) { return lowerName.indexOf(keyword) !== -1; });
     if (!hasKeyword) return;
     if (seen.has(name)) return;
@@ -7214,7 +7214,7 @@ function findArchiveMonthlyCandidateSheetsUpToDate_(ss, keywords, cutoffDate) {
     const sheetDate = extractFirstDateFromSheetName_(name);
     if (sheetDate) {
       const sheetKey = Number(Utilities.formatDate(sheetDate, Session.getScriptTimeZone(), "yyyyMM"));
-      
+
       // Compare the YYYYMM integers instead of exact milliseconds
       if (sheetKey <= cutoffKey) {
         seen.add(name);
