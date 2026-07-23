@@ -1,0 +1,516 @@
+MASTER LIST FRAMEWORK — EXHAUSTIVE ENGINEERING CODE REVIEW
+
+Act as the Lead Framework Engineer and perform a complete engineering review of the current Master List production script.
+
+This review must follow the same engineering depth, structure, and practical focus as the original v1.6.29 Exhaustive Code Review.
+
+PRIMARY OBJECTIVE
+
+Identify actual code defects, logic defects, broken dependencies, performance bottlenecks, architecture weaknesses, orphaned code, duplicate code, trigger problems, data-flow problems, and maintainability issues.
+
+This is a privately used Google Apps Script database framework operated primarily by one user and occasionally by two other trusted users.
+
+The review must be proportionate to that use case.
+
+DO NOT expand the review into enterprise deployment assurance, compliance, formal evidence gathering, security hardening, or repeated release validation.
+
+SOURCE OF TRUTH
+
+Review the current production script as the governing source of truth.
+
+Also review, when available:
+
+- Current framework timing reports
+- Dashboard Quality reports
+- Apps Script execution reports
+- Current function inventory
+- Current architecture or framework specifications
+- Current mapping and sheet-definition documents
+
+Historical scripts may be consulted only to understand intended behavior. Do not recommend restoring obsolete logic merely because it existed in an older version.
+
+REVIEW SCOPE
+
+Perform a complete review of the following areas.
+
+1. CODE CORRECTNESS
+
+Review for:
+
+- Undefined functions, helpers, constants, and variables
+- Incorrect function calls
+- Missing dependencies
+- Incorrect parameters
+- Broken return-value handling
+- Invalid control flow
+- Incorrect conditions
+- Incorrect array indexes
+- Incorrect row or column calculations
+- Off-by-one errors
+- Incorrect sheet resolution
+- Incorrect header resolution
+- Incorrect data mapping
+- Incorrect date handling
+- Incorrect sorting or filtering
+- Incorrect deletion or replacement behavior
+- Runtime paths that can fail under expected operating conditions
+
+Report only real or reasonably probable defects.
+
+Do not report theoretical concerns without a plausible execution path.
+
+2. BUSINESS-LOGIC REVIEW
+
+Verify that the code correctly implements the approved Master List workflow, including:
+
+- Template-first processing
+- Dashboard-driven configuration
+- Raw Data processing
+- Demo P creation and monthly updating
+- Primary PMR Row assignment
+- Contact processing
+- Banner synchronization
+- Care Plan synchronization
+- Disenrollment processing
+- Master List creation
+- Monthly Change reporting
+- Master List Change Log processing
+- Index processing
+- Dashboard Quality processing
+- Timing and validation reporting
+
+Identify any location where implementation behavior conflicts with the approved framework rules.
+
+Do not redesign approved business logic unless the existing implementation is defective, incomplete, or materially inefficient.
+
+3. FUNCTION AND DEPENDENCY INVENTORY
+
+Inventory all top-level functions.
+
+For each function, determine where reasonably possible:
+
+- Function name
+- Primary responsibility
+- Direct callers
+- Direct dependencies
+- Menu or trigger entry-point status
+- Public workflow status
+- Internal helper status
+- Compatibility-wrapper status
+- Diagnostic status
+- Suspected orphan status
+- Destructive or write-operation status
+
+Identify:
+
+- Duplicate function declarations
+- Duplicate or conflicting helpers
+- Undefined helper calls
+- Missing callbacks
+- Broken dependency chains
+- Functions with no identifiable static path
+- Compatibility wrappers that appear obsolete
+- Functions that appear unused but may be dynamically invoked
+
+Do not recommend deleting a function solely because static analysis does not find a caller.
+
+Classify suspected unused functions as:
+
+- Confirmed orphan
+- Probable orphan
+- Retained compatibility function
+- Dynamic or uncertain
+- Supported public entry point
+
+4. ARCHITECTURE REVIEW
+
+Review whether the current implementation follows the approved Master List architecture:
+
+- Single-file production architecture
+- Dashboard-driven formatting
+- Dashboard-controlled templates
+- Template-first formatting
+- Header row 4 and data row 5
+- Primary PMR Row architecture
+- Batch processing
+- One-read / in-memory transformation / one-write patterns
+- Centralized configuration
+- Centralized sheet and header resolution
+- Separation of workflow entry points and internal helpers
+- Consistent timing and error handling
+
+Identify:
+
+- Duplicated architecture
+- Competing implementations
+- Legacy paths that bypass current architecture
+- Inconsistent helper usage
+- Direct hard-coded behavior that should use dashboard configuration
+- Business logic embedded in formatting helpers
+- Formatting logic embedded in data-processing helpers
+- Unnecessary compatibility layers
+
+Do not recommend modularization merely because the script is large.
+
+The current approved architecture remains single-file unless a specific defect requires otherwise.
+
+5. PERFORMANCE REVIEW
+
+Review performance using both code inspection and available timing evidence.
+
+Focus on:
+
+- Row-by-row operations
+- Repeated Spreadsheet service calls
+- Repeated reads of the same range
+- Repeated writes
+- Repeated formatting calls
+- Repeated sheet lookups
+- Nested loops over large datasets
+- Repeated header-map creation
+- Repeated date parsing
+- Excessive flush calls
+- Repeated deleteRows or deleteRow operations
+- Excessive row-height or column-width operations
+- Rebuilding data that could be updated in memory
+- Trigger activity during long workflows
+- Timing-report writes that slow the primary workflow
+
+Prioritize findings according to actual operational impact.
+
+For each performance finding, include:
+
+- Workflow
+- Function or call path
+- Cause
+- Approximate impact
+- Recommended correction
+- Risk of changing the implementation
+- Whether business logic can remain unchanged
+
+Do not recommend performance changes that add unnecessary complexity for negligible gain.
+
+6. DATA-FLOW AND DATA-INTEGRITY REVIEW
+
+Review the sequence in which data is read, transformed, deleted, copied, replaced, or written.
+
+Focus on actual risks such as:
+
+- Deleting data before replacement data is successfully prepared
+- Using the wrong source sheet
+- Processing the wrong month
+- Resolving the wrong report
+- Replacing a valid sheet with incomplete data
+- Excluding or retaining the wrong PMRs
+- Incorrect Primary PMR Row selection
+- Incorrect deduplication
+- Incorrect disenrollment handling
+- Incorrect changed-PMR processing
+- Incorrect report-section assignment
+- Partial output caused by execution failure
+- Header mismatches that silently shift data
+
+Do not assume that every write or deletion requires rollback, archival, screenshots, proof artifacts, or transaction infrastructure.
+
+Only recommend additional safeguards when a realistic code path could cause incorrect output or loss of required source data.
+
+The user has explicitly accepted that some generated and intermediate data can be recreated.
+
+Do not treat recreatable data as critical permanent data.
+
+7. TRIGGER AND CONCURRENCY REVIEW
+
+Review:
+
+- onOpen
+- Installed triggers
+- Index refresh triggers
+- Trigger creation and duplicate prevention
+- Locks already used by the script
+- Possible overlap of long-running menu workflows
+- Trigger churn caused by bulk sheet creation or deletion
+
+Only report concurrency findings that are plausible for a workbook used primarily by one person and occasionally by two other trusted users.
+
+Do not recommend enterprise-level locking or orchestration.
+
+Recommend a lock or busy flag only when overlapping execution could realistically corrupt output or materially disrupt a workflow.
+
+8. ERROR HANDLING AND LOGGING
+
+Review whether errors:
+
+- Stop schema-critical or destructive processing appropriately
+- Provide enough information to identify the failed workflow
+- Preserve useful timing information
+- Avoid hiding failures
+- Avoid turning harmless formatting warnings into workflow failures
+- Distinguish required failures from best-effort formatting issues
+
+Identify:
+
+- Empty catch blocks
+- Errors that are swallowed
+- Errors that are converted into misleading success results
+- Setup functions that partially mutate state and then fail
+- Logging that materially slows workflows
+- Repeated or unnecessary diagnostics
+
+Do not recommend additional logging merely for evidence collection.
+
+Logging should exist only when it helps operate, diagnose, or maintain the framework.
+
+9. MAINTAINABILITY REVIEW
+
+Review for:
+
+- Conflicting naming
+- Obsolete compatibility aliases
+- Repeated constants
+- Repeated literals
+- Duplicate implementations
+- Unclear workflow boundaries
+- Helpers with multiple unrelated responsibilities
+- Functions that are excessively difficult to reason about
+- Comments that no longer match code behavior
+- Historical references that no longer apply
+- Unsupported old-version references
+- Dead configuration
+- Unused dashboard fields
+- Obsolete processing paths
+
+Do not recommend stylistic rewrites that do not improve correctness, maintainability, or performance.
+
+Do not recommend splitting the production script into multiple files unless explicitly requested.
+
+10. PUBLIC ENTRY-POINT REVIEW
+
+Identify the supported operational entry points, including:
+
+- Menu functions
+- Trigger handlers
+- Workflow functions
+- Administrative functions
+- Diagnostic functions
+- Compatibility wrappers
+
+Classify other top-level functions as internal, compatibility, deprecated, diagnostic, or uncertain.
+
+Do not evaluate the project as a reusable public Apps Script library unless the code is actually intended to be used as one.
+
+The Master List script is primarily a container-bound operational application, not a general-purpose public library.
+
+EXCLUDED FROM THIS REVIEW
+
+Do not request, perform, or recommend the following unless a specific code defect directly depends on it:
+
+- Repeating node --check
+- Copying the production script to a .js file
+- Repeating ESLint
+- Repeating python3 -m json.tool
+- Revalidating committed manifests
+- Screenshot or photographic verification
+- Video evidence
+- Proof that menu items were clicked
+- Proof that sheets visually match
+- Manual evidence packages
+- Formal release certification
+- Enterprise security review
+- Penetration testing
+- Compliance review
+- Accessibility review
+- Disaster recovery planning
+- Multi-region or high-availability planning
+- Public API hardening
+- External threat modeling
+- Formal rollback infrastructure
+- CI/CD requirements
+- Deployment pipeline recommendations
+- Formal test evidence for every finding
+- Repeating validations already completed during remediation
+
+Assume these validations are managed separately and have already been completed unless the current code itself shows that they failed.
+
+Do not lower the health rating because screenshots, manifest evidence, test artifacts, or validation logs were not supplied.
+
+SEVERITY STANDARD
+
+Use these severity levels:
+
+CRITICAL
+
+A confirmed defect likely to cause:
+
+- Incorrect production output
+- Failure of a core workflow
+- Practical Apps Script timeout
+- Partial completion of a destructive workflow
+- Removal or corruption of required source data
+
+HIGH
+
+A confirmed or highly probable defect that materially affects:
+
+- Runtime stability
+- Data correctness
+- Dependency resolution
+- A supported workflow
+- Significant recurring performance
+
+MEDIUM
+
+A real issue that affects:
+
+- Maintainability
+- Diagnostics
+- Moderate performance
+- Edge-case correctness
+- A non-primary workflow
+
+LOW
+
+A minor issue with limited operational impact.
+
+Do not inflate severity based on hypothetical enterprise risks.
+
+Every finding must include a plausible operational impact.
+
+REQUIRED OUTPUT
+
+Produce the review in the following structure.
+
+1. Executive Review Summary
+
+Include:
+
+- Overall health rating
+- Production readiness assessment
+- Critical finding count
+- High finding count
+- Medium finding count
+- Low finding count
+- Highest-risk workflows
+- Primary bottlenecks
+- Primary maintainability concerns
+- Recommended next action
+
+2. Repository and File Inventory
+
+Identify the current production artifact and relevant supporting artifacts.
+
+Do not classify missing optional evidence as a code defect.
+
+3. Function and Dependency Inventory
+
+Include counts for:
+
+- Top-level functions
+- Unique function names
+- Duplicate declarations
+- Missing menu callbacks
+- Undefined dependencies
+- Destructive or write-operation functions
+- Suspected no-static-path functions
+
+4. Complete Findings Register
+
+For every finding include:
+
+- Finding ID
+- Severity
+- Confidence
+- Category
+- Function or workflow
+- Description
+- Code evidence or execution path
+- Operational impact
+- Recommended correction
+- Breaking-change risk
+- Focused testing needed after correction
+
+Do not include validation recommendations as findings.
+
+5. Supported Entry-Point Report
+
+Classify:
+
+- Menu/admin functions
+- Workflow functions
+- Trigger handlers
+- Diagnostics
+- Internal helpers
+- Compatibility wrappers
+- Removal candidates
+
+6. Orphan and Duplicate Code Report
+
+Separate:
+
+- Confirmed duplicates
+- Confirmed orphans
+- Probable orphans
+- Compatibility functions
+- Dynamic or uncertain functions
+
+7. Performance Report
+
+Rank the most important performance issues using actual code paths and timing evidence where available.
+
+8. Data-Flow and Data-Integrity Report
+
+Limit this section to realistic defects or plausible failure paths.
+
+9. Trigger and Concurrency Report
+
+Keep recommendations proportional to a one-to-three-user workbook.
+
+10. Error Handling and Logging Review
+
+Identify actual weaknesses and strengths.
+
+11. Maintainability and Architecture Review
+
+Identify obsolete, duplicated, conflicting, or unnecessarily complex implementation areas.
+
+12. Prioritized Remediation Plan
+
+Organize remediation into:
+
+- Phase A — Confirmed correctness defects
+- Phase B — Broken dependencies and runtime stability
+- Phase C — Material performance improvements
+- Phase D — Orphan and duplicate cleanup
+- Phase E — Maintainability cleanup
+
+Do not add phases for evidence gathering, screenshots, security certification, deployment certification, or repeated validation.
+
+13. Focused Regression Test Plan
+
+Include only tests directly related to code changes recommended by the review.
+
+Do not create a general release-validation checklist.
+
+14. Final Conclusion
+
+State one of:
+
+- Approved
+- Approved with minor remediation
+- Conditional approval
+- Not approved due to identified code defects
+
+The conclusion must be based on actual code findings, not missing screenshots, missing evidence, missing validation logs, or unperformed enterprise controls.
+
+REVIEW DISCIPLINE
+
+- Do not invent defects to make the review appear exhaustive.
+- Do not repeat already remediated findings unless they are still present.
+- Do not turn optional improvements into mandatory blockers.
+- Do not interpret recreatable worksheet data as irreplaceable production data.
+- Do not require extra safeguards after the user has explicitly accepted the risk.
+- Do not penalize the project for its intentionally small user base.
+- Do not recommend changes solely to satisfy generic software-engineering best practices.
+- Preserve approved business logic.
+- Prefer the smallest correction that resolves the identified issue.
+- Clearly distinguish confirmed defects, probable defects, conditional risks, and optional improvements.
+- When no further material defect is found, state that the review found no additional material defect.
