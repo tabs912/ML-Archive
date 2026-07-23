@@ -1078,7 +1078,7 @@ This appendix integrates current v1.8.9 audit evidence from **Master_List/Audit 
 | ML189-001 Monthly Change disenrollment detection date rule | CLOSED / PASSED in Wave 1. | v1.8.9.2 closure accepts the strict first-of-month rule and centralized helper as passed review evidence. |
 | ML189-002 Create Monthly Update can mutate Demo P / Disenrolled Exclusion before Master List replacement confirmation | CLOSED / PASSED in Wave 1. | v1.8.9.2 moves replacement confirmation into preflight and bypasses duplicate prompts after preflight confirmation. |
 | ML189-003 Master List fallback from Primary PMR Row to DOB/first row | CLOSED / PASSED in Wave 1. | v1.8.9.2 closure records Primary PMR fail-closed Master List behavior as passed. |
-| ML189-004 Long-running mutating workflows need workflow-level lock/busy guard audit | Wave 3 implementation evidence supplied; closure pending explicit signoff. | v1.8.9.3 release notes implement `runFrameworkTimed_` lock/busy protection for five standalone mutating workflows, while live timing/quality evidence is documented separately. |
+| ML189-004 Long-running mutating workflows need workflow-level lock/busy guard audit | CLOSED / PASSED in Wave 3. | v1.8.9.3 closure confirms `runFrameworkTimed_` lock/busy protection for five standalone mutating workflows, prompt-before-lock behavior, public/menu compatibility, and trigger/dynamic/web surface review. |
 | ML189-005 Disenrollment sort uses source-column index against report rows | CLOSED / PASSED in Wave 1. | v1.8.9.2 closure records Monthly Change Disenrollments report-header sort index as passed. |
 | ML189-006 Monthly Change full-range clear/format performance target | Open cleanup/performance item. | Performance Framework lists Monthly Change as a high-complexity timing-review area. |
 | ML189-007 System sheet menu callbacks use underscore callback names | Open maintainability item. | Function Organization and Safe-Change Requirements preserve callback compatibility until approved cleanup. |
@@ -1375,7 +1375,7 @@ This appendix updates the framework specification after review of **Master_List/
 | Monthly Change Disenrollments sort index | Closure summary marks report-header sort index CLOSED / PASSED. | ML189-005 risk note updated to closed for Wave 1. |
 | Primary PMR fail-closed Master List behavior | Closure summary marks Primary PMR fail-closed behavior CLOSED / PASSED. | ML189-003 risk note updated to closed for Wave 1. |
 | Timing and quality evidence | v1.8.9.1 Framework Timing and Dashboard Quality PDF reports were supplied as closure evidence. | Reports are treated as binary evidence inputs only; they are not implementation artifacts and are not committed. |
-| Next remediation wave | Closure summary identified Wave 3 - Trigger, concurrency, and public API safety as next wave; v1.8.9.3 supplies Wave 3 implementation evidence. | ML189-004 is updated to implementation-evidence-supplied / closure-signoff-pending status. |
+| Next remediation wave | Wave 3 is now CLOSED / PASSED by **Master_List/Audit Summary/WAVE_3_CLOSURE_SUMMARY_v1.8.9.3.md**. | ML189-004 is closed; next wave is Wave 4 performance and timing optimization planning. |
 
 ### U.1 Wave 1 Closure Status
 
@@ -1385,7 +1385,7 @@ Wave 1 is CLOSED / PASSED for the documented scope: strict first-of-month disenr
 
 | Item | Status | Required Future Handling |
 |---|---|---|
-| ML189-004 workflow-level lock/busy guard audit | Implementation evidence supplied in v1.8.9.3; closure signoff pending. | Confirm runtime concurrency behavior and retain explicit closure evidence before declaring fully closed. |
+| ML189-004 workflow-level lock/busy guard audit | CLOSED / PASSED in Wave 3. | Retain Wave 3 closure evidence; future concurrency/public API changes must preserve `runFrameworkTimed_`, prompt-before-lock behavior, menu compatibility, and dynamic/web route safety. |
 | ML189-006 Monthly Change full-range clear/format performance target | Open cleanup/performance candidate. | Use timing evidence before changing range bounds. |
 | ML189-007 system-sheet underscore menu callbacks | Open maintainability candidate. | Preserve compatibility or migrate callbacks through approved public wrapper change. |
 | ML189-008 stale authority text outside this spec | Partially addressed. | Update remaining project README/spec authority text in a separate documentation cleanup if still stale. |
@@ -1427,8 +1427,10 @@ This appendix records review of the live workbook export **Master_List/Reports/C
 | Format Dashboard | Workbook contains Sections A-H and confirms current dashboard section ordering. | Dashboard architecture remains A-H, including Section F Tab Organization & Index, Section G Column Definitions, and Section H Sheet Headers. |
 | Dashboard Quality Report | Workbook contains Sections A-R with 96 PASS statuses and no FAIL/WARN statuses detected in the exported values. | Dashboard Quality evidence supports current quality-shell completeness and section-scoped validation behavior. |
 | Framework Timing Report | Workbook contains Sections A-D and process summary entries for template creation, Dashboard Quality validation/workflow, Format Monthly Sheets, Create Monthly Start, Create Monthly Update, Monthly Change, Demo P sync, Disenrolled List, Master List, archiving, and Banner formatting. | Timing evidence is current but not treated as performance closure; slow, bottleneck, and critical entries remain performance-review inputs. |
-| Wave 3 implementation notes | **Master_List/Audit Summary/WAVE_3_IMPLEMENTATION_RELEASE_NOTES_v1.8.9.3.md** states the five standalone mutating public workflows now run through `runFrameworkTimed_` after prompts. | ML189-004 is updated from next-wave candidate to implementation-evidence-supplied / closure-signoff-pending. |
+| Wave 3 closure summary | **Master_List/Audit Summary/WAVE_3_CLOSURE_SUMMARY_v1.8.9.3.md** marks Wave 3 CLOSED — COMPLETED AND PASSED REVIEW. | ML189-004 is closed for trigger, concurrency, and public API safety scope. |
+| Wave 3 implementation notes | **Master_List/Audit Summary/WAVE_3_IMPLEMENTATION_RELEASE_NOTES_v1.8.9.3.md** states the five standalone mutating public workflows now run through `runFrameworkTimed_` after prompts. | Preserved as implementation evidence supporting Wave 3 closure. |
 | Dynamic reference map | **Master_List/Audit Summary/EXHAUSTIVE_TRIGGER_DYNAMIC_REFERENCE_MAP_v1.8.9.3.md** documents menus, callback strings, trigger routes, web routes, and dynamic references. | Public-interface and callback governance remain protected surfaces for future safe-change review. |
+| Next wave | Wave 3 closure summary identifies **Wave 4 — Performance and timing optimization planning** as the next wave. | Performance/timing work must not change business logic unless a specific correctness defect is discovered and separately approved. |
 | Privacy handling | Index was intentionally removed from the workbook export. | Appendix expansion may use dashboard/timing/quality/template evidence from this workbook, but Index row-level evidence still requires a privacy-safe export if exact Index validation is needed. |
 
-Current v1.8.9.3 evidence updates the framework baseline and confirms live Dashboard Quality / Framework Timing availability. It does not by itself authorize deletion of historical evidence, removal of protected callback strings, or closure of remaining performance findings without explicit closure signoff.
+Current v1.8.9.3 evidence updates the framework baseline, confirms live Dashboard Quality / Framework Timing availability, and closes Wave 3 trigger/concurrency/public API safety scope. It does not authorize deletion of historical evidence, removal of protected callback strings, or closure of remaining performance findings. Performance and timing optimization planning moves to Wave 4 and must use the v1.8.9.3 Dashboard Quality and Framework Timing reports as inputs.
